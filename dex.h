@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include "i18n.h"  // gLang
 
 // GENERADO por tools/gen_dex.py desde tools/dex_data.py - no editar
 
@@ -173,6 +174,100 @@ static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
   { "MEWTWO", 0, 0, R_LEGENDARIO, 0xD28F, 106, 110, 90, 130, 0 },  // 150 psiquico
   { "MEW", 0, 0, R_LEGENDARIO, 0xD28F, 100, 100, 100, 100, 0 },  // 151 psiquico
 };
+
+// Nombres oficiales de FR y DE (en gen 1 son los unicos que difieren del
+// ingles; ES/IT/PT usan el de DEX_TBL). nullptr = sin nombre propio.
+static const char *const DEX_NAME_FR[DEX_COUNT + 1] = {
+  nullptr, "BULBIZARRE", "HERBIZARRE", "FLORIZARRE",
+  "SALAMECHE", "REPTINCEL", "DRACAUFEU", "CARAPUCE",
+  "CARABAFFE", "TORTANK", "CHENIPAN", "CHRYSACIER",
+  "PAPILUSION", "ASPICOT", "COCONFORT", "DARDARGNAN",
+  "ROUCOOL", "ROUCOUPS", "ROUCARNAGE", nullptr,
+  "RATTATAC", "PIAFABEC", "RAPASDEPIC", "ABO",
+  nullptr, nullptr, nullptr, "SABELETTE",
+  "SABLAIREAU", nullptr, nullptr, nullptr,
+  nullptr, nullptr, nullptr, "MELOFEE",
+  "MELODELFE", "GOUPIX", "FEUNARD", "RONDOUDOU",
+  "GRODOUDOU", "NOSFERAPTI", "NOSFERALTO", "MYSTHERBE",
+  "ORTIDE", "RAFFLESIA", nullptr, nullptr,
+  "MIMITOSS", "AEROMITE", "TAUPIQUEUR", "TRIOPIKEUR",
+  "MIAOUSS", nullptr, "PSYKOKWAK", "AKWAKWAK",
+  "FEROSINGE", "COLOSSINGE", "CANINOS", "ARCANIN",
+  "PTITARD", "TETARTE", "TARTARD", nullptr,
+  nullptr, nullptr, "MACHOC", "MACHOPEUR",
+  "MACKOGNEUR", "CHETIFLOR", "BOUSTIFLOR", "EMPIFLOR",
+  nullptr, nullptr, "RACAILLOU", "GRAVALANCH",
+  "GROLEM", nullptr, "GALOPA", "RAMOLOSS",
+  "FLAGADOSS", "MAGNETI", nullptr, "CANARTICHO",
+  nullptr, nullptr, "OTARIA", "LAMANTINE",
+  "TADMORV", "GROTADMORV", "KOKIYAS", "CRUSTABRI",
+  "FANTOMINUS", "SPECTRUM", "ECTOPLASMA", nullptr,
+  "SOPORIFIK", "HYPNOMADE", nullptr, "KRABBOSS",
+  "VOLTORBE", nullptr, "NOEUNOEUF", "NOADKOKO",
+  "OSSELAIT", "OSSATUEUR", "KICKLEE", "TYGNON",
+  "EXCELANGUE", "SMOGO", "SMOGOGO", "RHINOCORNE",
+  "RHINOFEROS", "LEVEINARD", "SAQUEDENEU", "KANGOUREX",
+  "HYPOTREMPE", "HYPOCEAN", "POISSIRENE", "POISSOROY",
+  "STARI", "STAROSS", "M. MIME", "INSECATEUR",
+  "LIPPOUTOU", "ELEKTEK", nullptr, "SCARABRUTE",
+  nullptr, "MAGICARPE", "LEVIATOR", "LOKHLASS",
+  "METAMORPH", "EVOLI", "AQUALI", "VOLTALI",
+  "PYROLI", nullptr, "AMONITA", "AMONISTAR",
+  nullptr, nullptr, "PTERA", "RONFLEX",
+  "ARTIKODIN", "ELECTHOR", "SULFURA", "MINIDRACO",
+  "DRACO", "DRACOLOSSE", nullptr, nullptr,
+};
+
+static const char *const DEX_NAME_DE[DEX_COUNT + 1] = {
+  nullptr, "BISASAM", "BISAKNOSP", "BISAFLOR",
+  "GLUMANDA", "GLUTEXO", "GLURAK", "SCHIGGY",
+  "SCHILLOK", "TURTOK", "RAUPY", "SAFCON",
+  "SMETTBO", "HORNLIU", "KOKUNA", "BIBOR",
+  "TAUBSI", "TAUBOGA", "TAUBOSS", "RATTFRATZ",
+  "RATTIKARL", "HABITAK", "IBITAK", "RETTAN",
+  nullptr, nullptr, nullptr, "SANDAN",
+  "SANDAMER", nullptr, nullptr, nullptr,
+  nullptr, nullptr, nullptr, "PIEPI",
+  "PIXI", nullptr, "VULNONA", "PUMMELUFF",
+  "KNUDDELUFF", nullptr, nullptr, "MYRAPLA",
+  "DUFLOR", "GIFLOR", nullptr, "PARASEK",
+  "BLUZUK", "OMOT", "DIGDA", "DIGDRI",
+  "MAUZI", "SNOBILIKAT", "ENTON", "ENTORON",
+  "MENKI", "RASAFF", "FUKANO", "ARKANI",
+  "QUAPSEL", "QUAPUTZI", "QUAPPO", nullptr,
+  nullptr, "SIMSALA", "MACHOLLO", "MASCHOCK",
+  "MACHOMEI", "KNOFENSA", "ULTRIGARIA", "SARZENIA",
+  "TENTACHA", "TENTOXA", "KLEINSTEIN", "GEOROK",
+  "GEOWAZ", "PONITA", "GALLOPA", "FLEGMON",
+  "LAHMUS", "MAGNETILO", nullptr, "PORENTA",
+  "DODU", "DODRI", "JUROB", "JUGONG",
+  "SLEIMA", "SLEIMOK", "MUSCHAS", "AUSTOS",
+  "NEBULAK", "ALPOLLO", nullptr, nullptr,
+  "TRAUMATO", nullptr, nullptr, nullptr,
+  "VOLTOBAL", "LEKTROBAL", "OWEI", "KOKOWEI",
+  "TRAGOSSO", "KNOGGA", "KICKLEE", "NOCKCHAN",
+  "SCHLURP", "SMOGON", "SMOGMOG", "RIHORN",
+  "RIZEROS", "CHANEIRA", nullptr, "KANGAMA",
+  "SEEPER", "SEEMON", "GOLDINI", "GOLKING",
+  "STERNDU", nullptr, "PANTIMOS", "SICHLOR",
+  "ROSSANA", "ELEKTEK", nullptr, nullptr,
+  nullptr, "KARPADOR", "GARADOS", nullptr,
+  nullptr, "EVOLI", "AQUANA", "BLITZA",
+  "FLAMARA", nullptr, "AMONITAS", "AMOROSO",
+  nullptr, nullptr, nullptr, "RELAXO",
+  "ARKTOS", nullptr, "LAVADOS", nullptr,
+  "DRAGONIR", "DRAGORAN", "MEWTU", nullptr,
+};
+
+// Nombre de la especie en el idioma activo (cae al de DEX_TBL si ese
+// idioma no tiene nombre propio para ella).
+static inline const char *dexName(int16_t dex) {
+  if (dex < 1 || dex > DEX_COUNT) return DEX_TBL[0].name;
+  const char *n = (gLang == LANG_FR)   ? DEX_NAME_FR[dex]
+                  : (gLang == LANG_DE) ? DEX_NAME_DE[dex]
+                                       : nullptr;
+  return n ? n : DEX_TBL[dex].name;
+}
 
 // el primer huevo de la partida: iniciales clasicos
 static const int16_t CLASSIC_DEX[] = { 1, 4, 7, 25, 133 };

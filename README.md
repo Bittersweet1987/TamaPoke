@@ -246,9 +246,12 @@ thumbnails (`SdThumbs`). `SdMon` (TPK1) remains as a dormant legacy fallback onl
 
 `tools/dex_data.py` is the **single source**: name, slug, type (accent colour +
 background biome), evolution line with gen-1 levels, rarities and starters.
-`tools/dex_stats.py` has the real base stats (from PokéAPI). `gen_dex.py` emits
-`dex.h` (the `DEX_TBL[152]` table). The pet's identity is its Pokédex number
-(persisted in NVS).
+`tools/dex_stats.py` has the real base stats (from PokéAPI). `tools/gen_names.py`
+pulls the **official localized names** from PokéAPI into `tools/dex_names.py`
+(only French and German differ in gen 1; Spanish, Italian and Portuguese use the
+English ones). `gen_dex.py` emits `dex.h` (the `DEX_TBL[152]` table plus the
+per-language name tables and the `dexName()` accessor). The pet's identity is its
+Pokédex number (persisted in NVS).
 
 - **Evolution** gen-1 style (levels 16/36/…; stones ≈30, trade ≈40; Eevee
   branches to whichever evolution you're missing). Each slip-up delays it 1
@@ -292,6 +295,9 @@ a farewell and punished by a runaway. Legendaries only with 25+ registered.
 
 **Languages:** the UI ships in 6 languages — English (default), Spanish, French,
 German, Italian, Portuguese — switchable from the settings screen (swipe down).
+**Pokémon names are localized too**: French and German show the official names
+(Bulbizarre, Bisasam...); the other languages use the English ones, which is what
+those regions officially use for gen 1.
 
 ## Backgrounds: biome + real time
 
@@ -310,7 +316,8 @@ beach, forest, volcano, mountain, snow). Sleeping forces night.
 - `dex.h` — GENERATED (`gen_dex.py`): the 151 table
 - `species.h` — GENERATED (`sprites.py`): fallback sprites, UI icons, colours
 - `pin_config.h` — the board's official pins
-- `tools/` — pipeline: `dex_data.py` (data), `dex_stats.py`, `gen_dex.py`,
+- `tools/` — pipeline: `dex_data.py` (data), `dex_stats.py`, `dex_names.py` +
+  `gen_names.py` (localized names), `gen_dex.py`,
   `sprites.py` (workshop), `pack_pmd.py` / `make_thumbs.py`
   (packers), `pack_bundle.py` (web bundle), `send_sd.py` (SD upload), `touch_log.py`
 - `tools/sdcard/mons/` — the generated .bin files (animated, shiny, PMD, thumbnails)
@@ -339,6 +346,7 @@ To test fast: lower `PET_TICK_MS`, `MINUTES_PER_LEVEL` and `FAREWELL_AGE_MIN` in
 ## Community forks
 
 - **[TamaPoke — Expanded](https://github.com/ShadowEnemyx/TamaPoke/tree/tamapoke-expanded-update)** by **ShadowEnemy** — a substantial community fork (different author/branch): a full **type-matchup battle system**, all **151 + shinies** with a **Pokédex / collection box** and daily goals, **6 UI languages**, **ES8311 sound**, starter choice and a one-click web installer. Worth a look. 🎮
+- **[TamaPoke](https://github.com/DylanPDao/TamaPoke)** by **DylanPDao** — another substantial fork: **gym battles** and **LAN battles** between two devices, **movesets**, a **party + box** system, an **EV/IV** stat system, and coverage extended **up to Gen 3 (386)**. Keeps the PMD sprite pipeline. 🏆
 
 ## Credits
 
