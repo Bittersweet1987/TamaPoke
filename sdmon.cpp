@@ -7,7 +7,7 @@ bool sdReady = false;
 bool sdDirty = false;
 SdThumbs thumbs;
 
-bool PmdMon::load(uint8_t dexNum, bool shiny) {
+bool PmdMon::load(uint16_t dexNum, bool shiny) {
   unload();
   if (!sdReady) return false;
 
@@ -119,13 +119,14 @@ bool sdBegin() {
   if (sdReady) {
     Serial.printf("SD montada: %llu MB\n", SD_MMC.cardSize() / (1024ULL * 1024ULL));
     SD_MMC.mkdir("/mons");
+    SD_MMC.mkdir("/cries");
   } else {
     Serial.println("SD no detectada (el juego usa los sprites de flash)");
   }
   return sdReady;
 }
 
-bool SdMon::load(uint8_t dexNum, bool shiny) {
+bool SdMon::load(uint16_t dexNum, bool shiny) {
   unload();
   if (!sdReady) return false;
 

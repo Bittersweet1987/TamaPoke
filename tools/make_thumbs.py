@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Genera /mons/thumbs.bin: miniaturas 40x40 de los 151 para la galeria.
+"""Genera /mons/thumbs.bin: miniaturas 40x40 para la galeria.
 
 Se derivan del frame frontal (Idle, frame 0) de los sprites PMD ya empaquetados
 (tools/sdcard/mons/pNNN.bin, formato TPK2) -> miniaturas legales (CC BY-NC), mismo
@@ -14,9 +14,13 @@ estilo que la pantalla principal. Formato TPTH (little-endian):
 """
 import os
 import struct
+import sys
+
+sys.path.insert(0, os.path.dirname(__file__))
 
 DIR = os.path.join(os.path.dirname(__file__), 'sdcard', 'mons')
 CELL = 40
+DEX_COUNT = 1025  # muss zu #define DEX_COUNT in dex.h passen
 
 
 def read_pmd_idle_frame0(path):
@@ -63,9 +67,19 @@ def shrink(w, h, pal, data):
 
 def main():
     blobs = []
-    for dex in range(1, 152):
+    dex_nums = list(range(1, DEX_COUNT + 1))
+    missing = []
+    for dex in dex_nums:
         path = os.path.join(DIR, f'p{dex:03d}.bin')
-        w, h, pal, data = read_pmd_idle_frame0(path)
+        try:
+            w, h, pal, data = read_pmd_idle_frame0(path)
+        except (FileNotFoundError, ValueError):
+            # kein PMD-Sprite vorhanden (PMD SpriteCollab hat diese Art noch nicht) ->
+            # 1x1 transparente Miniatur, damit die Indizes ausgerichtet bleiben
+            missing.append(dex)
+            blob = struct.pack('<3B', 1, 1, 0) + bytes([0xFF])
+            blobs.append(blob)
+            continue
         nw, nh, npal, ndata = shrink(w, h, pal, data)
         if len(npal) > 255:
             raise ValueError(f'{dex}: paleta {len(npal)}')
@@ -73,8 +87,10 @@ def main():
         blob += struct.pack(f'<{len(npal)}H', *npal)
         blob += ndata
         blobs.append(blob)
+    if missing:
+        print(f"ohne Sprite (Platzhalter-Miniatur): {missing}")
 
-    head = 4 + 2 + 4 * 151
+    head = 4 + 2 + 4 * len(blobs)
     offsets, pos = [], head
     for b in blobs:
         offsets.append(pos)
@@ -83,8 +99,8 @@ def main():
     out = os.path.join(DIR, 'thumbs.bin')
     with open(out, 'wb') as f:
         f.write(b'TPTH')
-        f.write(struct.pack('<H', 151))
-        f.write(struct.pack('<151I', *offsets))
+        f.write(struct.pack('<H', len(blobs)))
+        f.write(struct.pack(f'<{len(offsets)}I', *offsets))
         for b in blobs:
             f.write(b)
     print(f"guardado {out}: {pos / 1024:.0f} KB, {len(blobs)} miniaturas")

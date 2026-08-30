@@ -31,13 +31,19 @@
   code { background:#0001; padding:.1em .4em; border-radius:5px; }
   a { color:var(--accent); }
   .note { font-size:.9rem; color:#6b6b76; }
+  .ver { display:inline-block; margin: .35rem 0 1.25rem; padding:.35rem .75rem;
+         background:#fff; border:1px solid var(--track); border-radius:999px;
+         font-size:.95rem; color:var(--ink); }
+  .ver b { font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>🐢 TamaPoke</h1>
-  <p class="sub">A 151-Pokémon tamagotchi for the Waveshare ESP32-S3-Touch-AMOLED-1.75.
-     Install it from your browser — no Arduino, no drivers.</p>
+  <p class="ver" id="fw-ver">This flash: <b>1.35.3-soft-step</b> · 24 Aug 2026</p>
+  <p class="sub">A 251-Pokémon tamagotchi for the Waveshare ESP32-S3-Touch-AMOLED-1.75.
+     Install it from your browser — no ZIP download, no release files, no Arduino,
+     no manual firmware files.</p>
 
   <p class="unsupported" id="unsupported">
     ⚠️ Your browser doesn't support Web Serial. Use <b>Chrome</b> or <b>Edge</b> on a computer.
@@ -46,15 +52,17 @@
   <h2><span class="num">1</span>Flash the firmware</h2>
   <div class="step">
     <p>Plug the board in via USB and press install. Pick the port and wait.</p>
-    <esp-web-install-button manifest="manifest.json">
-      <button slot="activate">⚡ Install TamaPoke</button>
+    <p class="note" id="fw-step">Installs firmware <b>1.35.3-soft-step</b> from 24 Aug 2026.
+       The same version is shown on the board in Settings after flashing.</p>
+    <esp-web-install-button manifest="manifest.json?v=1.35.3-soft-step">
+      <button slot="activate">⚡ Install TamaPoke 1.35.3</button>
       <span slot="unsupported">Browser not supported (use Chrome/Edge).</span>
       <span slot="not-allowed">Needs HTTPS.</span>
     </esp-web-install-button>
     <p class="note">🔄 <b>Updating to a new version? Install <u>without</u> erasing</b> to keep
-       your Pokémon — the save lives in flash and the sprites on the microSD, so a normal
-       install keeps both. Only a full <b>Erase</b> wipes your saved pet (the SD sprites
-       survive even that). First time on a fresh board? You can erase, no problem.</p>
+       your Pokémon — updates flash only the firmware parts and leave the save area untouched.
+       Only a full <b>Erase</b> wipes your saved pet. First time on a fresh board? You can erase,
+       no problem.</p>
   </div>
 
   <h2><span class="num">2</span>Load the sprites onto the microSD</h2>
@@ -69,7 +77,7 @@
       <button id="auto" disabled>⬇️ Load sprites</button>
     </div>
     <p class="note">Have your own <code>.bin</code> files? <label style="cursor:pointer;text-decoration:underline">pick them manually<input id="files" type="file" accept=".bin" multiple disabled hidden></label></p>
-    <p class="note">🎨 Want to make your own sprites? See <a href="https://github.com/socquique/TamaPoke#generate-and-load-the-sprites-yourself" target="_blank">how to generate &amp; load them</a> in the repo.</p>
+    <p class="note">🎨 Want to make your own sprites? See <a href="https://github.com/Bittersweet1987/TamaPoke#generate-and-load-the-sprites-yourself" target="_blank">how to generate &amp; load them</a> in the repo.</p>
     <div class="bar" id="bar"><div></div></div>
     <pre id="log"></pre>
   </div>
@@ -79,7 +87,7 @@
      all. Tap the creature to pet it; swipe to open the Pokédex (sideways), the
      stat card (up) or set the clock (down); the physical PWR button turns the
      screen off (short press) or everything off (long press).
-     More in the <a href="https://github.com/socquique/TamaPoke" target="_blank">repository</a>.</p>
+     More in the <a href="https://github.com/Bittersweet1987/TamaPoke" target="_blank">repository</a>.</p>
 
   <p class="note">Sprites from <a href="https://github.com/PMDCollab/SpriteCollab" target="_blank">PMD SpriteCollab</a> (CC BY-NC).
      Pokémon is a ™ of Nintendo / Game Freak. Non-commercial project.</p>
@@ -87,6 +95,27 @@
 
 <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
 <script>
+function formatReleased(iso) {
+  const d = new Date(iso + 'T00:00:00Z');
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+fetch('manifest.json?v=1.35.3-soft-step')
+  .then((r) => r.ok ? r.json() : null)
+  .then((m) => {
+    if (!m || !m.version) return;
+    const when = m.released ? formatReleased(m.released) : '';
+    const label = when ? `${m.version} · ${when}` : m.version;
+    const pill = document.getElementById('fw-ver');
+    if (pill) pill.innerHTML = 'This flash: <b>' + m.version + '</b>' + (when ? ' · ' + when : '');
+    const step = document.getElementById('fw-step');
+    if (step) step.innerHTML = 'Installs firmware <b>' + m.version + '</b>' +
+      (when ? ' from ' + when : '') +
+      '. The same version is shown on the board in Settings after flashing.';
+  })
+  .catch(() => {});
+
 const log = (m) => { const el = document.getElementById('log'); el.style.display='block';
   el.textContent += m + '\n'; el.scrollTop = el.scrollHeight; };
 const supported = 'serial' in navigator;
@@ -174,16 +203,36 @@ document.getElementById('connect').onclick = async () => {
   } catch (e) { log('Could not connect: ' + e.message); }
 };
 
+// The full 1025-species bundle is too large for a single GitHub-hosted file
+// (~280 MB, over GitHub's 100 MB per-file limit), so it ships as numbered
+// raw parts (sprites.pak.1, .2, ...) listed in sprites.pak.json. They are
+// fetched in order and concatenated in memory before parsing the TPAK
+// bundle -- the TPAK format itself (parsePak above) is unchanged.
+async function fetchPak() {
+  const manifest = await fetch('sprites.pak.json');
+  if (!manifest.ok) throw new Error('HTTP ' + manifest.status + ' (sprites.pak.json)');
+  const { parts, totalSize } = await manifest.json();
+  const buf = new Uint8Array(totalSize);
+  let offset = 0;
+  for (const name of parts) {
+    log(`Downloading ${name} (${Math.round((offset / totalSize) * 100)}%)...`);
+    const resp = await fetch(name);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status + ' (' + name + ')');
+    const chunk = new Uint8Array(await resp.arrayBuffer());
+    buf.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return buf.buffer;
+}
+
 document.getElementById('auto').onclick = async () => {
   if (!writer) { log('Connect the board first.'); return; }
   document.getElementById('auto').disabled = true;
-  log('Downloading sprite bundle (~58 MB)...');
+  log('Downloading sprite bundle (~280 MB, all 1025 species)...');
   let items;
   try {
-    // sprites.pak servido desde el mismo origen (GitHub Pages) -> sin lios de CORS
-    const resp = await fetch('sprites.pak');
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    items = parsePak(await resp.arrayBuffer());
+    // sprites.pak.* servido desde el mismo origen (GitHub Pages) -> sin lios de CORS
+    items = parsePak(await fetchPak());
   } catch (e) { log('Could not download sprites.pak: ' + e.message); return; }
   log(`${items.length} sprites. Sending over USB...`);
   await sendAll(items);

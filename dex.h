@@ -1,273 +1,1596 @@
 #pragma once
 #include <stdint.h>
-#include "i18n.h"  // gLang
 
 // GENERADO por tools/gen_dex.py desde tools/dex_data.py - no editar
 
-#define DEX_COUNT 151
-#define DEX_EEVEE 133  // rama al azar: 134/135/136
+#define DEX_COUNT 1025
+#define DEX_BITMAP_BYTES ((DEX_COUNT + 7) / 8)
+#define DEX_EEVEE 133  // rama: 134/135/136/196/197
+
+#define DEX_LANG_COUNT 6
 
 // rareza: 0 = solo por evolucion, 1 = comun, 2 = raro, 3 = legendario
 enum : uint8_t { R_EVO = 0, R_COMUN, R_RARO, R_LEGENDARIO };
 
+// tipos de combate: datos actuales de las especies incluidas
+enum : uint8_t {
+  TYPE_NONE = 0, TYPE_NORMAL, TYPE_FIRE, TYPE_WATER, TYPE_ELECTRIC, TYPE_GRASS,
+  TYPE_ICE, TYPE_FIGHTING, TYPE_POISON, TYPE_GROUND, TYPE_FLYING, TYPE_PSYCHIC,
+  TYPE_BUG, TYPE_ROCK, TYPE_GHOST, TYPE_DRAGON, TYPE_DARK, TYPE_STEEL, TYPE_FAIRY
+};
+
+enum EvolutionCondition : uint8_t {
+  EVO_LEVEL = 0, EVO_BOND, EVO_DAY_BOND, EVO_NIGHT_BOND,
+  EVO_ATK_GT_DEF, EVO_DEF_GT_ATK, EVO_ATK_EQ_DEF
+};
+struct EvolutionRule {
+  uint16_t from;
+  uint16_t to;
+  uint8_t minLevel;
+  uint8_t condition;
+};
+
 struct DexEntry {
   const char *name;
-  uint8_t evolvesTo;    // numero de dex, 0 = forma final
+  uint16_t evolvesTo;   // numero de dex, 0 = forma final
   uint8_t evolveLevel;
   uint8_t rarity;       // sale de huevo si > 0
   uint16_t accent;      // color RGB565 del tipo para la UI
-  uint8_t bHp, bAtk, bDef, bSpe;  // base stats reales de gen 1
+  uint8_t bHp, bAtk, bDef, bSpA, bSpD, bSpe;  // Basiswerte (modernes 6-Werte-System)
+  uint8_t type1, type2; // tipos de combate, TYPE_NONE si no hay secundario
   uint8_t biome;        // 0 pradera 1 playa 2 bosque 3 volcan 4 montana 5 nieve
+  const char *desc;     // descripcion corta (aleman) para la vista detalle
 };
 
 static const DexEntry DEX_TBL[DEX_COUNT + 1] = {
-  { "?", 0, 0, 0, 0x2946, 50, 50, 50, 50, 0 },  // 0: sin usar
-  { "BULBASAUR", 2, 16, R_COMUN, 0x3C49, 45, 49, 49, 45, 2 },  // 1 planta
-  { "IVYSAUR", 3, 32, R_EVO, 0x3C49, 60, 62, 63, 60, 2 },  // 2 planta
-  { "VENUSAUR", 0, 0, R_EVO, 0x3C49, 80, 82, 83, 80, 2 },  // 3 planta
-  { "CHARMANDER", 5, 16, R_COMUN, 0xEA87, 39, 52, 43, 65, 3 },  // 4 fuego
-  { "CHARMELEON", 6, 36, R_EVO, 0xEA87, 58, 64, 58, 80, 3 },  // 5 fuego
-  { "CHARIZARD", 0, 0, R_EVO, 0xEA87, 78, 84, 78, 100, 3 },  // 6 fuego
-  { "SQUIRTLE", 8, 16, R_COMUN, 0x4C98, 44, 48, 65, 43, 1 },  // 7 agua
-  { "WARTORTLE", 9, 36, R_EVO, 0x4C98, 59, 63, 80, 58, 1 },  // 8 agua
-  { "BLASTOISE", 0, 0, R_EVO, 0x4C98, 79, 83, 100, 78, 1 },  // 9 agua
-  { "CATERPIE", 11, 7, R_COMUN, 0x7CC4, 45, 30, 35, 45, 2 },  // 10 bicho
-  { "METAPOD", 12, 10, R_EVO, 0x7CC4, 50, 20, 55, 30, 2 },  // 11 bicho
-  { "BUTTERFREE", 0, 0, R_EVO, 0x7CC4, 60, 45, 50, 70, 2 },  // 12 bicho
-  { "WEEDLE", 14, 7, R_COMUN, 0x7CC4, 40, 35, 30, 50, 2 },  // 13 bicho
-  { "KAKUNA", 15, 10, R_EVO, 0x7CC4, 45, 25, 50, 35, 2 },  // 14 bicho
-  { "BEEDRILL", 0, 0, R_EVO, 0x7CC4, 65, 90, 40, 75, 2 },  // 15 bicho
-  { "PIDGEY", 17, 18, R_COMUN, 0x8C4D, 40, 45, 40, 56, 0 },  // 16 normal
-  { "PIDGEOTTO", 18, 36, R_EVO, 0x8C4D, 63, 60, 55, 71, 0 },  // 17 normal
-  { "PIDGEOT", 0, 0, R_EVO, 0x8C4D, 83, 80, 75, 101, 0 },  // 18 normal
-  { "RATTATA", 20, 20, R_COMUN, 0x8C4D, 30, 56, 35, 72, 0 },  // 19 normal
-  { "RATICATE", 0, 0, R_EVO, 0x8C4D, 55, 81, 60, 97, 0 },  // 20 normal
-  { "SPEAROW", 22, 20, R_COMUN, 0x8C4D, 40, 60, 30, 70, 0 },  // 21 normal
-  { "FEAROW", 0, 0, R_EVO, 0x8C4D, 65, 90, 65, 100, 0 },  // 22 normal
-  { "EKANS", 24, 22, R_COMUN, 0x8A73, 35, 60, 44, 55, 0 },  // 23 veneno
-  { "ARBOK", 0, 0, R_EVO, 0x8A73, 60, 95, 69, 80, 0 },  // 24 veneno
-  { "PIKACHU", 26, 30, R_COMUN, 0xBCA1, 35, 55, 40, 90, 0 },  // 25 electrico
-  { "RAICHU", 0, 0, R_EVO, 0xBCA1, 60, 90, 55, 110, 0 },  // 26 electrico
-  { "SANDSHREW", 28, 22, R_COMUN, 0xB447, 50, 75, 85, 40, 4 },  // 27 tierra
-  { "SANDSLASH", 0, 0, R_EVO, 0xB447, 75, 100, 110, 65, 4 },  // 28 tierra
-  { "NIDORAN H", 30, 16, R_COMUN, 0x8A73, 55, 47, 52, 41, 0 },  // 29 veneno
-  { "NIDORINA", 31, 30, R_EVO, 0x8A73, 70, 62, 67, 56, 0 },  // 30 veneno
-  { "NIDOQUEEN", 0, 0, R_EVO, 0x8A73, 90, 92, 87, 76, 0 },  // 31 veneno
-  { "NIDORAN M", 33, 16, R_COMUN, 0x8A73, 46, 57, 40, 50, 0 },  // 32 veneno
-  { "NIDORINO", 34, 30, R_EVO, 0x8A73, 61, 72, 57, 65, 0 },  // 33 veneno
-  { "NIDOKING", 0, 0, R_EVO, 0x8A73, 81, 102, 77, 85, 0 },  // 34 veneno
-  { "CLEFAIRY", 36, 30, R_COMUN, 0x8C4D, 70, 45, 48, 35, 0 },  // 35 normal
-  { "CLEFABLE", 0, 0, R_EVO, 0x8C4D, 95, 70, 73, 60, 0 },  // 36 normal
-  { "VULPIX", 38, 30, R_COMUN, 0xEA87, 38, 41, 40, 65, 3 },  // 37 fuego
-  { "NINETALES", 0, 0, R_EVO, 0xEA87, 73, 76, 75, 100, 3 },  // 38 fuego
-  { "JIGGLYPUFF", 40, 30, R_COMUN, 0x8C4D, 115, 45, 20, 20, 0 },  // 39 normal
-  { "WIGGLYTUFF", 0, 0, R_EVO, 0x8C4D, 140, 70, 45, 45, 0 },  // 40 normal
-  { "ZUBAT", 42, 22, R_COMUN, 0x8A73, 40, 45, 35, 55, 0 },  // 41 veneno
-  { "GOLBAT", 0, 0, R_EVO, 0x8A73, 75, 80, 70, 90, 0 },  // 42 veneno
-  { "ODDISH", 44, 21, R_COMUN, 0x3C49, 45, 50, 55, 30, 2 },  // 43 planta
-  { "GLOOM", 45, 36, R_EVO, 0x3C49, 60, 65, 70, 40, 2 },  // 44 planta
-  { "VILEPLUME", 0, 0, R_EVO, 0x3C49, 75, 80, 85, 50, 2 },  // 45 planta
-  { "PARAS", 47, 24, R_COMUN, 0x7CC4, 35, 70, 55, 25, 2 },  // 46 bicho
-  { "PARASECT", 0, 0, R_EVO, 0x7CC4, 60, 95, 80, 30, 2 },  // 47 bicho
-  { "VENONAT", 49, 31, R_COMUN, 0x7CC4, 60, 55, 50, 45, 2 },  // 48 bicho
-  { "VENOMOTH", 0, 0, R_EVO, 0x7CC4, 70, 65, 60, 90, 2 },  // 49 bicho
-  { "DIGLETT", 51, 26, R_COMUN, 0xB447, 10, 55, 25, 95, 4 },  // 50 tierra
-  { "DUGTRIO", 0, 0, R_EVO, 0xB447, 35, 100, 50, 120, 4 },  // 51 tierra
-  { "MEOWTH", 53, 28, R_COMUN, 0x8C4D, 40, 45, 35, 90, 0 },  // 52 normal
-  { "PERSIAN", 0, 0, R_EVO, 0x8C4D, 65, 70, 60, 115, 0 },  // 53 normal
-  { "PSYDUCK", 55, 33, R_COMUN, 0x4C98, 50, 52, 48, 55, 1 },  // 54 agua
-  { "GOLDUCK", 0, 0, R_EVO, 0x4C98, 80, 82, 78, 85, 1 },  // 55 agua
-  { "MANKEY", 57, 28, R_COMUN, 0xA2A5, 40, 80, 35, 70, 0 },  // 56 lucha
-  { "PRIMEAPE", 0, 0, R_EVO, 0xA2A5, 65, 105, 60, 95, 0 },  // 57 lucha
-  { "GROWLITHE", 59, 30, R_RARO, 0xEA87, 55, 70, 45, 60, 3 },  // 58 fuego
-  { "ARCANINE", 0, 0, R_EVO, 0xEA87, 90, 110, 80, 95, 3 },  // 59 fuego
-  { "POLIWAG", 61, 25, R_COMUN, 0x4C98, 40, 50, 40, 90, 1 },  // 60 agua
-  { "POLIWHIRL", 62, 36, R_EVO, 0x4C98, 65, 65, 65, 90, 1 },  // 61 agua
-  { "POLIWRATH", 0, 0, R_EVO, 0x4C98, 90, 95, 95, 70, 1 },  // 62 agua
-  { "ABRA", 64, 16, R_COMUN, 0xD28F, 25, 20, 15, 90, 0 },  // 63 psiquico
-  { "KADABRA", 65, 40, R_EVO, 0xD28F, 40, 35, 30, 105, 0 },  // 64 psiquico
-  { "ALAKAZAM", 0, 0, R_EVO, 0xD28F, 55, 50, 45, 120, 0 },  // 65 psiquico
-  { "MACHOP", 67, 28, R_COMUN, 0xA2A5, 70, 80, 50, 35, 0 },  // 66 lucha
-  { "MACHOKE", 68, 40, R_EVO, 0xA2A5, 80, 100, 70, 45, 0 },  // 67 lucha
-  { "MACHAMP", 0, 0, R_EVO, 0xA2A5, 90, 130, 80, 55, 0 },  // 68 lucha
-  { "BELLSPROUT", 70, 21, R_COMUN, 0x3C49, 50, 75, 35, 40, 2 },  // 69 planta
-  { "WEEPINBELL", 71, 36, R_EVO, 0x3C49, 65, 90, 50, 55, 2 },  // 70 planta
-  { "VICTREEBEL", 0, 0, R_EVO, 0x3C49, 80, 105, 65, 70, 2 },  // 71 planta
-  { "TENTACOOL", 73, 30, R_COMUN, 0x4C98, 40, 40, 35, 70, 1 },  // 72 agua
-  { "TENTACRUEL", 0, 0, R_EVO, 0x4C98, 80, 70, 65, 100, 1 },  // 73 agua
-  { "GEODUDE", 75, 25, R_COMUN, 0x9407, 40, 80, 100, 20, 4 },  // 74 roca
-  { "GRAVELER", 76, 40, R_EVO, 0x9407, 55, 95, 115, 35, 4 },  // 75 roca
-  { "GOLEM", 0, 0, R_EVO, 0x9407, 80, 120, 130, 45, 4 },  // 76 roca
-  { "PONYTA", 78, 40, R_RARO, 0xEA87, 50, 85, 55, 90, 3 },  // 77 fuego
-  { "RAPIDASH", 0, 0, R_EVO, 0xEA87, 65, 100, 70, 105, 3 },  // 78 fuego
-  { "SLOWPOKE", 80, 37, R_COMUN, 0x4C98, 90, 65, 65, 15, 1 },  // 79 agua
-  { "SLOWBRO", 0, 0, R_EVO, 0x4C98, 95, 75, 110, 30, 1 },  // 80 agua
-  { "MAGNEMITE", 82, 30, R_COMUN, 0xBCA1, 25, 35, 70, 45, 0 },  // 81 electrico
-  { "MAGNETON", 0, 0, R_EVO, 0xBCA1, 50, 60, 95, 70, 0 },  // 82 electrico
-  { "FARFETCHD", 0, 0, R_RARO, 0x8C4D, 52, 90, 55, 60, 0 },  // 83 normal
-  { "DODUO", 85, 31, R_COMUN, 0x8C4D, 35, 85, 45, 75, 0 },  // 84 normal
-  { "DODRIO", 0, 0, R_EVO, 0x8C4D, 60, 110, 70, 110, 0 },  // 85 normal
-  { "SEEL", 87, 34, R_COMUN, 0x4C98, 65, 45, 55, 45, 1 },  // 86 agua
-  { "DEWGONG", 0, 0, R_EVO, 0x4C98, 90, 70, 80, 70, 1 },  // 87 agua
-  { "GRIMER", 89, 38, R_RARO, 0x8A73, 80, 80, 50, 25, 0 },  // 88 veneno
-  { "MUK", 0, 0, R_EVO, 0x8A73, 105, 105, 75, 50, 0 },  // 89 veneno
-  { "SHELLDER", 91, 30, R_COMUN, 0x4C98, 30, 65, 100, 40, 1 },  // 90 agua
-  { "CLOYSTER", 0, 0, R_EVO, 0x4C98, 50, 95, 180, 70, 1 },  // 91 agua
-  { "GASTLY", 93, 25, R_COMUN, 0x6AD3, 30, 35, 30, 80, 0 },  // 92 fantasma
-  { "HAUNTER", 94, 40, R_EVO, 0x6AD3, 45, 50, 45, 95, 0 },  // 93 fantasma
-  { "GENGAR", 0, 0, R_EVO, 0x6AD3, 60, 65, 60, 110, 0 },  // 94 fantasma
-  { "ONIX", 0, 0, R_RARO, 0x9407, 35, 45, 160, 70, 4 },  // 95 roca
-  { "DROWZEE", 97, 26, R_COMUN, 0xD28F, 60, 48, 45, 42, 0 },  // 96 psiquico
-  { "HYPNO", 0, 0, R_EVO, 0xD28F, 85, 73, 70, 67, 0 },  // 97 psiquico
-  { "KRABBY", 99, 28, R_COMUN, 0x4C98, 30, 105, 90, 50, 1 },  // 98 agua
-  { "KINGLER", 0, 0, R_EVO, 0x4C98, 55, 130, 115, 75, 1 },  // 99 agua
-  { "VOLTORB", 101, 30, R_COMUN, 0xBCA1, 40, 30, 50, 100, 0 },  // 100 electrico
-  { "ELECTRODE", 0, 0, R_EVO, 0xBCA1, 60, 50, 70, 150, 0 },  // 101 electrico
-  { "EXEGGCUTE", 103, 30, R_COMUN, 0x3C49, 60, 40, 80, 40, 2 },  // 102 planta
-  { "EXEGGUTOR", 0, 0, R_EVO, 0x3C49, 95, 95, 85, 55, 2 },  // 103 planta
-  { "CUBONE", 105, 28, R_COMUN, 0xB447, 50, 50, 95, 35, 4 },  // 104 tierra
-  { "MAROWAK", 0, 0, R_EVO, 0xB447, 60, 80, 110, 45, 4 },  // 105 tierra
-  { "HITMONLEE", 0, 0, R_RARO, 0xA2A5, 50, 120, 53, 87, 0 },  // 106 lucha
-  { "HITMONCHAN", 0, 0, R_RARO, 0xA2A5, 50, 105, 79, 76, 0 },  // 107 lucha
-  { "LICKITUNG", 0, 0, R_RARO, 0x8C4D, 90, 55, 75, 30, 0 },  // 108 normal
-  { "KOFFING", 110, 35, R_COMUN, 0x8A73, 40, 65, 95, 35, 0 },  // 109 veneno
-  { "WEEZING", 0, 0, R_EVO, 0x8A73, 65, 90, 120, 60, 0 },  // 110 veneno
-  { "RHYHORN", 112, 42, R_RARO, 0xB447, 80, 85, 95, 25, 4 },  // 111 tierra
-  { "RHYDON", 0, 0, R_EVO, 0xB447, 105, 130, 120, 40, 4 },  // 112 tierra
-  { "CHANSEY", 0, 0, R_RARO, 0x8C4D, 250, 5, 5, 50, 0 },  // 113 normal
-  { "TANGELA", 0, 0, R_RARO, 0x3C49, 65, 55, 115, 60, 2 },  // 114 planta
-  { "KANGASKHAN", 0, 0, R_RARO, 0x8C4D, 105, 95, 80, 90, 0 },  // 115 normal
-  { "HORSEA", 117, 32, R_COMUN, 0x4C98, 30, 40, 70, 60, 1 },  // 116 agua
-  { "SEADRA", 0, 0, R_EVO, 0x4C98, 55, 65, 95, 85, 1 },  // 117 agua
-  { "GOLDEEN", 119, 33, R_COMUN, 0x4C98, 45, 67, 60, 63, 1 },  // 118 agua
-  { "SEAKING", 0, 0, R_EVO, 0x4C98, 80, 92, 65, 68, 1 },  // 119 agua
-  { "STARYU", 121, 30, R_COMUN, 0x4C98, 30, 45, 55, 85, 1 },  // 120 agua
-  { "STARMIE", 0, 0, R_EVO, 0x4C98, 60, 75, 85, 115, 1 },  // 121 agua
-  { "MR. MIME", 0, 0, R_RARO, 0xD28F, 40, 45, 65, 90, 0 },  // 122 psiquico
-  { "SCYTHER", 0, 0, R_RARO, 0x7CC4, 70, 110, 80, 105, 2 },  // 123 bicho
-  { "JYNX", 0, 0, R_RARO, 0x4DB8, 65, 50, 35, 95, 5 },  // 124 hielo
-  { "ELECTABUZZ", 0, 0, R_RARO, 0xBCA1, 65, 83, 57, 105, 0 },  // 125 electrico
-  { "MAGMAR", 0, 0, R_RARO, 0xEA87, 65, 95, 57, 93, 3 },  // 126 fuego
-  { "PINSIR", 0, 0, R_RARO, 0x7CC4, 65, 125, 100, 85, 2 },  // 127 bicho
-  { "TAUROS", 0, 0, R_RARO, 0x8C4D, 75, 100, 95, 110, 0 },  // 128 normal
-  { "MAGIKARP", 130, 20, R_COMUN, 0x4C98, 20, 10, 55, 80, 1 },  // 129 agua
-  { "GYARADOS", 0, 0, R_EVO, 0x4C98, 95, 125, 79, 81, 1 },  // 130 agua
-  { "LAPRAS", 0, 0, R_RARO, 0x4C98, 130, 85, 80, 60, 1 },  // 131 agua
-  { "DITTO", 0, 0, R_RARO, 0x8C4D, 48, 48, 48, 48, 0 },  // 132 normal
-  { "EEVEE", 134, 30, R_COMUN, 0x8C4D, 55, 55, 50, 55, 0 },  // 133 normal
-  { "VAPOREON", 0, 0, R_EVO, 0x4C98, 130, 65, 60, 65, 1 },  // 134 agua
-  { "JOLTEON", 0, 0, R_EVO, 0xBCA1, 65, 65, 60, 130, 0 },  // 135 electrico
-  { "FLAREON", 0, 0, R_EVO, 0xEA87, 65, 130, 60, 65, 3 },  // 136 fuego
-  { "PORYGON", 0, 0, R_RARO, 0x8C4D, 65, 60, 70, 40, 0 },  // 137 normal
-  { "OMANYTE", 139, 40, R_RARO, 0x9407, 35, 40, 100, 35, 1 },  // 138 roca
-  { "OMASTAR", 0, 0, R_EVO, 0x9407, 70, 60, 125, 55, 1 },  // 139 roca
-  { "KABUTO", 141, 40, R_RARO, 0x9407, 30, 80, 90, 55, 1 },  // 140 roca
-  { "KABUTOPS", 0, 0, R_EVO, 0x9407, 60, 115, 105, 80, 1 },  // 141 roca
-  { "AERODACTYL", 0, 0, R_RARO, 0x9407, 80, 105, 65, 130, 4 },  // 142 roca
-  { "SNORLAX", 0, 0, R_RARO, 0x8C4D, 160, 110, 65, 30, 0 },  // 143 normal
-  { "ARTICUNO", 0, 0, R_LEGENDARIO, 0x4DB8, 90, 85, 100, 85, 5 },  // 144 hielo
-  { "ZAPDOS", 0, 0, R_LEGENDARIO, 0xBCA1, 90, 90, 85, 100, 0 },  // 145 electrico
-  { "MOLTRES", 0, 0, R_LEGENDARIO, 0xEA87, 90, 100, 90, 90, 3 },  // 146 fuego
-  { "DRATINI", 148, 30, R_RARO, 0x5A98, 41, 64, 45, 50, 1 },  // 147 dragon
-  { "DRAGONAIR", 149, 55, R_EVO, 0x5A98, 61, 84, 65, 70, 1 },  // 148 dragon
-  { "DRAGONITE", 0, 0, R_EVO, 0x5A98, 91, 134, 95, 80, 1 },  // 149 dragon
-  { "MEWTWO", 0, 0, R_LEGENDARIO, 0xD28F, 106, 110, 90, 130, 0 },  // 150 psiquico
-  { "MEW", 0, 0, R_LEGENDARIO, 0xD28F, 100, 100, 100, 100, 0 },  // 151 psiquico
+  { "?", 0, 0, 0, 0x2946, 50, 50, 50, 50, 50, 50, TYPE_NONE, TYPE_NONE, 0, "" },  // 0: sin usar
+  { "BULBASAUR", 2, 16, R_COMUN, 0x3C49, 45, 49, 49, 65, 65, 45, TYPE_GRASS, TYPE_POISON, 2, "Dieses Pokemon traegt von Geburt an einen Samen auf dem Ruecken, der mit ihm keimt und waechst." },  // 1 grass/poison
+  { "IVYSAUR", 3, 32, R_EVO, 0x3C49, 60, 62, 63, 80, 80, 60, TYPE_GRASS, TYPE_POISON, 2, "Es traegt eine Knospe auf seinem Ruecken. Nimmt es Nahrung zu sich, soll aus der Knospe eine grosse bluehende Blume werden." },  // 2 grass/poison
+  { "VENUSAUR", 0, 0, R_EVO, 0x3C49, 80, 82, 83, 100, 100, 80, TYPE_GRASS, TYPE_POISON, 2, "Es spreizt die breiten Blaetter seiner Bluete, um seinen Koerper mit Sonnenenergie zu durchfluten." },  // 3 grass/poison
+  { "CHARMANDER", 5, 16, R_COMUN, 0xEA87, 39, 52, 43, 60, 50, 65, TYPE_FIRE, TYPE_NONE, 3, "Die Flamme auf seiner Schweifspitze zeigt die Lebensenergie an. Ist es gesund, leuchtet sie hell." },  // 4 fire
+  { "CHARMELEON", 6, 36, R_EVO, 0xEA87, 58, 64, 58, 80, 65, 80, TYPE_FIRE, TYPE_NONE, 3, "Es schlaegt im Kampf mit seinem Schwanz nach seinen Gegnern. Anschliessend zerfetzt es die Gegner mit seinen scharfen Klauen." },  // 5 fire
+  { "CHARIZARD", 0, 0, R_EVO, 0xEA87, 78, 84, 78, 109, 85, 100, TYPE_FIRE, TYPE_FLYING, 3, "Wenn dieses Pokemon einen Strahl gluehenden Feuers speit, leuchtet seine Schwanzspitze auf." },  // 6 fire/flying
+  { "SQUIRTLE", 8, 16, R_COMUN, 0x4C98, 44, 48, 65, 50, 64, 43, TYPE_WATER, TYPE_NONE, 1, "Es zieht sich in seinen Panzer zurueck und greift dann mit Wasserstrahlen seine Gegner an." },  // 7 water
+  { "WARTORTLE", 9, 36, R_EVO, 0x4C98, 59, 63, 80, 65, 80, 58, TYPE_WATER, TYPE_NONE, 1, "Bei Gefahr zieht dieses Pokemon seinen Kopf ein. Die Schwanzspitze ragt jedoch aus dem Panzer heraus." },  // 8 water
+  { "BLASTOISE", 0, 0, R_EVO, 0x4C98, 79, 83, 100, 85, 105, 78, TYPE_WATER, TYPE_NONE, 1, "Es begraebt seine Gegner mit seinem enormen Koerpergewicht. Wenn es in einer aussichtslosen Lage steckt, zieht es sich in seinen Panzer..." },  // 9 water
+  { "CATERPIE", 11, 7, R_COMUN, 0x7CC4, 45, 30, 35, 20, 20, 45, TYPE_BUG, TYPE_NONE, 2, "Als Schutz vor Feinden sondert es einen uebel riechenden Gestank mit seinen Antennen ab." },  // 10 bug
+  { "METAPOD", 12, 10, R_EVO, 0x7CC4, 50, 20, 55, 25, 25, 30, TYPE_BUG, TYPE_NONE, 2, "Der stahlharte Panzer schuetzt seinen zarten Koerper. Es wartet geduldig auf seine Entwicklung." },  // 11 bug
+  { "BUTTERFREE", 0, 0, R_EVO, 0x7CC4, 60, 45, 50, 90, 80, 70, TYPE_BUG, TYPE_FLYING, 2, "Es liebt Bluetenhonig. Es findet selbst Blumen, die sehr wenig Pollen haben." },  // 12 bug/flying
+  { "WEEDLE", 14, 7, R_COMUN, 0x7CC4, 40, 35, 30, 20, 20, 50, TYPE_BUG, TYPE_POISON, 2, "Es lebt bevorzugt in Waeldern und in hohem Gras. Auf dem Kopf traegt es einen circa 5 cm langen, spitzen, giftigen Stachel." },  // 13 bug/poison
+  { "KAKUNA", 15, 10, R_EVO, 0x7CC4, 45, 25, 50, 25, 25, 35, TYPE_BUG, TYPE_POISON, 2, "Dieses Pokemon kann sich kaum bewegen. Bei drohender Gefahr verhaertet es seinen Panzer." },  // 14 bug/poison
+  { "BEEDRILL", 0, 0, R_EVO, 0x7CC4, 65, 90, 40, 45, 80, 75, TYPE_BUG, TYPE_POISON, 2, "Dieses Pokemon verfuegt ueber drei Giftstachel. Es kann seine Gegner damit wiederholt stechen." },  // 15 bug/poison
+  { "PIDGEY", 17, 18, R_COMUN, 0x8C4D, 40, 45, 40, 35, 35, 56, TYPE_NORMAL, TYPE_FLYING, 0, "Ein vorwiegend in Waeldern lebendes Pokemon, das zur Verteidigung mit den Fluegeln Sand aufwirbelt." },  // 16 normal/flying
+  { "PIDGEOTTO", 18, 36, R_EVO, 0x8C4D, 63, 60, 55, 50, 50, 71, TYPE_NORMAL, TYPE_FLYING, 0, "Die Krallen an seinen Fuessen sind sehr ausgepraegt. Es kann sogar ein Owei zu seinem Nest in 100 km Entfernung tragen." },  // 17 normal/flying
+  { "PIDGEOT", 0, 0, R_EVO, 0x8C4D, 83, 80, 75, 70, 70, 101, TYPE_NORMAL, TYPE_FLYING, 0, "Dieses Pokemon schnellt bei der Jagd blitzschnell unter Wasser, um seine ahnungslose Beute zu fangen." },  // 18 normal/flying
+  { "RATTATA", 20, 20, R_COMUN, 0x8C4D, 30, 56, 35, 25, 35, 72, TYPE_NORMAL, TYPE_NONE, 0, "Es baut sein Nest, wo es Futter findet. Es ist den ganzen Tag auf der Suche nach etwas Essbarem." },  // 19 normal
+  { "RATICATE", 0, 0, R_EVO, 0x8C4D, 55, 81, 60, 50, 70, 97, TYPE_NORMAL, TYPE_NONE, 0, "Es wetzt seine staendig wachsenden Zaehne an harten Dingen. Es kann Waende aus Beton zernagen." },  // 20 normal
+  { "SPEAROW", 22, 20, R_COMUN, 0x8C4D, 40, 60, 30, 31, 31, 70, TYPE_NORMAL, TYPE_FLYING, 0, "Es beschuetzt sein Gebiet stets vor Eindringlingen. Daher fliegt es staendig wild umher." },  // 21 normal/flying
+  { "FEAROW", 0, 0, R_EVO, 0x8C4D, 65, 90, 65, 61, 61, 100, TYPE_NORMAL, TYPE_FLYING, 0, "Mit seinen riesigen Fluegeln kann dieses Pokemon nahezu pausenlos in der Luft bleiben." },  // 22 normal/flying
+  { "EKANS", 24, 22, R_COMUN, 0x8A73, 35, 60, 44, 40, 54, 55, TYPE_POISON, TYPE_NONE, 0, "Mit dem Alter wird der Koerper dieses Pokemon immer laenger. Es schlaeft um Aeste gewickelt." },  // 23 poison
+  { "ARBOK", 0, 0, R_EVO, 0x8A73, 60, 95, 69, 65, 79, 80, TYPE_POISON, TYPE_NONE, 0, "Das Muster auf seinem Bauch aehnelt einer Fratze. Schwache Gegner nehmen bereits beim Anblick Reissaus." },  // 24 poison
+  { "PIKACHU", 26, 30, R_EVO, 0xBCA1, 35, 55, 40, 50, 50, 90, TYPE_ELECTRIC, TYPE_NONE, 0, "Es streckt seinen Schweif nach oben, um seine Umgebung zu pruefen. Haeufig faehrt ein Blitz hinein." },  // 25 electric
+  { "RAICHU", 0, 0, R_EVO, 0xBCA1, 60, 90, 55, 90, 80, 110, TYPE_ELECTRIC, TYPE_NONE, 0, "Wenn es sich auflaedt, zucken seine Muskeln und es wird aggressiver und kampflustiger." },  // 26 electric
+  { "SANDSHREW", 28, 22, R_COMUN, 0xB447, 50, 75, 85, 20, 30, 40, TYPE_GROUND, TYPE_NONE, 4, "Es graebt und lebt im Erdboden. Bei Gefahr rollt es sich zum Schutz zu einem Ball zusammen." },  // 27 ground
+  { "SANDSLASH", 0, 0, R_EVO, 0xB447, 75, 100, 110, 45, 55, 65, TYPE_GROUND, TYPE_NONE, 4, "Wenn es schnell graebt, koennen seine Stacheln und Krallen abbrechen. Sie wachsen binnen eines Tages nach." },  // 28 ground
+  { "NIDORAN H", 30, 16, R_COMUN, 0x8A73, 55, 47, 52, 40, 40, 41, TYPE_POISON, TYPE_NONE, 0, "Dieses Pokemon ist sehr klein, verfuegt aber ueber starke Gifte. Das Weibchen hat ein kleineres Horn." },  // 29 poison
+  { "NIDORINA", 31, 30, R_EVO, 0x8A73, 70, 62, 67, 55, 55, 56, TYPE_POISON, TYPE_NONE, 0, "Das Weibchen ist ausgeglichener. Es stoesst Schreie im Ultraschallwellenbereich aus, die den Gegner verwirren koennen." },  // 30 poison
+  { "NIDOQUEEN", 0, 0, R_EVO, 0x8A73, 90, 92, 87, 75, 85, 76, TYPE_POISON, TYPE_GROUND, 0, "Es benutzt seinen schuppigen Koerper, um den Hoehleneingang als Schutz fuer seine Jungen zu sperren." },  // 31 poison/ground
+  { "NIDORAN M", 33, 16, R_COMUN, 0x8A73, 46, 57, 40, 40, 40, 50, TYPE_POISON, TYPE_NONE, 0, "Es untersucht die Umgebung, indem es die Ohren spitzt und lauscht. Sein giftiges Horn schuetzt es." },  // 32 poison
+  { "NIDORINO", 34, 30, R_EVO, 0x8A73, 61, 72, 57, 55, 55, 65, TYPE_POISON, TYPE_NONE, 0, "Es ueberwacht mit seinen riesigen Ohren die Umgebung. Registriert es eine Bewegung, greift es an." },  // 33 poison
+  { "NIDOKING", 0, 0, R_EVO, 0x8A73, 81, 102, 77, 85, 75, 85, TYPE_POISON, TYPE_GROUND, 0, "Seine steinharte Haut und sein ausgepraegtes Horn sind seine Markenzeichen. Achte auf das Horn, denn es enthaelt Gift." },  // 34 poison/ground
+  { "CLEFAIRY", 36, 30, R_EVO, 0x8C4D, 70, 45, 48, 60, 65, 35, TYPE_FAIRY, TYPE_NONE, 0, "Eine Ansammlung von Piepi bei Vollmond tanzen zu sehen, soll Freude verheissen." },  // 35 fairy
+  { "CLEFABLE", 0, 0, R_EVO, 0x8C4D, 95, 70, 73, 95, 90, 60, TYPE_FAIRY, TYPE_NONE, 0, "Es kann eine Nadel hoeren, die in 1 km Entfernung zu Boden faellt. Es lebt in der Stille der Berge." },  // 36 fairy
+  { "VULPIX", 38, 30, R_COMUN, 0xEA87, 38, 41, 40, 50, 65, 65, TYPE_FIRE, TYPE_NONE, 3, "Dieses Pokemon hat bei seiner Geburt nur einen Schweif, der sich mit zunehmendem Alter aufspaltet." },  // 37 fire
+  { "NINETALES", 0, 0, R_EVO, 0xEA87, 73, 76, 75, 81, 100, 100, TYPE_FIRE, TYPE_NONE, 3, "Es hat neun lange Schweife und sein Fell glaenzt guelden. Man sagt, es soll 1 000 Jahre alt werden." },  // 38 fire
+  { "JIGGLYPUFF", 40, 30, R_EVO, 0x8C4D, 115, 45, 20, 45, 25, 20, TYPE_NORMAL, TYPE_FAIRY, 0, "Es fesselt die Gegner mit seinen grossen, runden Augen und versetzt sie in Schlaf, indem es eine beruhigende Melodie singt." },  // 39 normal/fairy
+  { "WIGGLYTUFF", 0, 0, R_EVO, 0x8C4D, 140, 70, 45, 85, 50, 45, TYPE_NORMAL, TYPE_FAIRY, 0, "Sein Fell ist so flauschig, dass, wenn zwei zusammenstehen, sie nicht getrennt werden moechten." },  // 40 normal/fairy
+  { "ZUBAT", 42, 22, R_COMUN, 0x8A73, 40, 45, 35, 30, 40, 55, TYPE_POISON, TYPE_FLYING, 0, "Obwohl es keine Augen hat, kann es Hindernisse mithilfe von Ultraschallwellen wahrnehmen." },  // 41 poison/flying
+  { "GOLBAT", 0, 0, R_EVO, 0x8A73, 75, 80, 70, 65, 75, 90, TYPE_POISON, TYPE_FLYING, 0, "Dieses Pokemon saugt dem Gegner selbst dann noch Energie ab, wenn es zu schwer zum Fliegen wird." },  // 42 poison/flying
+  { "ODDISH", 44, 21, R_COMUN, 0x3C49, 45, 50, 55, 75, 65, 30, TYPE_GRASS, TYPE_POISON, 2, "Tagsueber versteckt es sich in der kalten Erde, um die Sonne zu meiden. Es waechst im Mondschein." },  // 43 grass/poison
+  { "GLOOM", 45, 36, R_EVO, 0x3C49, 60, 65, 70, 85, 75, 40, TYPE_GRASS, TYPE_POISON, 2, "Dieses Pokemon sondert einen uebelriechenden Geruch ab. Trotzdem halten einige Leute es im Haus." },  // 44 grass/poison
+  { "VILEPLUME", 0, 0, R_EVO, 0x3C49, 75, 80, 85, 110, 90, 50, TYPE_GRASS, TYPE_POISON, 2, "Je groesser die Bluetenblaetter, desto mehr giftige Pollen sind in der Bluete enthalten." },  // 45 grass/poison
+  { "PARAS", 47, 24, R_COMUN, 0x7CC4, 35, 70, 55, 45, 55, 25, TYPE_BUG, TYPE_GRASS, 2, "Auf seinem Ruecken wachsen Pilze, die man Tochukaso nennt. Die Pilze wachsen mit ihrem Wirt." },  // 46 bug/grass
+  { "PARASECT", 0, 0, R_EVO, 0x7CC4, 60, 95, 80, 60, 80, 30, TYPE_BUG, TYPE_GRASS, 2, "Parasek wird von einem Pilz, der groesser als das Pokemon ist, kontrolliert. Er gibt Giftsporen ab." },  // 47 bug/grass
+  { "VENONAT", 49, 31, R_COMUN, 0x7CC4, 60, 55, 50, 40, 55, 45, TYPE_BUG, TYPE_POISON, 2, "Seine grossen Augen bestehen aus vielen kleinen Augen. Nachts wird es von Licht angezogen." },  // 48 bug/poison
+  { "VENOMOTH", 0, 0, R_EVO, 0x7CC4, 70, 65, 60, 90, 75, 90, TYPE_BUG, TYPE_POISON, 2, "Wer die von ihm verstreuten Schuppen beruehrt, wird gelaehmt und muss sich setzen." },  // 49 bug/poison
+  { "DIGLETT", 51, 26, R_COMUN, 0xB447, 10, 55, 25, 35, 45, 95, TYPE_GROUND, TYPE_NONE, 4, "Dieses Pokemon lebt 1 m unter der Erde. Es frisst Wurzeln und kommt selten an die Oberflaeche." },  // 50 ground
+  { "DUGTRIO", 0, 0, R_EVO, 0xB447, 35, 100, 50, 50, 70, 120, TYPE_GROUND, TYPE_NONE, 4, "Im Kampf graebt es sich ein und attackiert den Gegner aus einer unvorhersehbaren Richtung." },  // 51 ground
+  { "MEOWTH", 53, 28, R_COMUN, 0x8C4D, 40, 45, 35, 40, 40, 90, TYPE_NORMAL, TYPE_NONE, 0, "Ein nachtaktives Pokemon. Sieht es etwas Schimmerndes, fangen seine Augen an zu glaenzen." },  // 52 normal
+  { "PERSIAN", 0, 0, R_EVO, 0x8C4D, 65, 70, 60, 65, 65, 115, TYPE_NORMAL, TYPE_NONE, 0, "Dieses Pokemon hat sehr schoenes Fell. Es ist jedoch ein schwer erziehbares Haustier." },  // 53 normal
+  { "PSYDUCK", 55, 33, R_COMUN, 0x4C98, 50, 52, 48, 65, 50, 55, TYPE_WATER, TYPE_NONE, 1, "Es wird permanent von Kopfschmerzen geplagt. Wird der Schmerz staerker, setzt es geheimnisvolle Kraefte ein." },  // 54 water
+  { "GOLDUCK", 0, 0, R_EVO, 0x4C98, 80, 82, 78, 95, 80, 85, TYPE_WATER, TYPE_NONE, 1, "Es taucht bei Sonnenuntergang am Wasser auf. Leuchtet seine Stirn, setzt es telekinetische Kraefte ein." },  // 55 water
+  { "MANKEY", 57, 28, R_COMUN, 0xA2A5, 40, 80, 35, 35, 45, 70, TYPE_FIGHTING, TYPE_NONE, 0, "Da es grundlos angreift und nicht zwischen Freund oder Feind unterscheidet, ist es sehr gefaehrlich." },  // 56 fighting
+  { "PRIMEAPE", 0, 0, R_EVO, 0xA2A5, 65, 105, 60, 60, 70, 95, TYPE_FIGHTING, TYPE_NONE, 0, "In ganz seltenen Faellen beruhigt sich dieses sehr jaehzornige Pokemon und ist fuer einen Moment friedlich." },  // 57 fighting
+  { "GROWLITHE", 59, 30, R_RARO, 0xEA87, 55, 70, 45, 70, 50, 60, TYPE_FIRE, TYPE_NONE, 3, "Es ist sehr freundlich und bleibt den Menschen treu. Durch Bellen und Beissen versucht es, Gegner zu verscheuchen." },  // 58 fire
+  { "ARCANINE", 0, 0, R_EVO, 0xEA87, 90, 110, 80, 100, 80, 95, TYPE_FIRE, TYPE_NONE, 3, "Dieses Pokemon traegt ein wunderschoenes Fell. Es ist obendrein schnell und sehr wendig." },  // 59 fire
+  { "POLIWAG", 61, 25, R_COMUN, 0x4C98, 40, 50, 40, 40, 40, 90, TYPE_WATER, TYPE_NONE, 1, "Seine glatte, schwarze Haut ist duenn und feucht. Teilweise sind seine Innereien als spiralfoermige Muster sichtbar." },  // 60 water
+  { "POLIWHIRL", 62, 36, R_EVO, 0x4C98, 65, 65, 65, 50, 50, 90, TYPE_WATER, TYPE_NONE, 1, "Dieses Pokemon kann im Wasser und auch an Land leben. An Land schwitzt es sich den Koerper nass." },  // 61 water
+  { "POLIWRATH", 0, 0, R_EVO, 0x4C98, 90, 95, 95, 70, 90, 70, TYPE_WATER, TYPE_FIGHTING, 1, "Es hat extrem starke Muskeln und kann durch den Ozean schwimmen, ohne sich ausruhen zu muessen." },  // 62 water/fighting
+  { "ABRA", 64, 16, R_COMUN, 0xD28F, 25, 20, 15, 105, 55, 90, TYPE_PSYCHIC, TYPE_NONE, 0, "Es schlaeft 18 Stunden am Tag. Waehrenddessen setzt es eine Vielzahl zusaetzlicher sensorischer Kraefte ein." },  // 63 psychic
+  { "KADABRA", 65, 40, R_EVO, 0xD28F, 40, 35, 30, 120, 70, 105, TYPE_PSYCHIC, TYPE_NONE, 0, "Setzt es seine Psycho-Kraefte ein, sondert es Alphawellen ab, die Praezisionsgeraeten schaden koennen." },  // 64 psychic
+  { "ALAKAZAM", 0, 0, R_EVO, 0xD28F, 55, 50, 45, 135, 95, 120, TYPE_PSYCHIC, TYPE_NONE, 0, "Seine Gehirnzellen vervielfachen sich sein ganzes Leben lang. Daher kann es sich immer an alles erinnern." },  // 65 psychic
+  { "MACHOP", 67, 28, R_COMUN, 0xA2A5, 70, 80, 50, 35, 35, 35, TYPE_FIGHTING, TYPE_NONE, 0, "Es hebt Georok hoch, um seinen Koerper zu trainieren. Ausserdem uebt es sich in jeder Art von Kampfsport." },  // 66 fighting
+  { "MACHOKE", 68, 40, R_EVO, 0xA2A5, 80, 100, 70, 50, 60, 45, TYPE_FIGHTING, TYPE_NONE, 0, "Dieses Pokemon ist superstark. Es kann sich nur mit einem Kraft regulierenden Guertel bewegen." },  // 67 fighting
+  { "MACHAMP", 0, 0, R_EVO, 0xA2A5, 90, 130, 80, 65, 85, 55, TYPE_FIGHTING, TYPE_NONE, 0, "Seine markigen Arme koennen innerhalb von nur zwei Sekunden 1 000 Schlaege verteilen." },  // 68 fighting
+  { "BELLSPROUT", 70, 21, R_COMUN, 0x3C49, 50, 75, 35, 70, 30, 40, TYPE_GRASS, TYPE_POISON, 2, "Obwohl sein Koerper sehr schmal ist, schnappt es blitzschnell nach Beute." },  // 69 grass/poison
+  { "WEEPINBELL", 71, 36, R_EVO, 0x3C49, 65, 90, 50, 85, 45, 55, TYPE_GRASS, TYPE_POISON, 2, "Die Blaetter werden eingesetzt, um Gegner aufzuschlitzen. Dieses Pokemon spuckt eine Fluessigkeit, die alles aufloest." },  // 70 grass/poison
+  { "VICTREEBEL", 0, 0, R_EVO, 0x3C49, 80, 105, 65, 100, 70, 70, TYPE_GRASS, TYPE_POISON, 2, "Dieses Pokemon soll in grossen Kolonien tief im Dschungel leben, doch niemand kann dies bestaetigen." },  // 71 grass/poison
+  { "TENTACOOL", 73, 30, R_COMUN, 0x4C98, 40, 40, 35, 50, 100, 70, TYPE_WATER, TYPE_POISON, 1, "Sein Koerper besteht aus Wasser. Aus seinen kristallartigen Augen verschiesst es eigenartige Strahlen." },  // 72 water/poison
+  { "TENTACRUEL", 0, 0, R_EVO, 0x4C98, 80, 70, 65, 80, 120, 100, TYPE_WATER, TYPE_POISON, 1, "Dieses Pokemon kann die Tentakel bei der Jagd ausfahren, um die Beute leichter zu fangen." },  // 73 water/poison
+  { "GEODUDE", 75, 25, R_COMUN, 0x9407, 40, 80, 100, 30, 30, 20, TYPE_ROCK, TYPE_GROUND, 4, "Wanderer stolpern in den Bergen haeufig ueber dieses Pokemon, da es wie ein Stein aussieht." },  // 74 rock/ground
+  { "GRAVELER", 76, 40, R_EVO, 0x9407, 55, 95, 115, 45, 45, 35, TYPE_ROCK, TYPE_GROUND, 4, "Es ist ihm voellig gleichgueltig, wenn Stuecke aus ihm herausbrechen, waehrend es Berge hinabrollt." },  // 75 rock/ground
+  { "GOLEM", 0, 0, R_EVO, 0x9407, 80, 120, 130, 55, 65, 45, TYPE_ROCK, TYPE_GROUND, 4, "Sie rollen Berge hinunter und hinterlassen Spurrillen. Halte dich von diesen Rillen fern." },  // 76 rock/ground
+  { "PONYTA", 78, 40, R_RARO, 0xEA87, 50, 85, 55, 65, 65, 90, TYPE_FIRE, TYPE_NONE, 3, "Neugeboren kann es kaum stehen. Durch das Galoppieren werden seine Beine aber schneller und kraeftiger." },  // 77 fire
+  { "RAPIDASH", 0, 0, R_EVO, 0xEA87, 65, 100, 70, 80, 80, 105, TYPE_FIRE, TYPE_NONE, 3, "Dieses Pokemon verfolgt schnelle Objekte in der Hoffnung, ein Wettrennen gegen sie zu gewinnen." },  // 78 fire
+  { "SLOWPOKE", 80, 37, R_COMUN, 0x4C98, 90, 65, 65, 40, 40, 15, TYPE_WATER, TYPE_PSYCHIC, 1, "Es ist stets in Gedanken versunken und niemand weiss, worueber es nachdenkt. Es kann mit seiner Rute gut angeln." },  // 79 water/psychic
+  { "SLOWBRO", 0, 0, R_EVO, 0x4C98, 95, 75, 110, 100, 80, 30, TYPE_WATER, TYPE_PSYCHIC, 1, "Das Muschas an seiner Rute laesst nicht locker, da ein leckerer Geschmack aus seiner Rute stroemt." },  // 80 water/psychic
+  { "MAGNEMITE", 82, 30, R_COMUN, 0xBCA1, 25, 35, 70, 95, 55, 45, TYPE_ELECTRIC, TYPE_STEEL, 0, "Die Magneten an seinem Koerper erzeugen ein Antigravitationsfeld, um es staendig in der Schwebe zu halten." },  // 81 electric/steel
+  { "MAGNETON", 462, 30, R_EVO, 0xBCA1, 50, 60, 95, 120, 70, 70, TYPE_ELECTRIC, TYPE_STEEL, 0, "Schliessen sich mehrere Magnetilo zusammen, entsteht dieses Pokemon. Es entlaedt kraeftige Hochspannungsmagnetwellen." },  // 82 electric/steel
+  { "FARFETCHD", 0, 0, R_RARO, 0x8C4D, 52, 90, 55, 58, 62, 60, TYPE_NORMAL, TYPE_FLYING, 0, "Dieses Pokemon nutzt eine Lauchstange als Waffe. Es setzt sie wie ein Schwert ein." },  // 83 normal/flying
+  { "DODUO", 85, 31, R_COMUN, 0x8C4D, 35, 85, 45, 35, 35, 75, TYPE_NORMAL, TYPE_FLYING, 0, "Dieses zweikoepfige Pokemon gilt als ploetzliche Mutation. Es rennt bis zu 100 km/h schnell." },  // 84 normal/flying
+  { "DODRIO", 0, 0, R_EVO, 0x8C4D, 60, 110, 70, 60, 60, 110, TYPE_NORMAL, TYPE_FLYING, 0, "Laesst ein Feind auch nur einen der drei Koepfe fuer nur eine Sekunde aus den Augen, wird er sofort gepickt." },  // 85 normal/flying
+  { "SEEL", 87, 34, R_COMUN, 0x4C98, 65, 45, 55, 45, 70, 45, TYPE_WATER, TYPE_NONE, 1, "Dieses Pokemon lebt auf Eisbergen. Es schwimmt im Eiswasser und bricht das Eis mithilfe seines Horns." },  // 86 water
+  { "DEWGONG", 0, 0, R_EVO, 0x4C98, 90, 70, 80, 70, 95, 70, TYPE_WATER, TYPE_ICE, 1, "Sein Koerper ist mit reinem, weissem Fell ueberzogen. Je kaelter es wird, desto aktiver wird dieses Pokemon." },  // 87 water/ice
+  { "GRIMER", 89, 38, R_RARO, 0x8A73, 80, 80, 50, 40, 50, 25, TYPE_POISON, TYPE_NONE, 0, "Schlamm, der Roentgenstrahlung vom Mond ausgesetzt war, wurde zu Sleima. Es isst am liebsten dreckige Dinge." },  // 88 poison
+  { "MUK", 0, 0, R_EVO, 0x8A73, 105, 105, 75, 65, 100, 50, TYPE_POISON, TYPE_NONE, 0, "Sie treffen sich an stinkenden Orten, an denen der Schleim sich tuermt. Dies merkt man am Gestank." },  // 89 poison
+  { "SHELLDER", 91, 30, R_COMUN, 0x4C98, 30, 65, 100, 45, 25, 40, TYPE_WATER, TYPE_NONE, 1, "Eine harte Schale schuetzt dieses Pokemon. Nur wenn es diese oeffnet, wird es verwundbar." },  // 90 water
+  { "CLOYSTER", 0, 0, R_EVO, 0x4C98, 50, 95, 180, 85, 45, 70, TYPE_WATER, TYPE_ICE, 1, "Austos, die im Meer mit starker Stroemung leben, werden gross und entwickeln scharfe Stacheln." },  // 91 water/ice
+  { "GASTLY", 93, 25, R_COMUN, 0x6AD3, 30, 35, 30, 100, 35, 80, TYPE_GHOST, TYPE_POISON, 0, "Es hat einen gasfoermigen Koerper. Es kann jeden Gegner mit Giftgas einnebeln und dadurch ersticken." },  // 92 ghost/poison
+  { "HAUNTER", 94, 40, R_EVO, 0x6AD3, 45, 50, 45, 115, 55, 95, TYPE_GHOST, TYPE_POISON, 0, "Falls du im Dunkeln das Gefuehl hast, beobachtet zu werden und niemand ist zu sehen, ist es bestimmt Alpollo." },  // 93 ghost/poison
+  { "GENGAR", 0, 0, R_EVO, 0x6AD3, 60, 65, 60, 130, 75, 110, TYPE_GHOST, TYPE_POISON, 0, "Es versteckt sich im Schatten. Man sagt, wenn sich ein Gengar versteckt, kuehlt es sich um 5 Grad ab." },  // 94 ghost/poison
+  { "ONIX", 0, 0, R_RARO, 0x9407, 35, 45, 160, 30, 45, 70, TYPE_ROCK, TYPE_GROUND, 4, "Dieses Pokemon graebt auf seiner Suche nach Futter lange Tunnel, in denen sich spaeter Digda einnisten." },  // 95 rock/ground
+  { "DROWZEE", 97, 26, R_COMUN, 0xD28F, 60, 48, 45, 43, 90, 42, TYPE_PSYCHIC, TYPE_NONE, 0, "Traumato versetzt Gegner in den Schlaf und frisst deren Traeume. Von Alptraeumen wird ihm aber uebel." },  // 96 psychic
+  { "HYPNO", 0, 0, R_EVO, 0xD28F, 85, 73, 70, 73, 115, 67, TYPE_PSYCHIC, TYPE_NONE, 0, "Es traegt ein Pendel. Man berichtet von einem Vorfall, bei dem es ein Kind mitnahm, das es zuvor hypnotisiert hatte." },  // 97 psychic
+  { "KRABBY", 99, 28, R_COMUN, 0x4C98, 30, 105, 90, 25, 25, 50, TYPE_WATER, TYPE_NONE, 1, "Wittert es Gefahr, huellt es sich in Blasen aus seinem Maul, um groesser zu erscheinen." },  // 98 water
+  { "KINGLER", 0, 0, R_EVO, 0x4C98, 55, 130, 115, 50, 50, 75, TYPE_WATER, TYPE_NONE, 1, "Die Kraft seiner grossen und harten Schere entspricht 10 000 PS. Durch die Groesse ist sie aber auch aeusserst unhandlich und sperrig." },  // 99 water
+  { "VOLTORB", 101, 30, R_COMUN, 0xBCA1, 40, 30, 50, 55, 55, 100, TYPE_ELECTRIC, TYPE_NONE, 0, "Es wurde entdeckt, als man Pokebaelle einfuehrte. Es scheint, als gaebe es da einen Zusammenhang." },  // 100 electric
+  { "ELECTRODE", 0, 0, R_EVO, 0xBCA1, 60, 50, 70, 80, 80, 150, TYPE_ELECTRIC, TYPE_NONE, 0, "Es explodiert schon bei kleinsten Reizen. Sein Spitzname \"Die Bombenkugel\" spiegelt die Furcht der Menschen wider." },  // 101 electric
+  { "EXEGGCUTE", 103, 30, R_COMUN, 0x3C49, 60, 40, 80, 60, 45, 40, TYPE_GRASS, TYPE_PSYCHIC, 2, "Die sechs Eier kommunizieren telepathisch. Werden sie getrennt, finden sie sich schnell wieder." },  // 102 grass/psychic
+  { "EXEGGUTOR", 0, 0, R_EVO, 0x3C49, 95, 95, 85, 125, 75, 55, TYPE_GRASS, TYPE_PSYCHIC, 2, "Seine drei Koepfe denken unabhaengig voneinander. Dennoch sind sie nett zueinander und streiten nie." },  // 103 grass/psychic
+  { "CUBONE", 105, 28, R_COMUN, 0xB447, 50, 50, 95, 40, 50, 35, TYPE_GROUND, TYPE_NONE, 4, "Es traegt den Schaedel seiner verstorbenen Mutter auf seinem Kopf. Fuehlt es sich einsam, soll es laut weinen." },  // 104 ground
+  { "MAROWAK", 0, 0, R_EVO, 0xB447, 60, 80, 110, 50, 80, 45, TYPE_GROUND, TYPE_NONE, 4, "Es ist klein und war urspruenglich sehr schwach. Erst als es anfing Knochen einzusetzen, wurde es wild." },  // 105 ground
+  { "HITMONLEE", 0, 0, R_EVO, 0xA2A5, 50, 120, 53, 35, 110, 87, TYPE_FIGHTING, TYPE_NONE, 0, "Die Beine ziehen und strecken sich unabhaengig voneinander. Mit seinen dehnbaren Beinen kann es einen entfernten Gegner treffen." },  // 106 fighting
+  { "HITMONCHAN", 0, 0, R_EVO, 0xA2A5, 50, 105, 79, 35, 110, 76, TYPE_FIGHTING, TYPE_NONE, 0, "Die Schlaege, die es austeilt, koennen Beton pulverisieren. Es muss sich im Kampf alle drei Minuten ausruhen." },  // 107 fighting
+  { "LICKITUNG", 463, 30, R_RARO, 0x8C4D, 90, 55, 75, 60, 75, 30, TYPE_NORMAL, TYPE_NONE, 0, "Seine Zunge ist mit klebrigem Speichel bedeckt, der ueberall haftet. Dies ist sehr nuetzlich." },  // 108 normal
+  { "KOFFING", 110, 35, R_COMUN, 0x8A73, 40, 65, 95, 60, 45, 35, TYPE_POISON, TYPE_NONE, 0, "Sein duenner, ballonartiger Koerper ist mit schrecklichem Giftgas gefuellt. Es verbreitet einen heftigen Gestank, wenn es in der Naehe ist." },  // 109 poison
+  { "WEEZING", 0, 0, R_EVO, 0x8A73, 65, 90, 120, 85, 70, 60, TYPE_POISON, TYPE_NONE, 0, "Pumpt sich eines der zwei Smogon auf, laesst das andere Luft ab. So findet ein Giftgasaustausch statt." },  // 110 poison
+  { "RHYHORN", 112, 42, R_RARO, 0xB447, 80, 85, 95, 30, 30, 25, TYPE_GROUND, TYPE_ROCK, 4, "Stark, aber nicht allzu klug, kann dieses Pokemon sogar Hochhaeuser mit seinem Tackle-Angriff zum Einsturz bringen." },  // 111 ground/rock
+  { "RHYDON", 464, 40, R_EVO, 0xB447, 105, 130, 120, 45, 45, 40, TYPE_GROUND, TYPE_ROCK, 4, "Durch seine panzeraehnliche Koerperhuelle kann es in bis zu 2 000 Grad heisser Lava leben." },  // 112 ground/rock
+  { "CHANSEY", 0, 0, R_EVO, 0x8C4D, 250, 5, 5, 35, 105, 50, TYPE_NORMAL, TYPE_NONE, 0, "Man sagt, es bringe Glueck. Es ist sehr mitfuehlend und teilt seine Eier mit Verletzten." },  // 113 normal
+  { "TANGELA", 465, 30, R_RARO, 0x3C49, 65, 55, 115, 100, 40, 60, TYPE_GRASS, TYPE_NONE, 2, "Aufgrund der Ranken, die seinen Koerper bedecken, kennt keiner seine wahre Form. Die blauen Ranken wachsen immer weiter." },  // 114 grass
+  { "KANGASKHAN", 0, 0, R_RARO, 0x8C4D, 105, 95, 80, 40, 80, 90, TYPE_NORMAL, TYPE_NONE, 0, "Sein Nachwuchs waechst in seinem Beutel heran. Nur wenn es sicher ist, darf das Junge aus dem Beutel." },  // 115 normal
+  { "HORSEA", 117, 32, R_COMUN, 0x4C98, 30, 40, 70, 70, 25, 60, TYPE_WATER, TYPE_NONE, 1, "Dieses Pokemon schiesst mit Tinte auf ueber der Wasseroberflaeche fliegende Insekten." },  // 116 water
+  { "SEADRA", 0, 0, R_EVO, 0x4C98, 55, 65, 95, 95, 45, 85, TYPE_WATER, TYPE_NONE, 1, "Sein Koerper ist mit scharfen Stacheln gespickt. Wenn man sorglos ist und es beruehrt, kann man durch die Stacheln bewusstlos werden." },  // 117 water
+  { "GOLDEEN", 119, 33, R_COMUN, 0x4C98, 45, 67, 60, 35, 50, 63, TYPE_WATER, TYPE_NONE, 1, "Es schwimmt mit fuenf Knoten. Wird es angegriffen, wehrt es sich mit seinem scharfen Horn." },  // 118 water
+  { "SEAKING", 0, 0, R_EVO, 0x4C98, 80, 92, 65, 65, 80, 68, TYPE_WATER, TYPE_NONE, 1, "Im Herbst, zur Paarungszeit, sieht man diese Pokemon kraftvoll Baeche und Fluesse hinaufschwimmen." },  // 119 water
+  { "STARYU", 121, 30, R_COMUN, 0x4C98, 30, 45, 55, 70, 55, 85, TYPE_WATER, TYPE_NONE, 1, "Auch wenn sein Koerper nicht mehr intakt ist, kann es sich regenerieren, wenn der Kern leuchtet." },  // 120 water
+  { "STARMIE", 0, 0, R_EVO, 0x4C98, 60, 75, 85, 100, 85, 115, TYPE_WATER, TYPE_PSYCHIC, 1, "Der Kern dieses Pokemon leuchtet in den Farben des Regenbogens. Sein Kern gilt als Edelstein." },  // 121 water/psychic
+  { "MR. MIME", 0, 0, R_EVO, 0xD28F, 40, 45, 65, 100, 120, 90, TYPE_PSYCHIC, TYPE_FAIRY, 0, "Seine Fingerspitzen sondern etwas ab, das die Luft zu einer schuetzenden Wand werden laesst." },  // 122 psychic/fairy
+  { "SCYTHER", 0, 0, R_RARO, 0x7CC4, 70, 110, 80, 55, 80, 105, TYPE_BUG, TYPE_FLYING, 2, "Es zerreisst und zerkleinert seine Beute mit seinen unglaublich scharfen Sicheln. Selten breitet es seine Fluegel aus, um zu fliegen." },  // 123 bug/flying
+  { "JYNX", 0, 0, R_EVO, 0x4DB8, 65, 50, 35, 115, 95, 95, TYPE_ICE, TYPE_PSYCHIC, 5, "Der beschwingte Gang dieses Pokemon bezaubert Zuschauer und laesst sie im Takt dazu tanzen." },  // 124 ice/psychic
+  { "ELECTABUZZ", 466, 40, R_EVO, 0xBCA1, 65, 83, 57, 95, 85, 105, TYPE_ELECTRIC, TYPE_NONE, 0, "Elektrizitaet bedeckt seinen Koerper. Im Dunkeln erstrahlt es in einem blaeulichen Ton." },  // 125 electric
+  { "MAGMAR", 467, 40, R_EVO, 0xEA87, 65, 95, 57, 100, 85, 93, TYPE_FIRE, TYPE_NONE, 3, "Es wurde in der Naehe eines Vulkans gefunden. Die Koerpertemperatur dieses Feuerspuckers liegt bei fast 1 200 Grad." },  // 126 fire
+  { "PINSIR", 0, 0, R_RARO, 0x7CC4, 65, 125, 100, 55, 70, 85, TYPE_BUG, TYPE_NONE, 2, "Es haelt seine Beute mit seiner Zange fest und teilt sie dann. Was es nicht teilen kann, wirft es fort." },  // 127 bug
+  { "TAUROS", 0, 0, R_RARO, 0x8C4D, 75, 100, 95, 40, 70, 110, TYPE_NORMAL, TYPE_NONE, 0, "Es kaempft mit vollem Einsatz, nachdem es sich mit seinen drei Schweifen auspeitschte, um sich anzustacheln." },  // 128 normal
+  { "MAGIKARP", 130, 20, R_COMUN, 0x4C98, 20, 10, 55, 15, 20, 80, TYPE_WATER, TYPE_NONE, 1, "Es ist nutzlos, was Kraft und Geschwindigkeit angeht. Dieses ist das schwaechste und erbaermlichste Pokemon der Welt." },  // 129 water
+  { "GYARADOS", 0, 0, R_EVO, 0x4C98, 95, 125, 79, 60, 100, 81, TYPE_WATER, TYPE_FLYING, 1, "In alten Schriften wird von einem Garados berichtet, das in einem Wutanfall ein Dorf zerstoerte." },  // 130 water/flying
+  { "LAPRAS", 0, 0, R_RARO, 0x4C98, 130, 85, 80, 85, 95, 60, TYPE_WATER, TYPE_ICE, 1, "Sie sind gutmuetig. Da sie selten kaempfen, wurden sie oft gefangen. Ihre Anzahl ist stark reduziert." },  // 131 water/ice
+  { "DITTO", 0, 0, R_RARO, 0x8C4D, 48, 48, 48, 48, 48, 48, TYPE_NORMAL, TYPE_NONE, 0, "Es kann seine Zellstruktur so veraendern, dass es sich in alles verwandeln kann, was es sieht." },  // 132 normal
+  { "EEVEE", 134, 30, R_COMUN, 0x8C4D, 55, 55, 50, 45, 65, 55, TYPE_NORMAL, TYPE_NONE, 0, "Ein seltenes Pokemon, das sich seiner Umgebung anpasst, indem es sich in unterschiedliche Formen entwickelt." },  // 133 normal
+  { "VAPOREON", 0, 0, R_EVO, 0x4C98, 130, 65, 60, 110, 95, 65, TYPE_WATER, TYPE_NONE, 1, "Es liebt schoene Ufer. Da seine Zellstruktur Wassermolekuelen aehnlich ist, kann es mit Wasser verschmelzen." },  // 134 water
+  { "JOLTEON", 0, 0, R_EVO, 0xBCA1, 65, 65, 60, 110, 95, 130, TYPE_ELECTRIC, TYPE_NONE, 0, "Laedt es sich mit Elektrizitaet auf, steht jedes einzelne seiner Koerperhaare steil nach oben." },  // 135 electric
+  { "FLAREON", 0, 0, R_EVO, 0xEA87, 65, 130, 60, 95, 110, 65, TYPE_FIRE, TYPE_NONE, 3, "In seinem Koerper befindet sich eine Flamme. Seine Koerpertemperatur liegt vor dem Kampf bei 900 Grad." },  // 136 fire
+  { "PORYGON", 0, 0, R_RARO, 0x8C4D, 65, 60, 70, 85, 75, 40, TYPE_NORMAL, TYPE_NONE, 0, "Ein kuenstlich produziertes Pokemon, welches das Ergebnis von Forschungen ist. Es ist simpel aufgebaut." },  // 137 normal
+  { "OMANYTE", 139, 40, R_RARO, 0x9407, 35, 40, 100, 90, 55, 35, TYPE_ROCK, TYPE_WATER, 1, "Ein praehistorisches Pokemon, das zur Urzeit im Wasser lebte. Es schwimmt, indem es seine zehn Tentakel bewegt." },  // 138 rock/water
+  { "OMASTAR", 0, 0, R_EVO, 0x9407, 70, 60, 125, 115, 70, 55, TYPE_ROCK, TYPE_WATER, 1, "Seine Tentakel sind hoch entwickelt und es setzt sie aehnlich Haenden und Fuessen ein. Sobald es Beute ergriffen hat, beisst es zu." },  // 139 rock/water
+  { "KABUTO", 141, 40, R_RARO, 0x9407, 30, 80, 90, 55, 45, 55, TYPE_ROCK, TYPE_WATER, 1, "Man geht davon aus, dass dieses Pokemon vor 300 Millionen Jahren die Straende bevoelkerte." },  // 140 rock/water
+  { "KABUTOPS", 0, 0, R_EVO, 0x9407, 60, 115, 105, 65, 70, 80, TYPE_ROCK, TYPE_WATER, 1, "Im Wasser zieht es seine Beine an und bewegt seinen Panzer, um so schneller schwimmen zu koennen." },  // 141 rock/water
+  { "AERODACTYL", 0, 0, R_RARO, 0x9407, 80, 105, 65, 60, 75, 130, TYPE_ROCK, TYPE_FLYING, 4, "In Bernstein eingeschlossenes genetisches Material eines Dinosauriers war der Ursprung dieses Pokemon. Beim Fliegen schreit es schrill." },  // 142 rock/flying
+  { "SNORLAX", 0, 0, R_EVO, 0x8C4D, 160, 110, 65, 65, 110, 30, TYPE_NORMAL, TYPE_NONE, 0, "Es ist erst satt, wenn es ueber 400 kg Nahrung am Tag gefressen hat. Ist es mit dem Essen fertig, schlaeft es sofort ein." },  // 143 normal
+  { "ARTICUNO", 0, 0, R_LEGENDARIO, 0x4DB8, 90, 85, 100, 95, 125, 85, TYPE_ICE, TYPE_FLYING, 5, "Ein Legendaeres Vogel-Pokemon. Es kann Blizzards verursachen, indem es Feuchtigkeit gefriert." },  // 144 ice/flying
+  { "ZAPDOS", 0, 0, R_LEGENDARIO, 0xBCA1, 90, 90, 85, 125, 90, 100, TYPE_ELECTRIC, TYPE_FLYING, 0, "Ein Legendaeres Vogel-Pokemon, das im Sturzflug aus den Wolken bricht und Blitze schleudert." },  // 145 electric/flying
+  { "MOLTRES", 0, 0, R_LEGENDARIO, 0xEA87, 90, 100, 90, 125, 85, 90, TYPE_FIRE, TYPE_FLYING, 3, "Dieses Pokemon ist der Legendaere Feuervogel. Sein Fluegelschlag entfacht ein helles Feuermeer." },  // 146 fire/flying
+  { "DRATINI", 148, 30, R_RARO, 0x5A98, 41, 64, 45, 50, 50, 50, TYPE_DRAGON, TYPE_NONE, 1, "Man nennt es \"Illusion-Pokemon\", denn nur wenige haben es gesehen. Nur seine Haut wurde oft gefunden." },  // 147 dragon
+  { "DRAGONAIR", 149, 55, R_EVO, 0x5A98, 61, 84, 65, 70, 70, 70, TYPE_DRAGON, TYPE_NONE, 1, "Die kristallenen Baelle an seinem Schweif ermoeglichen es ihm, das Wetter zu beeinflussen." },  // 148 dragon
+  { "DRAGONITE", 0, 0, R_EVO, 0x5A98, 91, 134, 95, 100, 100, 80, TYPE_DRAGON, TYPE_FLYING, 1, "Trotz seines wuchtigen und massiven Koerpers kann es fliegen. Es umrundet den Erdball in nur 16 Stunden." },  // 149 dragon/flying
+  { "MEWTWO", 0, 0, R_LEGENDARIO, 0xD28F, 106, 110, 90, 154, 90, 130, TYPE_PSYCHIC, TYPE_NONE, 0, "Dieses Pokemon ist das Resultat eines jahrelangen und skrupellosen Experimentes." },  // 150 psychic
+  { "MEW", 0, 0, R_LEGENDARIO, 0xD28F, 100, 100, 100, 100, 100, 100, TYPE_PSYCHIC, TYPE_NONE, 0, "Es beherrscht alle moeglichen Attacken, daher sieht man in ihm den Vorfahren aller Pokemon." },  // 151 psychic
+  { "CHIKORITA", 153, 16, R_COMUN, 0x3C49, 45, 49, 65, 49, 65, 45, TYPE_GRASS, TYPE_NONE, 2, "Ein suesser Duft geht von dem Blatt auf seinem Kopf aus. Es ist ruhig und liegt gerne in der Sonne." },  // 152 grass
+  { "BAYLEEF", 154, 32, R_EVO, 0x3C49, 60, 62, 80, 63, 80, 60, TYPE_GRASS, TYPE_NONE, 2, "Ein wuerziges Aroma geht von seinen Blaettern aus. Das Aroma soll gesundheitsfoerdernd sein." },  // 153 grass
+  { "MEGANIUM", 0, 0, R_EVO, 0x3C49, 80, 82, 100, 83, 100, 80, TYPE_GRASS, TYPE_NONE, 2, "Das Aroma aus seiner Bluete enthaelt Stoffe, die jegliche Aggressivitaet schwinden lassen." },  // 154 grass
+  { "CYNDAQUIL", 156, 14, R_COMUN, 0xEA87, 39, 52, 43, 60, 50, 65, TYPE_FIRE, TYPE_NONE, 3, "Es ist ruhig und kugelt sich stets zusammen. Zum Schutz entflammt es seinen Ruecken." },  // 155 fire
+  { "QUILAVA", 157, 36, R_EVO, 0xEA87, 58, 64, 58, 80, 65, 80, TYPE_FIRE, TYPE_NONE, 3, "Vor dem Kampf dreht es dem Feind den Ruecken zu, um ihm zu zeigen, wie Furcht erregend sein Feuer lodert." },  // 156 fire
+  { "TYPHLOSION", 0, 0, R_EVO, 0xEA87, 78, 84, 78, 109, 85, 100, TYPE_FIRE, TYPE_NONE, 3, "Wenn sein Zorn den Zenit uebersteigt, wird es so heiss, dass alles, was es beruehrt, in Flammen aufgeht." },  // 157 fire
+  { "TOTODILE", 159, 18, R_COMUN, 0x4C98, 50, 65, 64, 44, 48, 43, TYPE_WATER, TYPE_NONE, 1, "Es ist klein, aber zaeh und stark. Es zoegert nicht, jeden anzugreifen, wenn dieser ihm zu nahe kommt." },  // 158 water
+  { "CROCONAW", 160, 30, R_EVO, 0x4C98, 65, 80, 80, 59, 63, 58, TYPE_WATER, TYPE_NONE, 1, "Verliert es einen seiner Zaehne, waechst ein neuer nach. Es hat immer 48 Zaehne in seinem Kiefer." },  // 159 water
+  { "FERALIGATR", 0, 0, R_EVO, 0x4C98, 85, 105, 100, 79, 83, 78, TYPE_WATER, TYPE_NONE, 1, "Eigentlich bewegt es sich langsam, doch seine Beute greift es blitzschnell an." },  // 160 water
+  { "SENTRET", 162, 15, R_COMUN, 0x8C4D, 35, 46, 34, 35, 45, 20, TYPE_NORMAL, TYPE_NONE, 0, "Wenn es Wache hat, warnt es seine Artgenossen, indem es schreit und mit dem Schwanz auf den Boden schlaegt." },  // 161 normal
+  { "FURRET", 0, 0, R_EVO, 0x8C4D, 85, 76, 64, 45, 55, 90, TYPE_NORMAL, TYPE_NONE, 0, "Es rollt sich um seine Jungen, wenn diese schlafen sollen. Gegnern begegnet es mit Schnelligkeit." },  // 162 normal
+  { "HOOTHOOT", 164, 20, R_COMUN, 0x8C4D, 60, 30, 30, 36, 56, 50, TYPE_NORMAL, TYPE_FLYING, 0, "Sein Zeitgefuehl ist perfekt. Was auch immer passiert, es behaelt den Rhythmus, da sein Kopf wackelt." },  // 163 normal/flying
+  { "NOCTOWL", 0, 0, R_EVO, 0x8C4D, 100, 50, 50, 86, 96, 70, TYPE_NORMAL, TYPE_FLYING, 0, "Sein Sehvermoegen ist hervorragend. Selbst bei schwachem Licht kann es jedes Detail erkennen." },  // 164 normal/flying
+  { "LEDYBA", 166, 18, R_COMUN, 0x7CC4, 40, 20, 30, 40, 80, 55, TYPE_BUG, TYPE_FLYING, 2, "Wird es kalt, versammeln sich viele Ledyba von nah und fern, um sich gegenseitig Waerme zu schenken." },  // 165 bug/flying
+  { "LEDIAN", 0, 0, R_EVO, 0x7CC4, 55, 35, 50, 55, 110, 85, TYPE_BUG, TYPE_FLYING, 2, "Leuchten die Sterne am Nachthimmel, schwirrt es umher und verstreut einen strahlenden, leuchtenden Puder." },  // 166 bug/flying
+  { "SPINARAK", 168, 22, R_COMUN, 0x7CC4, 40, 60, 40, 40, 40, 30, TYPE_BUG, TYPE_POISON, 2, "Es spinnt ein Netz aus feinem, aber reissfestem Faden. Dann wartet es auf Beute, die im Netz zappelt." },  // 167 bug/poison
+  { "ARIADOS", 0, 0, R_EVO, 0x7CC4, 70, 90, 70, 60, 70, 40, TYPE_BUG, TYPE_POISON, 2, "Da es Faeden sowohl mit dem Hinterleib als auch mit dem Mund spinnt, verwechselt man die beiden leicht." },  // 168 bug/poison
+  { "CROBAT", 0, 0, R_EVO, 0x8A73, 85, 90, 80, 70, 80, 130, TYPE_POISON, TYPE_FLYING, 0, "Mit seinen vier Fluegeln fliegt es so geraeuschlos durch die Nacht, dass man es nicht bemerkt." },  // 169 poison/flying
+  { "CHINCHOU", 171, 27, R_COMUN, 0x4C98, 75, 38, 38, 56, 56, 67, TYPE_WATER, TYPE_ELECTRIC, 1, "Am Meeresgrund kann es sich nur durch staendiges Flackern seiner Lichter der Umgebung kundtun." },  // 170 water/electric
+  { "LANTURN", 0, 0, R_EVO, 0x4C98, 125, 58, 58, 76, 76, 67, TYPE_WATER, TYPE_ELECTRIC, 1, "Lanturns Licht kann aus grossen Tiefen heraufscheinen. Man nennt es auch \"Tiefseestern\"." },  // 171 water/electric
+  { "PICHU", 25, 10, R_COMUN, 0xBCA1, 20, 40, 15, 35, 35, 60, TYPE_ELECTRIC, TYPE_NONE, 0, "Sie spielen miteinander, indem sie ihre Schweifspitzen aneinanderhalten und Funken fliegen lassen." },  // 172 electric
+  { "CLEFFA", 35, 10, R_COMUN, 0x8C4D, 50, 25, 28, 45, 55, 15, TYPE_FAIRY, TYPE_NONE, 0, "Aufgrund seiner ungewoehnlichen Sternform sagt man, es sei auf einem Meteor hierhergereist." },  // 173 fairy
+  { "IGGLYBUFF", 39, 10, R_COMUN, 0x8C4D, 90, 30, 15, 40, 20, 15, TYPE_NORMAL, TYPE_FAIRY, 0, "Anstatt mit seinen kurzen Beinen zu laufen, huepft es mit seinem weichen und kuscheligen Koerper." },  // 174 normal/fairy
+  { "TOGEPI", 176, 10, R_RARO, 0x8C4D, 35, 20, 65, 40, 65, 20, TYPE_FAIRY, TYPE_NONE, 0, "Seine Schale ist voll von Freude. Es teilt sein Glueck, wenn man es freundlich und gut behandelt." },  // 175 fairy
+  { "TOGETIC", 468, 30, R_EVO, 0x8C4D, 55, 40, 85, 80, 105, 40, TYPE_FAIRY, TYPE_FLYING, 0, "Es wird entmutigt, wenn es unter unfreundlichen Menschen ist. Es kann ohne Fluegel niedrig schweben." },  // 176 fairy/flying
+  { "NATU", 178, 25, R_COMUN, 0xD28F, 40, 50, 45, 70, 45, 70, TYPE_PSYCHIC, TYPE_FLYING, 0, "Da seine Fluegel nicht voll ausgebildet sind, bewegt es sich huepfend. Es starrt immer etwas an." },  // 177 psychic/flying
+  { "XATU", 0, 0, R_EVO, 0xD28F, 65, 75, 70, 95, 70, 95, TYPE_PSYCHIC, TYPE_FLYING, 0, "Wenn es bei Sonnenaufgang anfaengt zu meditieren, vergeht der ganze Tag, ehe es sich wieder bewegt." },  // 178 psychic/flying
+  { "MAREEP", 180, 15, R_COMUN, 0xBCA1, 55, 40, 40, 65, 45, 35, TYPE_ELECTRIC, TYPE_NONE, 0, "Sein weiches Fell wird doppelt so dick, wenn sich Elektrizitaet aufbaut." },  // 179 electric
+  { "FLAAFFY", 181, 30, R_EVO, 0xBCA1, 70, 55, 55, 80, 60, 45, TYPE_ELECTRIC, TYPE_NONE, 0, "Sein flauschiges Fell speichert Elektrizitaet. Seine Gummihaut schuetzt es vor Stromstoessen." },  // 180 electric
+  { "AMPHAROS", 0, 0, R_EVO, 0xBCA1, 90, 75, 85, 115, 90, 55, TYPE_ELECTRIC, TYPE_NONE, 0, "Seine Schweifspitze ist so hell, dass viele Verschollene es als Orientierungspunkt nutzen." },  // 181 electric
+  { "BELLOSSOM", 0, 0, R_EVO, 0x3C49, 75, 80, 95, 90, 100, 50, TYPE_GRASS, TYPE_NONE, 2, "Blubella kommen zusammen, um zu tanzen. Man sagt, dieser Tanz sei ein Ritual, um der Sonne zu huldigen." },  // 182 grass
+  { "MARILL", 184, 18, R_EVO, 0x4C98, 70, 20, 50, 20, 50, 40, TYPE_WATER, TYPE_FAIRY, 1, "Sein Fell ist von Natur aus wasserabweisend. Es bleibt trocken, auch wenn es im Wasser spielt." },  // 183 water/fairy
+  { "AZUMARILL", 0, 0, R_EVO, 0x4C98, 100, 50, 80, 60, 80, 50, TYPE_WATER, TYPE_FAIRY, 1, "Seine langen Ohren sind hervorragende Sensoren. Mit ihnen kann es Bewegungen im Fluss wahrnehmen." },  // 184 water/fairy
+  { "SUDOWOODO", 0, 0, R_EVO, 0x9407, 70, 100, 115, 30, 65, 30, TYPE_ROCK, TYPE_NONE, 4, "Obwohl es vorgibt, ein Baum zu sein, kommt seine Zusammensetzung einem Stein naeher als einer Pflanze." },  // 185 rock
+  { "POLITOED", 0, 0, R_EVO, 0x4C98, 90, 75, 75, 90, 100, 70, TYPE_WATER, TYPE_NONE, 1, "Sind drei oder mehr von ihnen zusammen, lassen sie einen schallenden Ruf erklingen." },  // 186 water
+  { "HOPPIP", 188, 18, R_COMUN, 0x3C49, 35, 35, 40, 35, 55, 50, TYPE_GRASS, TYPE_FLYING, 2, "Sein Koerper ist so leicht, dass es seine Fuesse im Boden verankert, damit es nicht davongeweht wird." },  // 187 grass/flying
+  { "SKIPLOOM", 189, 27, R_EVO, 0x3C49, 55, 45, 50, 45, 65, 80, TYPE_GRASS, TYPE_FLYING, 2, "Temperaturschwankungen veranlassen es, die Bluete auf seinem Kopf immer zu oeffnen oder zu schliessen." },  // 188 grass/flying
+  { "JUMPLUFF", 0, 0, R_EVO, 0x3C49, 75, 55, 70, 55, 95, 110, TYPE_GRASS, TYPE_FLYING, 2, "Es laesst sich von den Winden um den Globus tragen und verteilt auf seinem Flug Baumwollsamen." },  // 189 grass/flying
+  { "AIPOM", 424, 30, R_COMUN, 0x8C4D, 55, 70, 55, 40, 55, 85, TYPE_NORMAL, TYPE_NONE, 0, "Es lebt in den Kronen grosser Baeume. Es huepft von Ast zu Ast und balanciert mit seinem Schweif." },  // 190 normal
+  { "SUNKERN", 192, 20, R_COMUN, 0x3C49, 30, 30, 30, 30, 30, 30, TYPE_GRASS, TYPE_NONE, 2, "Manchmal faellt es ploetzlich vom Himmel. Wird es von Habitak angegriffen, schuettelt es seine Blaetter." },  // 191 grass
+  { "SUNFLORA", 0, 0, R_EVO, 0x3C49, 75, 75, 55, 105, 85, 30, TYPE_GRASS, TYPE_NONE, 2, "Steht der Sommer bevor, werden die Blaetter um das Gesicht dieses Pokemon aktiv und lebhaft." },  // 192 grass
+  { "YANMA", 469, 30, R_RARO, 0x7CC4, 65, 65, 45, 75, 45, 95, TYPE_BUG, TYPE_FLYING, 2, "Mit seinen Augen hat es einen Blickwinkel von 360 Grad. Es sieht sogar Beute, die sich hinter ihm befindet." },  // 193 bug/flying
+  { "WOOPER", 195, 20, R_COMUN, 0x4C98, 55, 45, 45, 25, 25, 15, TYPE_WATER, TYPE_GROUND, 1, "Dieses Pokemon lebt in Eiswasser. Wird es an Land kalt, verlaesst es das Wasser und sucht nach Futter." },  // 194 water/ground
+  { "QUAGSIRE", 0, 0, R_EVO, 0x4C98, 95, 85, 85, 65, 65, 35, TYPE_WATER, TYPE_GROUND, 1, "Ein traeges Pokemon, das auf dem Grund des Flusses liegt und wartet, dass ihm Beute ins Maul schwimmt." },  // 195 water/ground
+  { "ESPEON", 0, 0, R_EVO, 0xD28F, 65, 65, 60, 130, 95, 110, TYPE_PSYCHIC, TYPE_NONE, 0, "Die Spitze seines geteilten Schweifs bebt, wenn es die naechste Attacke seines Feindes voraussagt." },  // 196 psychic
+  { "UMBREON", 0, 0, R_EVO, 0x5A6E, 95, 65, 110, 60, 130, 65, TYPE_DARK, TYPE_NONE, 0, "Mondlicht hat die genetische Struktur von Evoli veraendert. Im Dunkeln wartet es auf Beute." },  // 197 dark
+  { "MURKROW", 430, 30, R_RARO, 0x5A6E, 60, 85, 42, 85, 42, 91, TYPE_DARK, TYPE_FLYING, 0, "Es versteckt jeden schimmernden Gegenstand. Kramurx und Mauzi rauben sich gegenseitig die Beute." },  // 198 dark/flying
+  { "SLOWKING", 0, 0, R_EVO, 0x4C98, 95, 75, 80, 100, 110, 30, TYPE_WATER, TYPE_PSYCHIC, 1, "Sein feines Gespuer und Intellekt zeichnen es aus. Es bleibt in jeder Situation gelassen und besonnen." },  // 199 water/psychic
+  { "MISDREAVUS", 429, 30, R_RARO, 0x6AD3, 60, 60, 60, 85, 85, 85, TYPE_GHOST, TYPE_NONE, 0, "Es naehrt sich von der Angst anderer Wesen und nimmt diese in roten Kugeln auf. Schlaeft am Tage." },  // 200 ghost
+  { "UNOWN", 0, 0, R_RARO, 0xD28F, 48, 72, 48, 72, 48, 48, TYPE_PSYCHIC, TYPE_NONE, 0, "Sein flacher, duenner Koerper haengt immer an Waenden. Seine Form scheint eine Bedeutung zu haben." },  // 201 psychic
+  { "WOBBUFFET", 0, 0, R_COMUN, 0xD28F, 190, 33, 58, 33, 58, 33, TYPE_PSYCHIC, TYPE_NONE, 0, "Es hasst Licht und Schlaege. Wird es angegriffen, pumpt es sich auf, um einen Gegenschlag vorzubereiten." },  // 202 psychic
+  { "GIRAFARIG", 0, 0, R_COMUN, 0x8C4D, 70, 80, 65, 90, 65, 85, TYPE_NORMAL, TYPE_PSYCHIC, 0, "Waehrend es schlaeft, haelt sein Schweif Wache. Dieser benoetigt keinen Schlaf." },  // 203 normal/psychic
+  { "PINECO", 205, 31, R_COMUN, 0x7CC4, 50, 65, 90, 35, 35, 15, TYPE_BUG, TYPE_NONE, 2, "Es fuegt seiner Schale schichtenweise Baumrinde hinzu. Die zusaetzliche Belastung ist ihm gleich." },  // 204 bug
+  { "FORRETRESS", 0, 0, R_EVO, 0x7CC4, 75, 90, 140, 60, 60, 40, TYPE_BUG, TYPE_STEEL, 2, "Dieses Pokemon ist von einer Stahlhuelle umgeben. Seine stechenden Augen sind alles, was man von ihm sieht." },  // 205 bug/steel
+  { "DUNSPARCE", 0, 0, R_RARO, 0x8C4D, 100, 70, 70, 65, 65, 45, TYPE_NORMAL, TYPE_NONE, 0, "Wird es entdeckt, fluechtet dieses Pokemon, indem es sich mit seinem Schweif in den Boden graebt." },  // 206 normal
+  { "GLIGAR", 472, 30, R_COMUN, 0xB447, 65, 75, 105, 35, 65, 85, TYPE_GROUND, TYPE_FLYING, 4, "Es haengt meist an Klippen. Erspaeht es Beute, spreizt es seine Fluegel und greift diese sofort an." },  // 207 ground/flying
+  { "STEELIX", 0, 0, R_EVO, 0xB447, 75, 85, 200, 55, 65, 30, TYPE_STEEL, TYPE_GROUND, 4, "Hoher Druck und hohe Temperaturen haben seinen Koerper haerter als Stahl werden lassen." },  // 208 steel/ground
+  { "SNUBBULL", 210, 23, R_COMUN, 0x8C4D, 60, 80, 50, 40, 40, 30, TYPE_FAIRY, TYPE_NONE, 0, "Es ist von Natur aus verspielt. Es tollt mit vielen Frauen herum, da es ihnen zugeneigt ist." },  // 209 fairy
+  { "GRANBULL", 0, 0, R_EVO, 0x8C4D, 90, 120, 75, 60, 60, 45, TYPE_FAIRY, TYPE_NONE, 0, "Es ist trotz seines Aeusseren schuechtern. Wird es wuetend, schnappt es mit seinen Faengen zu." },  // 210 fairy
+  { "QWILFISH", 0, 0, R_COMUN, 0x4C98, 65, 95, 85, 55, 55, 85, TYPE_WATER, TYPE_POISON, 1, "Um seine Giftstacheln abzufeuern, muss es seinen Koerper aufpumpen, indem es 10 l trinkt." },  // 211 water/poison
+  { "SCIZOR", 0, 0, R_EVO, 0x7CC4, 70, 130, 100, 55, 80, 65, TYPE_BUG, TYPE_STEEL, 2, "Dieses Pokemon kann mit seinen staehlernen Scheren jeden harten Gegenstand muehelos zermalmen." },  // 212 bug/steel
+  { "SHUCKLE", 0, 0, R_RARO, 0x7CC4, 20, 10, 230, 10, 230, 5, TYPE_BUG, TYPE_ROCK, 2, "In seinem topffoermigen Panzer gelagerte Beeren verwandeln sich im Nu zu einem dickfluessigen Saft." },  // 213 bug/rock
+  { "HERACROSS", 0, 0, R_RARO, 0x7CC4, 80, 125, 75, 40, 95, 85, TYPE_BUG, TYPE_FIGHTING, 2, "Dieses kraeftige Pokemon rammt sein stolzes Horn unter den Rumpf des Gegners und wirft ihn um." },  // 214 bug/fighting
+  { "SNEASEL", 461, 30, R_RARO, 0x5A6E, 55, 95, 55, 35, 75, 115, TYPE_DARK, TYPE_ICE, 0, "Es ernaehrt sich von Eiern, die es aus Nestern stiehlt. Beute greift es mit seinen scharfen Krallen an." },  // 215 dark/ice
+  { "TEDDIURSA", 217, 30, R_COMUN, 0x8C4D, 60, 80, 50, 50, 50, 40, TYPE_NORMAL, TYPE_NONE, 0, "Findet es Honig, leuchtet die Sichel auf seinem Kopf. Es leckt oft seine mit Honig bedeckten Pfoten." },  // 216 normal
+  { "URSARING", 0, 0, R_EVO, 0x8C4D, 90, 130, 75, 75, 75, 55, TYPE_NORMAL, TYPE_NONE, 0, "Da es alle Gerueche perfekt unterscheiden kann, findet es sogar Nahrung, die tief im Erdreich ist." },  // 217 normal
+  { "SLUGMA", 219, 38, R_COMUN, 0xEA87, 40, 40, 40, 70, 40, 20, TYPE_FIRE, TYPE_NONE, 3, "Es haelt sich staendig bei Vulkanen auf und ist stets kriechend auf der Suche nach warmen Aufenthaltsorten." },  // 218 fire
+  { "MAGCARGO", 0, 0, R_EVO, 0xEA87, 60, 50, 120, 90, 80, 30, TYPE_FIRE, TYPE_ROCK, 3, "Aus seinem poroesen Schneckengehaeuse sprudeln Feuerfontaenen, die seinen Koerper durchfluten." },  // 219 fire/rock
+  { "SWINUB", 221, 33, R_COMUN, 0x4DB8, 50, 50, 40, 30, 30, 50, TYPE_ICE, TYPE_GROUND, 5, "Auf Nahrungssuche schnueffelt es am Boden entlang. Es entdeckt dabei manchmal auch heisse Quellen." },  // 220 ice/ground
+  { "PILOSWINE", 473, 30, R_EVO, 0x4DB8, 100, 100, 80, 60, 60, 50, TYPE_ICE, TYPE_GROUND, 5, "Trotz kurzer Beine rutscht es auf eisigen Flaechen nicht aus, da seine Hufe ihm genuegend Halt bieten." },  // 221 ice/ground
+  { "CORSOLA", 0, 0, R_RARO, 0x4C98, 65, 55, 95, 65, 95, 35, TYPE_WATER, TYPE_ROCK, 1, "Es haeutet sich staendig und waechst. Seine Kopfspitze wurde als Schatz der Schoenheit ausgezeichnet." },  // 222 water/rock
+  { "REMORAID", 224, 25, R_COMUN, 0x4C98, 35, 65, 35, 65, 35, 65, TYPE_WATER, TYPE_NONE, 1, "Es ist aeusserst praezise. Es kann mit seinem Wasserschuss Beute erlegen, die 100 m entfernt ist." },  // 223 water
+  { "OCTILLERY", 0, 0, R_EVO, 0x4C98, 75, 105, 75, 105, 75, 45, TYPE_WATER, TYPE_NONE, 1, "Es verkriecht sich gerne in Loechern, von wo aus es Gegner mit Tinte beschiesst. Es bevorzugt Felsspalten und Vasen." },  // 224 water
+  { "DELIBIRD", 0, 0, R_RARO, 0x4DB8, 45, 55, 45, 65, 45, 75, TYPE_ICE, TYPE_FLYING, 5, "Im eingerollten Schweif transportiert es Futter, das es mit denen teilt, die sich verlaufen haben." },  // 225 ice/flying
+  { "MANTINE", 0, 0, R_EVO, 0x4C98, 85, 40, 70, 80, 140, 70, TYPE_WATER, TYPE_FLYING, 1, "Schwimmt es schnell genug, kann es ueber die Wellen springen und bis zu 100 m durch die Luefte gleiten." },  // 226 water/flying
+  { "SKARMORY", 0, 0, R_RARO, 0x7C73, 65, 80, 140, 40, 70, 70, TYPE_STEEL, TYPE_FLYING, 4, "Die dornigen Zweige seines Nests bewirken, dass die Fluegel seiner Jungen fest und hart werden." },  // 227 steel/flying
+  { "HOUNDOUR", 229, 24, R_COMUN, 0x5A6E, 45, 60, 30, 80, 50, 65, TYPE_DARK, TYPE_FIRE, 0, "Im Morgengrauen schallt sein ominoeses Geheule ueber das Gebiet, das es fuer sich beansprucht." },  // 228 dark/fire
+  { "HOUNDOOM", 0, 0, R_EVO, 0x5A6E, 75, 90, 50, 110, 80, 95, TYPE_DARK, TYPE_FIRE, 0, "In alten Zeiten glaubte man, das Heulen dieses Pokemon sei der Ruf des Todes." },  // 229 dark/fire
+  { "KINGDRA", 0, 0, R_EVO, 0x4C98, 75, 95, 95, 95, 95, 85, TYPE_WATER, TYPE_DRAGON, 1, "Man sagt, es hause in Unterwasserhoehlen. Es kann maechtige Strudel generieren, wenn es gaehnt." },  // 230 water/dragon
+  { "PHANPY", 232, 25, R_COMUN, 0xB447, 90, 60, 60, 40, 40, 40, TYPE_GROUND, TYPE_NONE, 4, "Als Zeichen seiner Zuneigung stupst es dich mit dem Ruessel, was dich aber buchstaeblich umwerfen koennte." },  // 231 ground
+  { "DONPHAN", 0, 0, R_EVO, 0xB447, 90, 120, 120, 60, 60, 50, TYPE_GROUND, TYPE_NONE, 4, "Aufgrund seiner scharfen Stosszaehne und seiner rauen Haut koennte es mit Tackle ein Haus niederreissen." },  // 232 ground
+  { "PORYGON2", 474, 40, R_EVO, 0x8C4D, 85, 80, 90, 105, 95, 60, TYPE_NORMAL, TYPE_NONE, 0, "Seine Faehigkeiten wurden verbessert. Es zeigt manchmal sogar Handlungen, die nicht einprogrammiert sind." },  // 233 normal
+  { "STANTLER", 0, 0, R_RARO, 0x8C4D, 73, 95, 62, 85, 65, 85, TYPE_NORMAL, TYPE_NONE, 0, "Starrt man auf sein Geweih, bekommt man das seltsame Gefuehl, in dessen Mitte gezogen zu werden." },  // 234 normal
+  { "SMEARGLE", 0, 0, R_RARO, 0x8C4D, 55, 20, 35, 20, 45, 75, TYPE_NORMAL, TYPE_NONE, 0, "Sein Revier markiert es mit seinem pinselartigen Schweif. Es kennt mehr als 5 000 Markierungen." },  // 235 normal
+  { "TYROGUE", 0, 0, R_RARO, 0xA2A5, 35, 35, 35, 35, 35, 35, TYPE_FIGHTING, TYPE_NONE, 0, "Es strotzt vor Energie. Um noch staerker zu werden, kaempft es weiter, auch wenn es verloren hat." },  // 236 fighting
+  { "HITMONTOP", 0, 0, R_EVO, 0xA2A5, 50, 95, 95, 35, 110, 70, TYPE_FIGHTING, TYPE_NONE, 0, "Es kaempft, waehrend es sich wie ein Kreisel dreht. Die Zentrifugalkraft verzehnfacht seine Kampfkraft." },  // 237 fighting
+  { "SMOOCHUM", 124, 30, R_RARO, 0x4DB8, 45, 30, 15, 85, 65, 65, TYPE_ICE, TYPE_PSYCHIC, 5, "Die Lippen sind sein empfindlichster Koerperteil. Neue Dinge untersucht es zuerst damit." },  // 238 ice/psychic
+  { "ELEKID", 125, 30, R_RARO, 0xBCA1, 45, 63, 37, 65, 55, 95, TYPE_ELECTRIC, TYPE_NONE, 0, "Es bewegt seine Arme und generiert damit Elektrizitaet. Diese kann es aber nicht speichern." },  // 239 electric
+  { "MAGBY", 126, 30, R_RARO, 0xEA87, 45, 75, 37, 70, 55, 83, TYPE_FIRE, TYPE_NONE, 3, "Seine Koerpertemperatur misst 600 Grad. Beim Ein- und Ausatmen springen gluehende Kohlenstuecke aus seinem Mund." },  // 240 fire
+  { "MILTANK", 0, 0, R_RARO, 0x8C4D, 95, 80, 105, 40, 70, 100, TYPE_NORMAL, TYPE_NONE, 0, "Wenn es gerade ein Junges hat, dann enthaelt seine Milch mehr Naehrstoffe als gewoehnlich." },  // 241 normal
+  { "BLISSEY", 0, 0, R_EVO, 0x8C4D, 255, 10, 10, 75, 135, 55, TYPE_NORMAL, TYPE_NONE, 0, "Eier, die es legt, stecken voller Froehlichkeit. Schon ein Bissen erzeugt ein breites Laecheln." },  // 242 normal
+  { "RAIKOU", 0, 0, R_LEGENDARIO, 0xBCA1, 90, 85, 75, 115, 100, 115, TYPE_ELECTRIC, TYPE_NONE, 0, "Die Regenwolken, die es traegt, ermoeglichen es ihm, Gewitter zu erzeugen. Es strotzt vor Blitzen." },  // 243 electric
+  { "ENTEI", 0, 0, R_LEGENDARIO, 0xEA87, 115, 115, 85, 90, 75, 100, TYPE_FIRE, TYPE_NONE, 3, "Dieses Pokemon jagt ueber das Land. Man sagt, in jedem neuen Vulkan wird ein Entei geboren." },  // 244 fire
+  { "SUICUNE", 0, 0, R_LEGENDARIO, 0x4C98, 100, 75, 115, 90, 115, 85, TYPE_WATER, TYPE_NONE, 1, "Es wandert bestaendig in der Welt herum, um verunreinigtes Wasser zu reinigen. Es zieht mit dem Nordwind." },  // 245 water
+  { "LARVITAR", 247, 30, R_RARO, 0x9407, 50, 64, 50, 45, 50, 41, TYPE_ROCK, TYPE_GROUND, 4, "Es ernaehrt sich von Erde. Nachdem es einen Berg verspeist hat, schlaeft es ein, um zu wachsen." },  // 246 rock/ground
+  { "PUPITAR", 248, 55, R_EVO, 0x9407, 70, 84, 70, 65, 70, 51, TYPE_ROCK, TYPE_GROUND, 4, "Sein Koerper ist hart wie Fels. Es laesst mit Hochdruck Gas ab, um wie eine Rakete nach oben zu schiessen." },  // 247 rock/ground
+  { "TYRANITAR", 0, 0, R_EVO, 0x9407, 100, 134, 110, 95, 100, 61, TYPE_ROCK, TYPE_DARK, 4, "Es besitzt so viel Kraft, dass es mit nur einer Hand die Erde beben lassen und Berge zerbroeckeln kann." },  // 248 rock/dark
+  { "LUGIA", 0, 0, R_LEGENDARIO, 0xD28F, 106, 90, 130, 90, 154, 110, TYPE_PSYCHIC, TYPE_FLYING, 0, "Es schlaeft in einem Tiefseegraben. Schwingt es seine Fluegel, entsteht ein Sturm, der 40 Tage dauert." },  // 249 psychic/flying
+  { "HO_OH", 0, 0, R_LEGENDARIO, 0xEA87, 106, 130, 90, 110, 154, 90, TYPE_FIRE, TYPE_FLYING, 3, "Sein Koerper soll in sieben Farben leuchten. Im Flug zieht es einen Regenbogen hinter sich her." },  // 250 fire/flying
+  { "CELEBI", 0, 0, R_LEGENDARIO, 0xD28F, 100, 100, 100, 100, 100, 100, TYPE_PSYCHIC, TYPE_GRASS, 0, "Dieses Pokemon reist durch Zeit und Raum. Baeume und Wiesen wuchern, wenn es in der Naehe ist." },  // 251 psychic/grass
+  { "TREECKO", 253, 16, R_COMUN, 0x3C49, 40, 45, 35, 65, 55, 70, TYPE_GRASS, TYPE_NONE, 2, "Es klettert blitzschnell Waende empor. Mit seinem Schwanz misst es die Luftfeuchtigkeit, um das Wetter am naechsten Tag vorherzusagen." },  // 252 grass
+  { "GROVYLE", 254, 36, R_EVO, 0x3C49, 50, 65, 45, 85, 65, 95, TYPE_GRASS, TYPE_NONE, 2, "Seine stark entwickelten Oberschenkelmuskeln verleihen ihm aussergewoehnliche Agilitaet und Sprungkraft." },  // 253 grass
+  { "SCEPTILE", 0, 0, R_EVO, 0x3C49, 70, 85, 65, 105, 85, 120, TYPE_GRASS, TYPE_NONE, 2, "Die Blaetter an seinen Armen koennen dicke Baeume faellen. Im Dschungelkampf gibt es kein staerkeres Pokemon." },  // 254 grass
+  { "TORCHIC", 256, 16, R_COMUN, 0xEA87, 45, 60, 40, 70, 50, 45, TYPE_FIRE, TYPE_NONE, 3, "In seinem Bauch ist ein Flammensack, der stets brennt. Umarmt man es, fuehlt es sich warm an." },  // 255 fire
+  { "COMBUSKEN", 257, 36, R_EVO, 0xEA87, 60, 85, 60, 85, 60, 55, TYPE_FIRE, TYPE_FIGHTING, 3, "Es kann zehn Tritte pro Sekunde austeilen. Es gibt schrille Schreie von sich, um Gegner einzuschuechtern." },  // 256 fire/fighting
+  { "BLAZIKEN", 0, 0, R_EVO, 0xEA87, 80, 120, 70, 110, 70, 80, TYPE_FIRE, TYPE_FIGHTING, 3, "Muehelos springt es selbst ueber 30-stoeckige Haeuser. Sein Feuerschlag fuegt dem Gegner Verbrennungen zu." },  // 257 fire/fighting
+  { "MUDKIP", 259, 16, R_COMUN, 0x4C98, 50, 70, 50, 50, 50, 40, TYPE_WATER, TYPE_NONE, 1, "Durch den propellerartigen Einsatz seiner grossen Schwanzflosse schwimmt es schnell durchs Wasser. Trotz seiner kleinen Groesse ist es..." },  // 258 water
+  { "MARSHTOMP", 260, 36, R_EVO, 0x4C98, 70, 85, 70, 60, 70, 50, TYPE_WATER, TYPE_GROUND, 1, "Seine kraeftigen Beine geben ihm sicheren Halt. Es graebt sich in Dreck ein, wenn es schlafen will." },  // 259 water/ground
+  { "SWAMPERT", 0, 0, R_EVO, 0x4C98, 100, 110, 90, 85, 90, 60, TYPE_WATER, TYPE_GROUND, 1, "Schon ein Hieb seiner steinharten Arme schlaegt selbst den staerksten Felsen zu Bruch." },  // 260 water/ground
+  { "POOCHYENA", 262, 18, R_COMUN, 0x5A6E, 35, 55, 35, 30, 30, 35, TYPE_DARK, TYPE_NONE, 0, "Ein beharrliches Pokemon, das seine Beute jagt, bis diese erschoepft ist." },  // 261 dark
+  { "MIGHTYENA", 0, 0, R_EVO, 0x5A6E, 70, 90, 70, 60, 60, 70, TYPE_DARK, TYPE_NONE, 0, "Es wird stets die Befehle eines begabten Trainers befolgen. Dieses Verhalten geht darauf zurueck, dass es frueher im Rudel lebte." },  // 262 dark
+  { "ZIGZAGOON", 264, 20, R_COMUN, 0x8C4D, 38, 30, 41, 30, 41, 60, TYPE_NORMAL, TYPE_NONE, 0, "Es laeuft im Zickzack. Es hat das Talent, Items im Gras, aber auch im Boden, zu finden." },  // 263 normal
+  { "LINOONE", 0, 0, R_EVO, 0x8C4D, 78, 70, 61, 50, 61, 100, TYPE_NORMAL, TYPE_NONE, 0, "Auf gerader Strecke erreicht es muehelos 100 km/h. Nur die Kurven bereiten ihm grosse Schwierigkeiten." },  // 264 normal
+  { "WURMPLE", 266, 7, R_COMUN, 0x7CC4, 45, 45, 35, 20, 30, 20, TYPE_BUG, TYPE_NONE, 2, "Es isst am liebsten Blaetter. Wird es von einem Staralili angegriffen, verteidigt es sich mit Stacheln." },  // 265 bug
+  { "SILCOON", 267, 10, R_EVO, 0x7CC4, 50, 35, 55, 25, 25, 15, TYPE_BUG, TYPE_NONE, 2, "Es bindet sich mit Seide an Aeste und trinkt Regenwasser, waehrend es starr auf seine Entwicklung wartet." },  // 266 bug
+  { "BEAUTIFLY", 0, 0, R_EVO, 0x7CC4, 60, 70, 50, 100, 50, 65, TYPE_BUG, TYPE_FLYING, 2, "Die bunten Fluegel sind sein Markenzeichen. Mit seinem Ruessel saugt es suessen Honig aus Blumen." },  // 267 bug/flying
+  { "CASCOON", 269, 10, R_EVO, 0x7CC4, 50, 35, 55, 25, 25, 15, TYPE_BUG, TYPE_NONE, 2, "Sein aus weicher Seide bestehender Koerper erhaertet mit der Zeit. Sobald Risse sichtbar sind, steht die Entwicklung kurz bevor." },  // 268 bug
+  { "DUSTOX", 0, 0, R_EVO, 0x7CC4, 60, 50, 70, 50, 90, 65, TYPE_BUG, TYPE_POISON, 2, "Nachtaktives Pokemon, das vom Licht der Stadt angezogen wird und dort die Blaetter der Baeume frisst." },  // 269 bug/poison
+  { "LOTAD", 271, 14, R_COMUN, 0x4C98, 40, 30, 30, 40, 50, 30, TYPE_WATER, TYPE_GRASS, 1, "Es sieht aus wie eine Wasserpflanze. Es dient den Pokemon, die nicht schwimmen koennen, als Faehre." },  // 270 water/grass
+  { "LOMBRE", 0, 0, R_EVO, 0x4C98, 60, 50, 50, 60, 70, 50, TYPE_WATER, TYPE_GRASS, 1, "Es lebt am Ufer, wo die Sonne scheint. Tagsueber schlaeft es in einem Bett aus Schilf und wird nachts aktiv." },  // 271 water/grass
+  { "LUDICOLO", 0, 0, R_EVO, 0x4C98, 80, 70, 70, 90, 100, 70, TYPE_WATER, TYPE_GRASS, 1, "Hoert es froehliche Musik, fuellen sich seine Muskeln mit Energie. Es muss dann einfach tanzen." },  // 272 water/grass
+  { "SEEDOT", 274, 14, R_COMUN, 0x3C49, 40, 40, 50, 30, 30, 30, TYPE_GRASS, TYPE_NONE, 2, "Mit dem Stiel auf seinem Kopf haengt es sich an Aeste. Bei starkem Wind faellt es durchaus einmal herunter." },  // 273 grass
+  { "NUZLEAF", 0, 0, R_EVO, 0x3C49, 70, 70, 40, 60, 40, 60, TYPE_GRASS, TYPE_DARK, 2, "Der Ton seiner Grasfloete beunruhigt die, die ihn hoeren. Es lebt tief in den Waeldern." },  // 274 grass/dark
+  { "SHIFTRY", 0, 0, R_EVO, 0x3C49, 90, 100, 60, 90, 60, 80, TYPE_GRASS, TYPE_DARK, 2, "Dieses Pokemon wurde als Waechter des Waldes gefuerchtet. Es kann die Gedanken des Gegners lesen und praeventiv handeln." },  // 275 grass/dark
+  { "TAILLOW", 277, 22, R_COMUN, 0x8C4D, 40, 55, 30, 30, 30, 85, TYPE_NORMAL, TYPE_FLYING, 0, "Es ist sehr mutig und stellt sich auch starken Gegnern. Es sucht staendig nach warmen Regionen." },  // 276 normal/flying
+  { "SWELLOW", 0, 0, R_EVO, 0x8C4D, 60, 85, 60, 75, 50, 125, TYPE_NORMAL, TYPE_FLYING, 0, "Wenn seine beiden Schwanzfedern aufrecht stehen, zeigt das, dass es bei bester Gesundheit ist. Es fliegt elegant in den Himmel empor." },  // 277 normal/flying
+  { "WINGULL", 279, 25, R_COMUN, 0x4C98, 40, 30, 30, 55, 30, 85, TYPE_WATER, TYPE_FLYING, 1, "Es laesst sich vom Wind der Meere treiben, als waere es ein Segelflugzeug." },  // 278 water/flying
+  { "PELIPPER", 0, 0, R_EVO, 0x4C98, 60, 50, 100, 95, 70, 65, TYPE_WATER, TYPE_FLYING, 1, "Es taucht seinen grossen Schnabel ins Wasser und faengt so eine Menge Beute." },  // 279 water/flying
+  { "RALTS", 281, 20, R_COMUN, 0xD28F, 28, 25, 25, 45, 35, 40, TYPE_PSYCHIC, TYPE_FAIRY, 0, "Es erfasst warme Gefuehle von Menschen und Pokemon mit seinen Hoernern und waermt sich daran auf." },  // 280 psychic/fairy
+  { "KIRLIA", 282, 30, R_EVO, 0xD28F, 38, 35, 35, 65, 55, 50, TYPE_PSYCHIC, TYPE_FAIRY, 0, "Die froehliche Stimmung seines Trainers verleiht ihm Energie fuer psychokinetische Kraft. Wenn es gluecklich ist, tanzt und dreht es sich." },  // 281 psychic/fairy
+  { "GARDEVOIR", 0, 0, R_EVO, 0xD28F, 68, 65, 65, 125, 115, 80, TYPE_PSYCHIC, TYPE_FAIRY, 0, "Erzeugt ein kleines schwarzes Loch mithilfe all seiner Psycho-Kraefte, um seinen Trainer zu schuetzen." },  // 282 psychic/fairy
+  { "SURSKIT", 284, 22, R_COMUN, 0x7CC4, 40, 30, 32, 50, 52, 65, TYPE_BUG, TYPE_WATER, 2, "Normalerweise leben sie in Teichen, aber nach einem Schauer am Abend kann man sie auch in Pfuetzen in den Staedten finden." },  // 283 bug/water
+  { "MASQUERAIN", 0, 0, R_EVO, 0x7CC4, 70, 60, 62, 100, 82, 80, TYPE_BUG, TYPE_FLYING, 2, "Seine Antenne besitzt ein Augenmuster. Seine vier Fluegel erlauben es, in alle Richtungen zu fliegen." },  // 284 bug/flying
+  { "SHROOMISH", 286, 23, R_COMUN, 0x3C49, 60, 40, 60, 40, 60, 35, TYPE_GRASS, TYPE_NONE, 2, "Es bevorzugt feuchte Orte. Am Tag sitzt es regungslos im Schatten des Waldes. Von seinem Kopf sondert es einen giftigen Puder ab." },  // 285 grass
+  { "BRELOOM", 0, 0, R_EVO, 0x3C49, 60, 130, 80, 60, 60, 70, TYPE_GRASS, TYPE_FIGHTING, 2, "Seine kurzen Arme dehnen sich aus, wenn es zuschlaegt. Seine Technik aehnelt der von Profi-Boxern." },  // 286 grass/fighting
+  { "SLAKOTH", 288, 18, R_COMUN, 0x8C4D, 60, 60, 60, 35, 35, 30, TYPE_NORMAL, TYPE_NONE, 0, "Allein bei Bummelz' Anblick werden Gegner von Traegheit gepackt und schlummern alsbald ein." },  // 287 normal
+  { "VIGOROTH", 289, 36, R_EVO, 0x8C4D, 80, 80, 80, 55, 55, 90, TYPE_NORMAL, TYPE_NONE, 0, "Sein Puls ist konstant so hoch, dass sein Blut immer in Wallung ist und es keine Sekunde stillhalten kann." },  // 288 normal
+  { "SLAKING", 0, 0, R_EVO, 0x8C4D, 150, 160, 100, 95, 65, 100, TYPE_NORMAL, TYPE_NONE, 0, "Das faulste Pokemon der Welt. Es bewegt sich nur, wenn alles Essbare in Reichweite verputzt ist." },  // 289 normal
+  { "NINCADA", 291, 20, R_COMUN, 0x7CC4, 31, 45, 90, 30, 30, 40, TYPE_BUG, TYPE_GROUND, 2, "Da es fast sein gesamtes Leben unter der Erde verbracht hat, ist es nahezu blind. Es setzt daher als Augenersatz seine Fuehler ein." },  // 290 bug/ground
+  { "NINJASK", 0, 0, R_EVO, 0x7CC4, 61, 90, 45, 50, 50, 160, TYPE_BUG, TYPE_FLYING, 2, "Sein Gesang erzeugt unausweichlich Kopfweh. Es bewegt sich so schnell, dass es beinah unsichtbar zu sein scheint." },  // 291 bug/flying
+  { "SHEDINJA", 0, 0, R_EVO, 0x7CC4, 1, 90, 45, 30, 30, 40, TYPE_BUG, TYPE_GHOST, 2, "Ein weggeworfener Kaeferpanzer, der zum Leben erwachte. Schaut man hinein, stiehlt es einem die Seele." },  // 292 bug/ghost
+  { "WHISMUR", 294, 20, R_COMUN, 0x8C4D, 64, 51, 23, 51, 23, 28, TYPE_NORMAL, TYPE_NONE, 0, "Normalerweise murmelt es, aber bei Gefahr beginnt es laut zu schreien. Es hoert auf zu schreien, wenn seine Ohrmuscheln bedeckt werden." },  // 293 normal
+  { "LOUDRED", 295, 40, R_EVO, 0x8C4D, 84, 71, 43, 71, 43, 48, TYPE_NORMAL, TYPE_NONE, 0, "Es atmet tief ein und nutzt seine Bauchmuskeln, um die Luft in einem gewaltigen Schrei auszustossen." },  // 294 normal
+  { "EXPLOUD", 0, 0, R_EVO, 0x8C4D, 104, 91, 63, 91, 73, 68, TYPE_NORMAL, TYPE_NONE, 0, "Sein Heulen hoert man in 10 km Entfernung. Es gibt alle Arten von Geraeuschen von sich." },  // 295 normal
+  { "MAKUHITA", 297, 24, R_COMUN, 0xA2A5, 72, 60, 30, 20, 30, 25, TYPE_FIGHTING, TYPE_NONE, 0, "Indem es wieder und wieder Baeume rammt, erhaelt es einen zaehen Koerper und einen stahlharten Willen." },  // 296 fighting
+  { "HARIYAMA", 0, 0, R_EVO, 0xA2A5, 144, 120, 60, 40, 60, 50, TYPE_FIGHTING, TYPE_NONE, 0, "Es stampft auf den Boden, um Energie zu generieren. Ein einziger Armschlag reicht aus, um einen 10 t schweren LKW durch die Luft zu wirbeln." },  // 297 fighting
+  { "AZURILL", 0, 0, R_COMUN, 0x8C4D, 50, 20, 40, 20, 40, 20, TYPE_NORMAL, TYPE_FAIRY, 0, "Dieses Pokemon lebt am Wasser. An Land bewegt es sich schnell, indem es auf seinem grossen Schweif huepft." },  // 298 normal/fairy
+  { "NOSEPASS", 476, 30, R_COMUN, 0x9407, 30, 45, 135, 45, 90, 30, TYPE_ROCK, TYPE_NONE, 4, "Es schuetzt sich mit Objekten aus Eisen, die es mithilfe seiner immer nach Norden zeigenden magnetischen Nase anzieht." },  // 299 rock
+  { "SKITTY", 0, 0, R_COMUN, 0x8C4D, 50, 45, 45, 35, 35, 50, TYPE_NORMAL, TYPE_NONE, 0, "Es muss Dinge, die sich bewegen, einfach jagen. Es rennt oft im Kreis und jagt seinen eigenen Schweif." },  // 300 normal
+  { "DELCATTY", 0, 0, R_EVO, 0x8C4D, 70, 65, 65, 55, 55, 90, TYPE_NORMAL, TYPE_NONE, 0, "Hasst schmutzige Orte. Behagt ihm ein Platz, faengt es sofort an, sein glaenzendes Fell zu pflegen." },  // 301 normal
+  { "SABLEYE", 0, 0, R_COMUN, 0x5A6E, 50, 75, 75, 65, 65, 50, TYPE_DARK, TYPE_GHOST, 0, "Es versteckt sich im Dunkeln von Hoehlen. Seine Augen sind Edelsteine." },  // 302 dark/ghost
+  { "MAWILE", 0, 0, R_COMUN, 0x7C73, 50, 85, 85, 55, 55, 50, TYPE_STEEL, TYPE_FAIRY, 4, "Mit seinem friedlichen Gesicht bringt es Gegner zur Selbstgefaelligkeit und beisst anschliessend mit seinem riesigen Kiefer gnadenlos zu." },  // 303 steel/fairy
+  { "ARON", 305, 32, R_COMUN, 0x7C73, 50, 70, 100, 40, 40, 30, TYPE_STEEL, TYPE_ROCK, 4, "Normalerweise lebt es in dunklen Bergen. Ist es hungrig, frisst es auch Eisenbahnschienen und Autos." },  // 304 steel/rock
+  { "LAIRON", 306, 42, R_EVO, 0x7C73, 60, 90, 140, 50, 50, 40, TYPE_STEEL, TYPE_ROCK, 4, "Ist verrueckt nach Eisenerz. Bei Revierkaempfen stossen Stollrak einander mit ihren Stahlkoerpern." },  // 305 steel/rock
+  { "AGGRON", 0, 0, R_EVO, 0x7C73, 70, 110, 180, 60, 60, 50, TYPE_STEEL, TYPE_ROCK, 4, "Ihre Reviere erstrecken sich ueber ganze Gebirge. Stolloss, die mit Narben uebersaet sind, sollte man besser meiden." },  // 306 steel/rock
+  { "MEDITITE", 308, 37, R_COMUN, 0xA2A5, 30, 40, 55, 40, 55, 60, TYPE_FIGHTING, TYPE_PSYCHIC, 0, "Trainiert tief in den Bergen. Erhoeht es seine spirituelle Kraft durch Meditation, kann es schweben." },  // 307 fighting/psychic
+  { "MEDICHAM", 0, 0, R_EVO, 0xA2A5, 60, 60, 75, 60, 75, 80, TYPE_FIGHTING, TYPE_PSYCHIC, 0, "Es weicht Attacken elegant taenzerisch aus, um anschliessend eine verheerende Attacke aus derselben Bewegung heraus zu lancieren." },  // 308 fighting/psychic
+  { "ELECTRIKE", 310, 26, R_COMUN, 0xBCA1, 40, 45, 40, 65, 40, 65, TYPE_ELECTRIC, TYPE_NONE, 0, "Die Elektrizitaet, die es im Fell speichert, nutzt es, um seine Muskeln zu stimulieren." },  // 309 electric
+  { "MANECTRIC", 0, 0, R_EVO, 0xBCA1, 70, 75, 60, 105, 60, 105, TYPE_ELECTRIC, TYPE_NONE, 0, "Es zeigt sich selten den Menschen. Man sagt, dass es sein Nest baut, wo der Blitz eingeschlagen hat." },  // 310 electric
+  { "PLUSLE", 0, 0, R_COMUN, 0xBCA1, 60, 50, 40, 85, 75, 95, TYPE_ELECTRIC, TYPE_NONE, 0, "Es feuert Freunde mit Pompons an, die aus Funken bestehen. Es holt sich Energie aus Telegrafenmasten." },  // 311 electric
+  { "MINUN", 0, 0, R_COMUN, 0xBCA1, 60, 40, 50, 75, 85, 95, TYPE_ELECTRIC, TYPE_NONE, 0, "Mit elektrischen Schlaegen regen Plusle und Minun den Blutkreislauf an und loesen so Verspannungen." },  // 312 electric
+  { "VOLBEAT", 0, 0, R_COMUN, 0x7CC4, 65, 73, 75, 47, 85, 85, TYPE_BUG, TYPE_NONE, 2, "Es kommuniziert mit anderen, indem es sein Hinterteil zum Leuchten bringt. Es liebt Illumises Duft." },  // 313 bug
+  { "ILLUMISE", 0, 0, R_COMUN, 0x7CC4, 65, 47, 75, 73, 85, 85, TYPE_BUG, TYPE_NONE, 2, "Sein suesser Duft leitet Volbeat an, ueber 200 verschiedene Lichtmuster an den Nachthimmel zu malen." },  // 314 bug
+  { "ROSELIA", 407, 30, R_EVO, 0x3C49, 50, 60, 45, 100, 80, 65, TYPE_GRASS, TYPE_POISON, 2, "Aus seinen Haenden verstroemt es jeweils ein anderes Gift. Je staerker Roselia duftet, desto gesuender ist es." },  // 315 grass/poison
+  { "GULPIN", 317, 26, R_COMUN, 0x8A73, 70, 43, 53, 43, 53, 40, TYPE_POISON, TYPE_NONE, 0, "Sein Koerper besteht fast nur aus Magen. Herz und Hirn sind winzig. Sein Magensaft verdaut alles." },  // 316 poison
+  { "SWALOT", 0, 0, R_EVO, 0x8A73, 100, 73, 83, 73, 83, 55, TYPE_POISON, TYPE_NONE, 0, "Es verschluckt alles in einem Stueck und sondert giftige Stoffe ab, mit denen es Gegner besprueht." },  // 317 poison
+  { "CARVANHA", 319, 30, R_COMUN, 0x4C98, 45, 90, 20, 65, 20, 65, TYPE_WATER, TYPE_DARK, 1, "Schwaerme von Kanivanha haben in Dschungelfluessen schon so manches Boot zerbissen und versenkt." },  // 318 water/dark
+  { "SHARPEDO", 0, 0, R_EVO, 0x4C98, 70, 120, 40, 95, 40, 95, TYPE_WATER, TYPE_DARK, 1, "Seine Zaehne durchdringen sogar Eisen. Es schwimmt mit 120 km/h und wird \"Tyrann des Meeres\" genannt." },  // 319 water/dark
+  { "WAILMER", 321, 40, R_COMUN, 0x4C98, 130, 70, 35, 70, 35, 60, TYPE_WATER, TYPE_NONE, 1, "Es huepft gerne wie ein Ball herum. Je mehr Meerwasser es trinkt, desto hoeher kann es springen." },  // 320 water
+  { "WAILORD", 0, 0, R_EVO, 0x4C98, 170, 90, 45, 90, 45, 60, TYPE_WATER, TYPE_NONE, 1, "Springt es mit seinem gewaltigen Koerper von einer Welle ab, kann es Gegner allein mit der Wucht des Aufpralls besiegen." },  // 321 water
+  { "NUMEL", 323, 33, R_COMUN, 0xEA87, 60, 60, 40, 65, 45, 35, TYPE_FIRE, TYPE_GROUND, 3, "In seinem Ruecken speichert es sehr heisses Magma. Regnet es, kuehlt das Magma ab und es wird langsamer." },  // 322 fire/ground
+  { "CAMERUPT", 0, 0, R_EVO, 0xEA87, 70, 100, 70, 105, 75, 40, TYPE_FIRE, TYPE_GROUND, 3, "Seine Vulkanhoecker brechen nur alle zehn Jahre aus oder wenn es richtig wuetend ist." },  // 323 fire/ground
+  { "TORKOAL", 0, 0, R_COMUN, 0xEA87, 70, 85, 140, 85, 70, 20, TYPE_FIRE, TYPE_NONE, 3, "Grosse Gruppen Qurtel siedeln sich in stillgelegten Bergwerken an und graben dort emsig nach Kohle." },  // 324 fire
+  { "SPOINK", 326, 32, R_COMUN, 0xD28F, 60, 25, 35, 70, 80, 60, TYPE_PSYCHIC, TYPE_NONE, 0, "Es huepft bestaendig umher, wobei es seinen Schweif als Feder verwendet. Nur so bleibt sein Herz aktiv." },  // 325 psychic
+  { "GRUMPIG", 0, 0, R_EVO, 0xD28F, 80, 45, 65, 90, 110, 80, TYPE_PSYCHIC, TYPE_NONE, 0, "Mit schwarzen Perlen verstaerkt es seine Psycho-Kraefte. Mit einem Tanz kontrolliert es seine Gegner." },  // 326 psychic
+  { "SPINDA", 0, 0, R_RARO, 0x8C4D, 60, 60, 60, 60, 60, 60, TYPE_NORMAL, TYPE_NONE, 0, "Das Muster eines Pandir ist wie ein Fingerabdruck. Sein Taumeln senkt die gegnerische Zielsicherheit." },  // 327 normal
+  { "TRAPINCH", 329, 35, R_COMUN, 0xB447, 45, 100, 45, 45, 45, 10, TYPE_GROUND, TYPE_NONE, 4, "Es lebt in trockenen Wuestengebieten, wo es eine Trichterfalle baut und seelenruhig darauf wartet, dass Beute hinabrutscht." },  // 328 ground
+  { "VIBRAVA", 330, 45, R_EVO, 0xB447, 50, 70, 50, 50, 50, 70, TYPE_GROUND, TYPE_DRAGON, 4, "Die Schallwellen, die es durch eine hohe Fluegelschlagfrequenz erzeugt, verursachen heftige Kopfschmerzen." },  // 329 ground/dragon
+  { "FLYGON", 0, 0, R_EVO, 0xB447, 80, 100, 80, 80, 80, 100, TYPE_GROUND, TYPE_DRAGON, 4, "Es versteckt sich, indem es mit seinen Fluegeln Wuestensand aufwirbelt. Rote Augenlider schuetzen es vor dem Sand." },  // 330 ground/dragon
+  { "CACNEA", 332, 32, R_COMUN, 0x3C49, 50, 85, 40, 85, 40, 35, TYPE_GRASS, TYPE_NONE, 2, "Es waechst an trockenen Orten mit wenig Niederschlag. Nur einmal im Jahr bildet es eine gelbe Bluete." },  // 331 grass
+  { "CACTURNE", 0, 0, R_EVO, 0x3C49, 70, 115, 60, 115, 60, 55, TYPE_GRASS, TYPE_DARK, 2, "Ein nachtaktives Pokemon, das Beute sucht, die durch die Tageshitze der Wueste bereits erschoepft ist." },  // 332 grass/dark
+  { "SWABLU", 334, 35, R_COMUN, 0x8C4D, 45, 40, 60, 40, 75, 50, TYPE_NORMAL, TYPE_FLYING, 0, "Aus irgendeinem Grund setzt es sich gerne auf den Kopf von Menschen und tut so, als sei es ein Hut." },  // 333 normal/flying
+  { "ALTARIA", 0, 0, R_EVO, 0x5A98, 75, 70, 90, 70, 105, 80, TYPE_DRAGON, TYPE_FLYING, 1, "Es schwebt gemaechlich durch den Himmel. Sein wunderschoenes Summen gibt einem das Gefuehl zu traeumen." },  // 334 dragon/flying
+  { "ZANGOOSE", 0, 0, R_COMUN, 0x8C4D, 73, 115, 60, 60, 60, 90, TYPE_NORMAL, TYPE_NONE, 0, "Seit Generationen ist es mit Vipitis verfeindet. Seine scharfen Klauen sind seine staerksten Waffen." },  // 335 normal
+  { "SEVIPER", 0, 0, R_COMUN, 0x8A73, 73, 100, 60, 100, 60, 65, TYPE_POISON, TYPE_NONE, 0, "Die flinken Angriffe von Sengo kontert es mit seinem messerscharfen Schweif, aus dem Gift austritt." },  // 336 poison
+  { "LUNATONE", 0, 0, R_COMUN, 0x9407, 90, 55, 65, 95, 85, 70, TYPE_ROCK, TYPE_PSYCHIC, 4, "Da es in Vollmondnaechten aktiv wird, sagt man ihm nach, mit den Mondphasen in Verbindung zu stehen." },  // 337 rock/psychic
+  { "SOLROCK", 0, 0, R_COMUN, 0x9407, 90, 95, 85, 55, 65, 70, TYPE_ROCK, TYPE_PSYCHIC, 4, "Da es seine Energie aus Sonnenlicht gewinnt, ist es tagsueber am staerksten. Wenn es sich dreht, leuchtet es." },  // 338 rock/psychic
+  { "BARBOACH", 340, 30, R_COMUN, 0x4C98, 50, 48, 43, 46, 41, 60, TYPE_WATER, TYPE_GROUND, 1, "Es bedeckt seinen Koerper mit einer schleimigen Substanz und kann sich so aus Umklammerungen winden." },  // 339 water/ground
+  { "WHISCASH", 0, 0, R_EVO, 0x4C98, 110, 78, 73, 76, 71, 60, TYPE_WATER, TYPE_GROUND, 1, "Sein Revier hat es im Sumpfland. Naehert sich ein Feind, zappelt es wie wild und erzeugt so Erdbeben." },  // 340 water/ground
+  { "CORPHISH", 342, 30, R_COMUN, 0x4C98, 43, 80, 65, 50, 35, 35, TYPE_WATER, TYPE_NONE, 1, "Egal, wie schmutzig der Fluss ist, in dem sie leben, sie passen sich daran an und vermehren sich. Sie sind hart im Nehmen." },  // 341 water
+  { "CRAWDAUNT", 0, 0, R_EVO, 0x4C98, 63, 120, 85, 90, 55, 55, TYPE_WATER, TYPE_DARK, 1, "Dieser Grobian ergreift andere Pokemon mit seinen Scheren und wirft sie aus seinem Teich." },  // 342 water/dark
+  { "BALTOY", 344, 36, R_COMUN, 0xB447, 40, 40, 55, 40, 70, 55, TYPE_GROUND, TYPE_PSYCHIC, 4, "Es bewegt sich, indem es auf seinem Fuss kreiselt. Vereinzelt sieht man Puppance, die kopfueber kreiseln." },  // 343 ground/psychic
+  { "CLAYDOL", 0, 0, R_EVO, 0xB447, 60, 70, 105, 70, 120, 75, TYPE_GROUND, TYPE_PSYCHIC, 4, "Eine antike Lehmstatue, die durch ein mysterioeses Licht zum Leben erwacht ist." },  // 344 ground/psychic
+  { "LILEEP", 346, 40, R_COMUN, 0x9407, 66, 41, 77, 61, 87, 23, TYPE_ROCK, TYPE_GRASS, 4, "Vor 100 Millionen Jahren starb es aus. Es faengt seine Beute mit als Bluete getarnten Tentakeln." },  // 345 rock/grass
+  { "CRADILY", 0, 0, R_EVO, 0x9407, 86, 81, 97, 81, 107, 43, TYPE_ROCK, TYPE_GRASS, 4, "Es lebt in seichten Stellen warmer Meere. Bei Ebbe sucht es im Sand nach Beute." },  // 346 rock/grass
+  { "ANORITH", 348, 40, R_COMUN, 0x9407, 45, 95, 50, 40, 50, 75, TYPE_ROCK, TYPE_BUG, 4, "Es ist eine Art Vorfahre der Pokemon. Mit seinen erweiterten Scheren geht es zwischen den Felsen am Meeresgrund auf Beutefang." },  // 347 rock/bug
+  { "ARMALDO", 0, 0, R_EVO, 0x9407, 75, 125, 100, 70, 80, 45, TYPE_ROCK, TYPE_BUG, 4, "Es spiesst die Beute mit seinen Scheren auf, ehe es sie verspeist. Den Koerper umgibt ein robuster Panzer." },  // 348 rock/bug
+  { "FEEBAS", 0, 0, R_RARO, 0x4C98, 20, 15, 20, 10, 55, 80, TYPE_WATER, TYPE_NONE, 1, "Es frisst einfach alles und kann daher auch in verschmutzter Umgebung leben. Niemand beachtet es." },  // 349 water
+  { "MILOTIC", 0, 0, R_EVO, 0x4C98, 95, 60, 79, 100, 125, 81, TYPE_WATER, TYPE_NONE, 1, "Milotic ist atemberaubend schoen. Man sagt, dass diejenigen, die es sehen, vergessen zu kaempfen." },  // 350 water
+  { "CASTFORM", 0, 0, R_RARO, 0x8C4D, 70, 70, 70, 70, 70, 70, TYPE_NORMAL, TYPE_NONE, 0, "Formeo kann seine Gestalt aendern. Seine Zellen reagieren auf Temperaturschwankungen und Feuchtigkeit." },  // 351 normal
+  { "KECLEON", 0, 0, R_COMUN, 0x8C4D, 60, 90, 70, 60, 120, 40, TYPE_NORMAL, TYPE_NONE, 0, "Es kann nach Belieben seine Farbe aendern. Nur das gezackte Muster auf seinem Bauch bleibt gleich." },  // 352 normal
+  { "SHUPPET", 354, 37, R_COMUN, 0x6AD3, 44, 75, 35, 63, 33, 45, TYPE_GHOST, TYPE_NONE, 0, "Man sagt, durch sein Horn ernaehre es sich von Rachsucht und Neid. Erst nachts wird es richtig aktiv." },  // 353 ghost
+  { "BANETTE", 0, 0, R_EVO, 0x6AD3, 64, 115, 65, 83, 63, 65, TYPE_GHOST, TYPE_NONE, 0, "Dieses Pokemon war eine Puppe, die weggeworfen wurde. Es sucht nun das Kind, das dies getan hat." },  // 354 ghost
+  { "DUSKULL", 356, 37, R_COMUN, 0x6AD3, 20, 40, 90, 30, 90, 25, TYPE_GHOST, TYPE_NONE, 0, "Verbissen verfolgt es seine Beute ueberallhin. Doch sobald die Sonne aufgeht, ist die Jagd vorbei." },  // 355 ghost
+  { "DUSCLOPS", 477, 40, R_EVO, 0x6AD3, 40, 70, 130, 60, 130, 25, TYPE_GHOST, TYPE_NONE, 0, "Blickt man direkt in den Feuerball in seinem Inneren, wird einem die Seele ausgesaugt." },  // 356 ghost
+  { "TROPIUS", 0, 0, R_COMUN, 0x3C49, 99, 68, 83, 72, 87, 51, TYPE_GRASS, TYPE_FLYING, 2, "Es nutzt seine grossen Blaetter als Fluegel und verteilt die suessen Fruechte, die an seinem Hals wachsen, an Kinder." },  // 357 grass/flying
+  { "CHIMECHO", 0, 0, R_EVO, 0xD28F, 75, 50, 80, 95, 90, 65, TYPE_PSYCHIC, TYPE_NONE, 0, "Mit seinem Saugnapf haengt es sich an Aeste oder unter Vordaecher. Es kennt sieben verschiedene Schreie." },  // 358 psychic
+  { "ABSOL", 0, 0, R_RARO, 0x5A6E, 65, 130, 60, 75, 60, 75, TYPE_DARK, TYPE_NONE, 0, "Es spuert drohende Katastrophen und erscheint nur dann, wenn es andere vor der Gefahr warnen will." },  // 359 dark
+  { "WYNAUT", 0, 0, R_COMUN, 0xD28F, 95, 23, 48, 23, 48, 23, TYPE_PSYCHIC, TYPE_NONE, 0, "Es zieht normalerweise im Rudel umher. Zum Schlafen draengen sie sich ganz eng in einer Hoehle zusammen." },  // 360 psychic
+  { "SNORUNT", 362, 42, R_COMUN, 0x4DB8, 50, 50, 50, 50, 50, 50, TYPE_ICE, TYPE_NONE, 5, "Geruechten zufolge sammeln sich Schneppke unter riesigen Blaettern und leben dort friedlich zusammen." },  // 361 ice
+  { "GLALIE", 0, 0, R_EVO, 0x4DB8, 80, 80, 80, 80, 80, 80, TYPE_ICE, TYPE_NONE, 5, "Um sich zu schuetzen, umgibt es seinen Koerper mit einer Ruestung aus Eis." },  // 362 ice
+  { "SPHEAL", 364, 32, R_COMUN, 0x4DB8, 70, 40, 50, 55, 50, 25, TYPE_ICE, TYPE_WATER, 5, "Es ist noch kein guter Schwimmer und bewegt sich rollend schneller fort. Ist es froh, klatscht es mit seinen Flossen." },  // 363 ice/water
+  { "SEALEO", 365, 44, R_EVO, 0x4DB8, 90, 60, 70, 75, 70, 45, TYPE_ICE, TYPE_WATER, 5, "Die Nerven in seiner Nase sind sehr empfindlich. Sieht es etwas Neues, beruehrt es es zuerst mit der Nase." },  // 364 ice/water
+  { "WALREIN", 0, 0, R_EVO, 0x4DB8, 110, 80, 90, 95, 90, 65, TYPE_ICE, TYPE_WATER, 5, "Mit seinen Stosszaehnen bricht es durch Eis. Eine Speckschicht schuetzt es vor Kaelte und Angriffen." },  // 365 ice/water
+  { "CLAMPERL", 0, 0, R_COMUN, 0x4C98, 35, 64, 85, 74, 55, 32, TYPE_WATER, TYPE_NONE, 1, "Es entwickelt sich nur einmal im Leben, wobei es eine wundersame Perle erzeugt, die Psycho-Kraefte verstaerkt." },  // 366 water
+  { "HUNTAIL", 0, 0, R_EVO, 0x4C98, 55, 104, 105, 94, 75, 52, TYPE_WATER, TYPE_NONE, 1, "Es lebt tief im Meer, wo Sonnenlicht nie vordringt. Beim Beutefang leuchtet sein fischartiger Schwanz, um Beute anzulocken." },  // 367 water
+  { "GOREBYSS", 0, 0, R_EVO, 0x4C98, 55, 84, 105, 114, 75, 52, TYPE_WATER, TYPE_NONE, 1, "Es lebt auf dem Grund des Meeres. Im Fruehling wirkt die Farbe seines Koerpers viel kraeftiger." },  // 368 water
+  { "RELICANTH", 0, 0, R_RARO, 0x4C98, 100, 90, 130, 45, 65, 55, TYPE_WATER, TYPE_ROCK, 1, "100 Millionen Jahre lang blieb es unveraendert. Es wurde bei einer Tiefsee-Tauchexpedition entdeckt." },  // 369 water/rock
+  { "LUVDISC", 0, 0, R_COMUN, 0x4C98, 43, 30, 55, 40, 65, 97, TYPE_WATER, TYPE_NONE, 1, "Es lebt in warmen Meeren. Man sagt, dass Verliebte, die es sehen, mit ewiger Liebe gesegnet sind." },  // 370 water
+  { "BAGON", 372, 30, R_RARO, 0x5A98, 45, 75, 60, 40, 30, 50, TYPE_DRAGON, TYPE_NONE, 1, "Mit seinen robusten Nackenmuskeln und seinem stahlharten Kopf kann es sogar Felsen zertruemmern." },  // 371 dragon
+  { "SHELGON", 373, 50, R_EVO, 0x5A98, 65, 95, 100, 60, 50, 50, TYPE_DRAGON, TYPE_NONE, 1, "Die Zellen seines Panzers fingen an, sich zu veraendern. Er faellt ab, sobald sich das Pokemon entwickelt." },  // 372 dragon
+  { "SALAMENCE", 0, 0, R_EVO, 0x5A98, 95, 135, 80, 110, 80, 100, TYPE_DRAGON, TYPE_FLYING, 1, "Wenn es wuetend ist, geraet es ausser Kontrolle. Es zerstoert alles mit seinen Klauen und mit Feuer." },  // 373 dragon/flying
+  { "BELDUM", 375, 20, R_RARO, 0x7C73, 40, 55, 80, 35, 60, 30, TYPE_STEEL, TYPE_PSYCHIC, 4, "Es fliegt, indem es eine magnetische Kraft erzeugt, durch die es der natuerlichen Anziehungskraft der Erde trotzt." },  // 374 steel/psychic
+  { "METANG", 376, 45, R_EVO, 0x7C73, 60, 75, 100, 55, 80, 50, TYPE_STEEL, TYPE_PSYCHIC, 4, "Das Pokemon besteht aus zwei Tanhel. Es bekommt selbst dann keinen Kratzer, wenn ein Jet es streift." },  // 375 steel/psychic
+  { "METAGROSS", 0, 0, R_EVO, 0x7C73, 80, 135, 130, 95, 90, 70, TYPE_STEEL, TYPE_PSYCHIC, 4, "Dank seiner vier vernetzten Hirne kann es Gegner besser als ein Supercomputer mit komplizierten Formeln analysieren." },  // 376 steel/psychic
+  { "REGIROCK", 0, 0, R_LEGENDARIO, 0x9407, 80, 100, 200, 50, 100, 50, TYPE_ROCK, TYPE_NONE, 4, "Sein Koerper besteht aus Stein. Bricht im Kampf etwas heraus, wird es durch Stein wieder ersetzt." },  // 377 rock
+  { "REGICE", 0, 0, R_LEGENDARIO, 0x4DB8, 80, 50, 100, 100, 200, 50, TYPE_ICE, TYPE_NONE, 5, "Es heisst, es habe Jahrtausende lang im ewigen Eis geschlummert. Selbst Magma schmilzt es nicht." },  // 378 ice
+  { "REGISTEEL", 0, 0, R_LEGENDARIO, 0x7C73, 80, 75, 150, 75, 150, 50, TYPE_STEEL, TYPE_NONE, 4, "Im Laufe der Jahrtausende, die es unterirdisch lebte, wurde sein Koerper durch Druck und Waerme hart." },  // 379 steel
+  { "LATIAS", 0, 0, R_LEGENDARIO, 0x5A98, 80, 80, 90, 110, 130, 110, TYPE_DRAGON, TYPE_PSYCHIC, 1, "Es kommuniziert durch Telepathie. Sein Daunenkleid bricht das Licht, sodass es unsichtbar wird." },  // 380 dragon/psychic
+  { "LATIOS", 0, 0, R_LEGENDARIO, 0x5A98, 80, 90, 80, 130, 110, 110, TYPE_DRAGON, TYPE_PSYCHIC, 1, "Ein hochintelligentes Pokemon. Wenn es im Flug seine Fluegel nach hinten legt, ist es schneller als ein Jet." },  // 381 dragon/psychic
+  { "KYOGRE", 0, 0, R_LEGENDARIO, 0x4C98, 100, 100, 90, 150, 140, 90, TYPE_WATER, TYPE_NONE, 1, "Der Legende nach erschuf sein Regen das Meer. Es und Groudon lieferten sich einen langen Kampf." },  // 382 water
+  { "GROUDON", 0, 0, R_LEGENDARIO, 0xB447, 100, 150, 140, 100, 90, 90, TYPE_GROUND, TYPE_NONE, 4, "Sein Feuer erschuf einst das Land. Es und Kyogre lieferten sich einen langen Kampf." },  // 383 ground
+  { "RAYQUAZA", 0, 0, R_LEGENDARIO, 0x5A98, 105, 150, 90, 150, 90, 95, TYPE_DRAGON, TYPE_FLYING, 1, "Es lebt in der Ozonschicht hoch ueber den Wolken und kann vom Boden aus nicht gesehen werden." },  // 384 dragon/flying
+  { "JIRACHI", 0, 0, R_LEGENDARIO, 0x7C73, 100, 100, 100, 100, 100, 100, TYPE_STEEL, TYPE_PSYCHIC, 4, "Wenn Jirachi erwacht, erfuellt es die Wuensche, die man auf die Zettel an seinem Kopf geschrieben hat." },  // 385 steel/psychic
+  { "DEOXYS", 0, 0, R_LEGENDARIO, 0xD28F, 50, 150, 50, 150, 50, 150, TYPE_PSYCHIC, TYPE_NONE, 0, "Ein ausserirdischer Virus kam mit einem Meteor auf die Erde. Seine DNA mutierte. So entstand Deoxys." },  // 386 psychic
+  { "TURTWIG", 388, 18, R_COMUN, 0x3C49, 55, 68, 64, 45, 55, 31, TYPE_GRASS, TYPE_NONE, 2, "Im Sonnenlicht betreibt sein ganzer Koerper Photosynthese. Sein Panzer besteht aus hartem Lehm." },  // 387 grass
+  { "GROTLE", 389, 32, R_EVO, 0x3C49, 75, 89, 85, 55, 65, 36, TYPE_GRASS, TYPE_NONE, 2, "Es lebt in der Naehe von Wasser in Waeldern. Tagsueber verlaesst es diese, um ein Sonnenbad zu nehmen." },  // 388 grass
+  { "TORTERRA", 0, 0, R_EVO, 0x3C49, 95, 109, 105, 75, 85, 56, TYPE_GRASS, TYPE_GROUND, 2, "In alten Zeiten malten die Menschen sich aus, die Erde ruhe auf dem Ruecken eines riesigen Chelterrar." },  // 389 grass/ground
+  { "CHIMCHAR", 391, 14, R_COMUN, 0xEA87, 44, 58, 44, 58, 44, 61, TYPE_FIRE, TYPE_NONE, 3, "Das Feuer an seinem Hinterteil wird durch Gase im Bauch genaehrt. Selbst Regen loescht es nicht." },  // 390 fire
+  { "MONFERNO", 392, 36, R_EVO, 0xEA87, 64, 78, 52, 78, 52, 81, TYPE_FIRE, TYPE_FIGHTING, 3, "Es kontrolliert die Staerke des Feuers auf seinem Schweif geschickt, um Gegner auf Distanz zu halten." },  // 391 fire/fighting
+  { "INFERNAPE", 0, 0, R_EVO, 0xEA87, 76, 104, 71, 104, 71, 108, TYPE_FIRE, TYPE_FIGHTING, 3, "Seine Krone aus Feuer ist Zeichen seines feurigen Wesens. Niemand ist schneller im Kampf als dieses Pokemon." },  // 392 fire/fighting
+  { "PIPLUP", 394, 16, R_COMUN, 0x4C98, 53, 51, 53, 61, 56, 40, TYPE_WATER, TYPE_NONE, 1, "Einmischung kann es gar nicht leiden. Es ist bockig und fasst nur schwer Zutrauen zu seinem Trainer." },  // 393 water
+  { "PRINPLUP", 395, 36, R_EVO, 0x4C98, 64, 66, 68, 81, 76, 50, TYPE_WATER, TYPE_NONE, 1, "Es lebt allein, entfernt von anderen. Jedes von ihnen denkt, es sei das Bedeutendste unter ihnen." },  // 394 water
+  { "EMPOLEON", 0, 0, R_EVO, 0x4C98, 84, 86, 88, 111, 101, 60, TYPE_WATER, TYPE_STEEL, 1, "Es schwimmt so schnell wie ein Rennboot. Seine Fluegel haben scharfe Seiten und koennen Packeis schneiden." },  // 395 water/steel
+  { "STARLY", 397, 14, R_COMUN, 0x8C4D, 40, 55, 30, 30, 30, 60, TYPE_NORMAL, TYPE_FLYING, 0, "Ihr Schwarm ist stets gross. Obwohl es kleine Pokemon sind, schwingen sie ihre Fluegel mit enormer Kraft." },  // 396 normal/flying
+  { "STARAVIA", 398, 34, R_EVO, 0x8C4D, 55, 75, 50, 40, 40, 80, TYPE_NORMAL, TYPE_FLYING, 0, "Es neigt dazu, sich in grossen Gruppen zu bewegen. Zwischen ihnen kommt es zu heftigen Kaempfen." },  // 397 normal/flying
+  { "STARAPTOR", 0, 0, R_EVO, 0x8C4D, 85, 120, 70, 50, 60, 100, TYPE_NORMAL, TYPE_FLYING, 0, "Die Muskeln in seinen Fluegeln und Beinen sind stark. Es kann im Flug sogar ein anderes Pokemon tragen." },  // 398 normal/flying
+  { "BIDOOF", 400, 15, R_COMUN, 0x8C4D, 59, 45, 40, 35, 40, 31, TYPE_NORMAL, TYPE_NONE, 0, "Es hat Nerven wie Drahtseile, nichts kann es erschuettern. Es ist agiler und aktiver, als es scheint." },  // 399 normal
+  { "BIBAREL", 0, 0, R_EVO, 0x8C4D, 79, 85, 60, 55, 60, 71, TYPE_NORMAL, TYPE_WATER, 0, "Emsig durchbeisst es mit seinen scharfen Vorderzaehnen Wurzeln und Aeste und baut daraus sein Nest." },  // 400 normal/water
+  { "KRICKETOT", 402, 10, R_COMUN, 0x7CC4, 37, 25, 41, 25, 41, 25, TYPE_BUG, TYPE_NONE, 2, "Diese Pokemon unterhalten sich, indem sie ihre Antennen aneinanderschlagen. Der Ton ist ihr Kennzeichen." },  // 401 bug
+  { "KRICKETUNE", 0, 0, R_EVO, 0x7CC4, 77, 85, 51, 55, 51, 65, TYPE_BUG, TYPE_NONE, 2, "Wenn es ruft, verschraenkt es seine messerartigen Arme vor der Brust. Es komponiert aus dem Stegreif." },  // 402 bug
+  { "SHINX", 404, 15, R_COMUN, 0xBCA1, 45, 65, 34, 40, 34, 45, TYPE_ELECTRIC, TYPE_NONE, 0, "Es erzeugt Elektrizitaet durch das Strecken und Zusammenziehen seiner Muskeln. Bei Bedrohung glueht es." },  // 403 electric
+  { "LUXIO", 405, 30, R_EVO, 0xBCA1, 60, 85, 49, 60, 49, 60, TYPE_ELECTRIC, TYPE_NONE, 0, "Seine Krallen geben Elektrizitaet ab, die stark genug ist, jemanden bewusstlos zu machen." },  // 404 electric
+  { "LUXRAY", 0, 0, R_EVO, 0xBCA1, 80, 120, 79, 95, 79, 70, TYPE_ELECTRIC, TYPE_NONE, 0, "Leuchten seine Augen golden auf, kann es Beute, die sich versteckt, sehen. Es kann durch Waende sehen." },  // 405 electric
+  { "BUDEW", 0, 0, R_COMUN, 0x3C49, 40, 30, 35, 50, 70, 55, TYPE_GRASS, TYPE_POISON, 2, "Bei Sonnenlicht oeffnet es seine Knospe und gibt Pollen ab. Es lebt in der Naehe von sauberem Wasser." },  // 406 grass/poison
+  { "ROSERADE", 0, 0, R_EVO, 0x3C49, 60, 70, 65, 125, 105, 90, TYPE_GRASS, TYPE_POISON, 2, "Es lockt seine Beute mit suessem Duft an, um sie danach mit seinen dornigen Ranken zu peitschen oder zu wuergen." },  // 407 grass/poison
+  { "CRANIDOS", 409, 30, R_COMUN, 0x9407, 67, 125, 40, 30, 30, 58, TYPE_ROCK, TYPE_NONE, 4, "Es wurde aus einem ballartigen, eisernen Fossil geschaffen. Es schlaegt Beute mit einem Kopfstoss." },  // 408 rock
+  { "RAMPARDOS", 0, 0, R_EVO, 0x9407, 97, 165, 60, 65, 50, 58, TYPE_ROCK, TYPE_NONE, 4, "Sein dicker Schaedelknochen trotzt jedem Angriff. Gleichzeitig stoppt er jedoch sein Hirnwachstum." },  // 409 rock
+  { "SHIELDON", 411, 30, R_COMUN, 0x9407, 30, 42, 118, 42, 88, 30, TYPE_ROCK, TYPE_STEEL, 4, "Es reibt sein Gesicht an Baumstaemmen, um es zu polieren. Es ist leicht, es von hinten anzugreifen." },  // 410 rock/steel
+  { "BASTIODON", 0, 0, R_EVO, 0x9407, 60, 52, 168, 47, 138, 30, TYPE_ROCK, TYPE_STEEL, 4, "Stellen sie sich Seite an Seite, kann kein Gegner hindurchbrechen. So schuetzen sie auch ihre Jungen." },  // 411 rock/steel
+  { "BURMY", 413, 20, R_COMUN, 0x7CC4, 40, 29, 45, 29, 45, 36, TYPE_BUG, TYPE_NONE, 2, "Um sich vor dem eisigen Winterwind zu schuetzen, legt es sich unter einen Umhang aus Aesten und Laub." },  // 412 bug
+  { "WORMADAM", 0, 0, R_EVO, 0x7CC4, 60, 59, 85, 79, 105, 36, TYPE_BUG, TYPE_GRASS, 2, "Die Umgebung, in der es sich entwickelt, bestimmt sein Aussehen. Es formt seinen Koerper mithilfe der umliegenden Materialien." },  // 413 bug/grass
+  { "MOTHIM", 0, 0, R_EVO, 0x7CC4, 70, 94, 50, 94, 50, 66, TYPE_BUG, TYPE_FLYING, 2, "Es liebt Honig und stiehlt den Honig, der von Wadribie gesammelt wurde." },  // 414 bug/flying
+  { "COMBEE", 416, 21, R_COMUN, 0x7CC4, 30, 30, 42, 30, 42, 70, TYPE_BUG, TYPE_FLYING, 2, "Dieses Trio ist von Geburt an zusammen. Fleissig bringt es Bluetenhonig zu Honweisel." },  // 415 bug/flying
+  { "VESPIQUEN", 0, 0, R_EVO, 0x7CC4, 70, 80, 102, 80, 102, 40, TYPE_BUG, TYPE_FLYING, 2, "Es beherbergt Jung-Pokemon in seinem Rumpf, die es mithilfe von verschiedenen Pheromonen frei herumkommandieren kann." },  // 416 bug/flying
+  { "PACHIRISU", 0, 0, R_COMUN, 0xBCA1, 60, 45, 70, 45, 90, 95, TYPE_ELECTRIC, TYPE_NONE, 0, "Es bildet ein Fellknaeuel, der vor statischer Energie knistert. Es speichert die Energie in Baeumen." },  // 417 electric
+  { "BUIZEL", 419, 26, R_COMUN, 0x4C98, 55, 65, 35, 60, 30, 85, TYPE_WATER, TYPE_NONE, 1, "Es schwimmt, indem es seine beiden Schweife wie eine Schiffsschraube rotieren laesst." },  // 418 water
+  { "FLOATZEL", 0, 0, R_EVO, 0x4C98, 85, 105, 55, 85, 50, 115, TYPE_WATER, TYPE_NONE, 1, "Es treibt mithilfe einer Art Rettungsring auf dem Wasser und hilft dem, der zu ertrinken droht." },  // 419 water
+  { "CHERUBI", 421, 25, R_COMUN, 0x3C49, 45, 35, 45, 62, 53, 35, TYPE_GRASS, TYPE_NONE, 2, "Sonnenlicht faerbt es rot. Verliert das kleine Baellchen Naehrstoffe, welkt es und die Entwicklung beginnt." },  // 420 grass
+  { "CHERRIM", 0, 0, R_EVO, 0x3C49, 70, 60, 70, 87, 78, 85, TYPE_GRASS, TYPE_NONE, 2, "Bei Sonnenschein entfaltet seine Knospe ihre Bluetenblaetter und es springt lebhaft umher." },  // 421 grass
+  { "SHELLOS", 423, 30, R_COMUN, 0x4C98, 76, 48, 48, 57, 62, 34, TYPE_WATER, TYPE_NONE, 1, "Nicht seinen Koerper zusammendruecken, sonst sickert eine seltsame lilafarbene Fluessigkeit aus!" },  // 422 water
+  { "GASTRODON", 0, 0, R_EVO, 0x4C98, 111, 83, 68, 92, 82, 39, TYPE_WATER, TYPE_GROUND, 1, "Wird es von einem natuerlichen Feind angegriffen, flieht es, indem es ein lila Sekret ueber die Haut ausstoesst." },  // 423 water/ground
+  { "AMBIPOM", 0, 0, R_EVO, 0x8C4D, 75, 100, 66, 60, 66, 115, TYPE_NORMAL, TYPE_NONE, 0, "Sie leben in grossen Kolonien und verbinden ihre Schweife in Freundschaft." },  // 424 normal
+  { "DRIFLOON", 426, 28, R_COMUN, 0x6AD3, 90, 50, 34, 60, 44, 70, TYPE_GHOST, TYPE_FLYING, 0, "Ein Pokemon, entstanden aus den Gefuehlen von Menschen und Pokemon. Es mag feuchte Jahreszeiten." },  // 425 ghost/flying
+  { "DRIFBLIM", 0, 0, R_EVO, 0x6AD3, 150, 80, 44, 90, 54, 80, TYPE_GHOST, TYPE_FLYING, 0, "Es traegt Menschen und Pokemon im Flug. Da es sich aber nur vom Wind tragen laesst, weiss man nie, wo es hingeht." },  // 426 ghost/flying
+  { "BUNEARY", 0, 0, R_COMUN, 0x8C4D, 55, 66, 44, 44, 56, 85, TYPE_NORMAL, TYPE_NONE, 0, "Seine Ohren sind immer aufgerollt. Mit ihnen kann es selbst grosse Felsbrocken zertruemmern." },  // 427 normal
+  { "LOPUNNY", 0, 0, R_EVO, 0x8C4D, 65, 76, 84, 54, 96, 105, TYPE_NORMAL, TYPE_NONE, 0, "Es ist extrem vorsichtig. Wenn es Gefahr wittert, macht es sich mit flinken Spruengen aus dem Staub." },  // 428 normal
+  { "MISMAGIUS", 0, 0, R_EVO, 0x6AD3, 60, 60, 60, 105, 105, 105, TYPE_GHOST, TYPE_NONE, 0, "Es spricht Beschwoerungen. Viele loesen Schmerzen aus, manche aber bringen Glueck." },  // 429 ghost
+  { "HONCHKROW", 0, 0, R_EVO, 0x5A6E, 100, 125, 52, 105, 52, 71, TYPE_DARK, TYPE_FLYING, 0, "Sein tiefer Ruf lockt andere Kramurx herbei. Man nennt es daher \"Beschwoerer der Nacht\"." },  // 430 dark/flying
+  { "GLAMEOW", 432, 38, R_COMUN, 0x8C4D, 49, 55, 42, 42, 37, 85, TYPE_NORMAL, TYPE_NONE, 0, "Es schlaegt mit Krallen zu oder schnurrt, je nachdem, ob es gerade wuetend oder zutraulich ist." },  // 431 normal
+  { "PURUGLY", 0, 0, R_EVO, 0x8C4D, 71, 82, 64, 64, 59, 112, TYPE_NORMAL, TYPE_NONE, 0, "Behagt ihm die Behausung eines anderen Pokemon, bleibt Shnurgarst einfach da und nistet sich dort ein." },  // 432 normal
+  { "CHINGLING", 0, 0, R_COMUN, 0xD28F, 45, 30, 50, 65, 50, 45, TYPE_PSYCHIC, TYPE_NONE, 0, "Jedes Mal, wenn es huepft, entsteht ein klingender Laut. Seine hohen Schreie machen die Gegner taub." },  // 433 psychic
+  { "STUNKY", 435, 34, R_COMUN, 0x8A73, 63, 63, 47, 41, 41, 74, TYPE_POISON, TYPE_DARK, 0, "Versprueht eine Substanz aus seinem Hinterleib, die in einem grossen Radius andere Pokemon fernhaelt." },  // 434 poison/dark
+  { "SKUNTANK", 0, 0, R_EVO, 0x8A73, 103, 93, 67, 71, 61, 84, TYPE_POISON, TYPE_DARK, 0, "Ueber seine Schweifspitze versprueht es eine uebelriechende Substanz. Die Reichweite liegt bei ueber 50 m." },  // 435 poison/dark
+  { "BRONZOR", 437, 33, R_COMUN, 0x7C73, 57, 24, 86, 24, 86, 23, TYPE_STEEL, TYPE_PSYCHIC, 4, "Frueher glaubten die Menschen, dem Muster auf seinem Ruecken wohne eine mysterioese Kraft inne." },  // 436 steel/psychic
+  { "BRONZONG", 0, 0, R_EVO, 0x7C73, 67, 89, 116, 79, 116, 33, TYPE_STEEL, TYPE_PSYCHIC, 4, "Man verehrt sie schon seit Urzeiten als Regenmacher. Manchmal findet man eines von ihnen im Boden vergraben." },  // 437 steel/psychic
+  { "BONSLY", 185, 30, R_COMUN, 0x9407, 50, 80, 95, 10, 45, 10, TYPE_ROCK, TYPE_NONE, 4, "Es bevorzugt trockene Gebiete. Es gibt ueber die Augen Wasser ab, um den Wasserhaushalt zu regulieren." },  // 438 rock
+  { "MIME JR.", 122, 30, R_COMUN, 0xD28F, 20, 25, 45, 70, 90, 60, TYPE_PSYCHIC, TYPE_FAIRY, 0, "Es ahmt seinen Gegner nach. Waehrend dieser noch verbluefft dreinsieht, macht es sich aus dem Staub." },  // 439 psychic/fairy
+  { "HAPPINY", 113, 30, R_COMUN, 0x8C4D, 100, 5, 5, 15, 65, 30, TYPE_NORMAL, TYPE_NONE, 0, "In seinem Beutel traegt es einen runden, eifoermigen Stein, den es Freunden gibt." },  // 440 normal
+  { "CHATOT", 0, 0, R_COMUN, 0x8C4D, 76, 65, 45, 92, 42, 91, TYPE_NORMAL, TYPE_FLYING, 0, "Es versucht Attacken zu entgehen, indem es den Ruf des Gegners nachahmt und einen Artgenossen mimt." },  // 441 normal/flying
+  { "SPIRITOMB", 0, 0, R_RARO, 0x6AD3, 50, 92, 108, 92, 108, 35, TYPE_GHOST, TYPE_DARK, 0, "Ein Pokemon, das aus 108 Geistern besteht. Es ist an einen Spalt in einem mysterioesen Stein gebunden." },  // 442 ghost/dark
+  { "GIBLE", 444, 24, R_COMUN, 0x5A98, 58, 70, 45, 40, 45, 42, TYPE_DRAGON, TYPE_GROUND, 1, "Es lebt in Hoehlen, die Erdwaerme ausgesetzt sind. Es springt heraus und beisst, wenn Feinde sich naehern." },  // 443 dragon/ground
+  { "GABITE", 445, 48, R_EVO, 0x5A98, 68, 90, 65, 50, 55, 82, TYPE_DRAGON, TYPE_GROUND, 1, "Es liebt funkelnde Dinge und sucht nach Schaetzen in Hoehlen, die es dann in seinem Nest hortet." },  // 444 dragon/ground
+  { "GARCHOMP", 0, 0, R_EVO, 0x5A98, 108, 130, 95, 80, 85, 102, TYPE_DRAGON, TYPE_GROUND, 1, "Spannt es seinen Koerper und seine Fluegel, sieht es aus wie ein Jet. Es fliegt mit Schallgeschwindigkeit." },  // 445 dragon/ground
+  { "MUNCHLAX", 0, 0, R_COMUN, 0x8C4D, 135, 85, 40, 40, 85, 5, TYPE_NORMAL, TYPE_NONE, 0, "Unter seinem langen Fell versteckt es Nahrung. Aber es vergisst, dass es sie dort versteckt hat." },  // 446 normal
+  { "RIOLU", 0, 0, R_COMUN, 0xA2A5, 40, 70, 40, 35, 40, 60, TYPE_FIGHTING, TYPE_NONE, 0, "Es kommuniziert mit seinen Artgenossen ueber Wellen, die je nach Gefuehlslage eine andere Form annehmen." },  // 447 fighting
+  { "LUCARIO", 0, 0, R_EVO, 0xA2A5, 70, 110, 70, 115, 70, 90, TYPE_FIGHTING, TYPE_STEEL, 0, "Es nimmt die Aura seines Gegners wahr. So kann es dessen Gedanken und Bewegungen erkennen." },  // 448 fighting/steel
+  { "HIPPOPOTAS", 450, 34, R_COMUN, 0xB447, 68, 72, 78, 38, 42, 32, TYPE_GROUND, TYPE_NONE, 4, "Es lebt in ausgetrockneten Gebieten. Statt zu schwitzen, sondert sein Koerper Sand ab." },  // 449 ground
+  { "HIPPOWDON", 0, 0, R_EVO, 0xB447, 108, 112, 118, 68, 72, 47, TYPE_GROUND, TYPE_NONE, 4, "Das weit aufgerissene Maul demonstriert seine Staerke. Es attackiert mit gebuendeltem Sand." },  // 450 ground
+  { "SKORUPI", 452, 40, R_COMUN, 0x8A73, 40, 50, 90, 30, 55, 65, TYPE_POISON, TYPE_BUG, 0, "Es greift seine Beute mit den Krallen an seinem Schweif und vergiftet sie. Dann wartet es ab..." },  // 451 poison/bug
+  { "DRAPION", 0, 0, R_EVO, 0x8A73, 70, 90, 110, 60, 75, 95, TYPE_POISON, TYPE_DARK, 0, "Es bringt seine Gegner mit starkem Gift zur Strecke, obwohl es weiss, dass es stark genug ist, um sie zu zerfetzen." },  // 452 poison/dark
+  { "CROAGUNK", 454, 37, R_COMUN, 0x8A73, 48, 61, 40, 61, 40, 50, TYPE_POISON, TYPE_FIGHTING, 0, "In seinen Backen sammelt sich Gift. Es versucht, Beute zu ueberraschen und mit Giftfingern zu schnappen." },  // 453 poison/fighting
+  { "TOXICROAK", 0, 0, R_EVO, 0x8A73, 83, 106, 65, 86, 65, 85, TYPE_POISON, TYPE_FIGHTING, 0, "Verfuegt ueber einen Giftsack an seiner Kehle. Quakt es, schaeumt das Gift und wird so noch staerker." },  // 454 poison/fighting
+  { "CARNIVINE", 0, 0, R_COMUN, 0x3C49, 74, 100, 72, 90, 72, 46, TYPE_GRASS, TYPE_NONE, 2, "Sein suesslich riechender Speichel zieht Beute an, die es frisst. Es braucht einen Tag, sie zu fressen." },  // 455 grass
+  { "FINNEON", 457, 31, R_COMUN, 0x4C98, 49, 49, 56, 49, 61, 66, TYPE_WATER, TYPE_NONE, 1, "Die Linie an seiner Seite kann Sonnenlicht speichern. Nachts leuchtet es sehr intensiv." },  // 456 water
+  { "LUMINEON", 0, 0, R_EVO, 0x4C98, 69, 69, 76, 69, 86, 91, TYPE_WATER, TYPE_NONE, 1, "Es lebt tief auf dem Meeresboden. Das blinkende Muster auf seinen vier Rueckenflossen zieht Beute an." },  // 457 water
+  { "MANTYKE", 226, 30, R_COMUN, 0x4C98, 45, 20, 50, 60, 120, 50, TYPE_WATER, TYPE_FLYING, 1, "Ihre Ruecken sind je nach Region unterschiedlich gemustert. Oft mischen sie sich unter Remoraid-Schwaerme." },  // 458 water/flying
+  { "SNOVER", 460, 40, R_COMUN, 0x3C49, 60, 62, 50, 62, 60, 40, TYPE_GRASS, TYPE_ICE, 2, "Im Winter steigt es bis zum Fuss der Berge herab. Im Fruehjahr kehrt es auf den Gipfel zurueck." },  // 459 grass/ice
+  { "ABOMASNOW", 0, 0, R_EVO, 0x3C49, 90, 92, 75, 92, 85, 60, TYPE_GRASS, TYPE_ICE, 2, "Es bedeckt weite Gebiete mit Schnee, indem es Blizzards ausloest. Man nennt es \"Das Eismonster\"." },  // 460 grass/ice
+  { "WEAVILE", 0, 0, R_EVO, 0x5A6E, 70, 120, 65, 45, 85, 125, TYPE_DARK, TYPE_ICE, 0, "Es lebt in schneereichen Gebieten. Snibunna senden einander Signale, indem sie Zeichen in Rinde ritzen." },  // 461 dark/ice
+  { "MAGNEZONE", 0, 0, R_EVO, 0xBCA1, 70, 70, 115, 130, 90, 60, TYPE_ELECTRIC, TYPE_STEEL, 0, "Gelegentlich erzeugen sie so starke Magnetfelder, dass sie sich gegenseitig anziehen und einander immobilisieren." },  // 462 electric/steel
+  { "LICKILICKY", 0, 0, R_EVO, 0x8C4D, 110, 85, 95, 80, 95, 50, TYPE_NORMAL, TYPE_NONE, 0, "Es umklammert Dinge mit seiner dehnbaren Zunge. Kommt man ihm zu nahe, wird man eingespeichelt." },  // 463 normal
+  { "RHYPERIOR", 0, 0, R_EVO, 0xB447, 115, 140, 130, 55, 55, 40, TYPE_GROUND, TYPE_ROCK, 4, "Es feuert Kleinstein aus seinen Handflaechen. Durch seinen Schuetzer ertraegt es sogar Vulkanausbrueche." },  // 464 ground/rock
+  { "TANGROWTH", 0, 0, R_EVO, 0x3C49, 100, 100, 125, 110, 50, 50, TYPE_GRASS, TYPE_NONE, 2, "Es umwickelt Beute, indem es seine Arme, die aus Ranken bestehen, verlaengert." },  // 465 grass
+  { "ELECTIVIRE", 0, 0, R_EVO, 0xBCA1, 75, 123, 67, 95, 85, 95, TYPE_ELECTRIC, TYPE_NONE, 0, "Bei voller Ladung zucken feurige, blassweisse Funken zwischen seinen zwei Hoernern hin und her." },  // 466 electric
+  { "MAGMORTAR", 0, 0, R_EVO, 0xEA87, 75, 95, 67, 125, 95, 83, TYPE_FIRE, TYPE_NONE, 3, "Aus den Enden seiner Arme schiessen Feuerbaelle mit 2 000 Grad. Es lebt in Vulkankratern." },  // 467 fire
+  { "TOGEKISS", 0, 0, R_EVO, 0xF5B8, 85, 50, 95, 120, 115, 80, TYPE_FAIRY, TYPE_FLYING, 0, "Es heisst, Togekiss erscheine in friedlichen Zeiten und verteile alle moeglichen Wohltaten." },  // 468 fairy/flying
+  { "YANMEGA", 0, 0, R_EVO, 0x7CC4, 86, 76, 86, 116, 56, 95, TYPE_BUG, TYPE_FLYING, 2, "Seine bevorzugte Strategie besteht darin, seine Gegner aus dem Flug blitzartig zur Strecke zu bringen." },  // 469 bug/flying
+  { "LEAFEON", 0, 0, R_EVO, 0x3C49, 65, 110, 130, 60, 65, 95, TYPE_GRASS, TYPE_NONE, 2, "An klaren Tagen erzeugt Folipurba saubere Luft, indem es Photosynthese betreibt." },  // 470 grass
+  { "GLACEON", 0, 0, R_EVO, 0x4DB8, 65, 60, 110, 130, 95, 65, TYPE_ICE, TYPE_NONE, 5, "Erzeugt ein Diamantstaubgestoeber durch das Einfrieren der Luft um sich herum." },  // 471 ice
+  { "GLISCOR", 0, 0, R_EVO, 0xB447, 75, 95, 125, 45, 75, 95, TYPE_GROUND, TYPE_FLYING, 4, "Es haengt kopfueber von einem Ast und beobachtet seine Beute. Bei Gelegenheit stuerzt es sich auf sie." },  // 472 ground/flying
+  { "MAMOSWINE", 0, 0, R_EVO, 0x4DB8, 110, 130, 80, 70, 60, 80, TYPE_ICE, TYPE_GROUND, 5, "Es existiert schon seit Urzeiten. Mamutel wurde sogar schon in 10 000 Jahre altem Eis gefunden." },  // 473 ice/ground
+  { "PORYGON-Z", 0, 0, R_EVO, 0x8C4D, 85, 80, 70, 135, 75, 90, TYPE_NORMAL, TYPE_NONE, 0, "Zusaetzliche Software wurde installiert, um das Pokemon zu verbessern. Seitdem benimmt es sich seltsam." },  // 474 normal
+  { "GALLADE", 0, 0, R_EVO, 0xD28F, 68, 125, 65, 65, 115, 80, TYPE_PSYCHIC, TYPE_FIGHTING, 0, "Da es selbst die leisesten Gedanken seines Gegners lesen kann, kann es immer zuerst angreifen." },  // 475 psychic/fighting
+  { "PROBOPASS", 0, 0, R_EVO, 0x9407, 60, 55, 145, 75, 150, 40, TYPE_ROCK, TYPE_STEEL, 4, "Es gibt starken Magnetismus ab. Es steuert drei kleine Einheiten, die sich Mininasen nennen." },  // 476 rock/steel
+  { "DUSKNOIR", 0, 0, R_EVO, 0x6AD3, 45, 100, 135, 65, 135, 45, TYPE_GHOST, TYPE_NONE, 0, "Man sagt, dass es verlorene Seelen in seinem biegsamen Koerper nach Hause geleite." },  // 477 ghost
+  { "FROSLASS", 0, 0, R_EVO, 0x4DB8, 70, 80, 70, 80, 70, 110, TYPE_ICE, TYPE_GHOST, 5, "Sein eisiger Atem mit -50 Grad friert Gegner ein. Was aussieht wie sein Koerper, ist tatsaechlich hohl." },  // 478 ice/ghost
+  { "ROTOM", 0, 0, R_COMUN, 0xBCA1, 50, 50, 77, 95, 77, 91, TYPE_ELECTRIC, TYPE_GHOST, 0, "Dieses Pokemon wurde lange Zeit erforscht, um als Energiequelle fuer einen besonderen Motor zu dienen." },  // 479 electric/ghost
+  { "UXIE", 0, 0, R_LEGENDARIO, 0xD28F, 75, 75, 130, 75, 130, 95, TYPE_PSYCHIC, TYPE_NONE, 0, "\"Das wissende Wesen\". Es soll die Erinnerungen derer loeschen, die ihm in die Augen sehen." },  // 480 psychic
+  { "MESPRIT", 0, 0, R_LEGENDARIO, 0xD28F, 80, 105, 105, 105, 105, 80, TYPE_PSYCHIC, TYPE_NONE, 0, "\"Das fuehlende Wesen\". Es lehrt die Menschen die Ideale von Trauer, Schmerz und Freude." },  // 481 psychic
+  { "AZELF", 0, 0, R_LEGENDARIO, 0xD28F, 75, 125, 70, 125, 70, 115, TYPE_PSYCHIC, TYPE_NONE, 0, "\"Das starke Wesen\". Es schlaeft auf dem Grund eines Sees und haelt so die Welt in Balance." },  // 482 psychic
+  { "DIALGA", 0, 0, R_LEGENDARIO, 0x7C73, 100, 120, 120, 150, 100, 90, TYPE_STEEL, TYPE_DRAGON, 4, "Ein Pokemon, das in Legenden zu finden ist. Man sagt, als Dialga geboren wurde, begann der Lauf der Zeit." },  // 483 steel/dragon
+  { "PALKIA", 0, 0, R_LEGENDARIO, 0x4C98, 90, 120, 100, 150, 120, 100, TYPE_WATER, TYPE_DRAGON, 1, "Man sagt, es lebe in einem Spalt in einer Paralleldimension. Es wird in der Mythologie erwaehnt." },  // 484 water/dragon
+  { "HEATRAN", 0, 0, R_LEGENDARIO, 0xEA87, 91, 90, 106, 130, 106, 77, TYPE_FIRE, TYPE_STEEL, 3, "Es lebt in vulkanischen Hoehlen. Mit seinen kreuzfoermigen Klauen kann es sogar an der Decke laufen." },  // 485 fire/steel
+  { "REGIGIGAS", 0, 0, R_LEGENDARIO, 0x8C4D, 110, 160, 110, 80, 110, 100, TYPE_NORMAL, TYPE_NONE, 0, "Man sagt, es habe Pokemon aus einem Eisberg, Felsen und Magma nach seinem Abbild geschaffen." },  // 486 normal
+  { "GIRATINA", 0, 0, R_LEGENDARIO, 0x6AD3, 150, 100, 120, 100, 120, 90, TYPE_GHOST, TYPE_DRAGON, 0, "Es lebt in einer Zerrwelt, die auf der Kehrseite der unseren liegt und die sich aller Logik entzieht." },  // 487 ghost/dragon
+  { "CRESSELIA", 0, 0, R_LEGENDARIO, 0xD28F, 120, 70, 110, 75, 120, 85, TYPE_PSYCHIC, TYPE_NONE, 0, "Seine Fluegel geben schimmernde Partikel ab, die wie ein Schleier herabrieseln. Man sagt, es verkoerpere die Mondsichel." },  // 488 psychic
+  { "PHIONE", 490, 30, R_LEGENDARIO, 0x4C98, 80, 80, 80, 80, 80, 80, TYPE_WATER, TYPE_NONE, 1, "Steigt die Meerestemperatur, blaest es seinen Schwimmbeutel auf und treibt in Schwaermen auf dem Wasser." },  // 489 water
+  { "MANAPHY", 0, 0, R_EVO, 0x4C98, 100, 100, 100, 100, 100, 100, TYPE_WATER, TYPE_NONE, 1, "Es wird mit einer wundersamen Kraft geboren, die eine Bindung zu jedem anderen Pokemon moeglich macht." },  // 490 water
+  { "DARKRAI", 0, 0, R_LEGENDARIO, 0x5A6E, 70, 90, 90, 135, 90, 125, TYPE_DARK, TYPE_NONE, 0, "Es vertreibt Eindringlinge aus seinem Revier, indem es sie in Schlaf versetzt und mit Alptraeumen quaelt." },  // 491 dark
+  { "SHAYMIN", 0, 0, R_LEGENDARIO, 0x3C49, 100, 100, 100, 100, 100, 100, TYPE_GRASS, TYPE_NONE, 2, "Es kann die Luft von Giften reinigen und Oedland in ein ueppig bluehendes Blumenfeld verwandeln." },  // 492 grass
+  { "ARCEUS", 0, 0, R_LEGENDARIO, 0x8C4D, 120, 120, 120, 120, 120, 120, TYPE_NORMAL, TYPE_NONE, 0, "In den Legenden Sinnohs heisst es, es sei aus einem Ei geschluepft und haette die gesamte Welt geschaffen." },  // 493 normal
+  { "VICTINI", 0, 0, R_LEGENDARIO, 0xD28F, 100, 100, 100, 100, 100, 100, TYPE_PSYCHIC, TYPE_FIRE, 0, "Ein siegverheissendes Pokemon. Man sagt, Trainer, die ein Victini in ihrem Team haben, seien unschlagbar." },  // 494 psychic/fire
+  { "SNIVY", 496, 17, R_COMUN, 0x3C49, 45, 45, 55, 45, 55, 63, TYPE_GRASS, TYPE_NONE, 2, "Im Sonnenlicht erhoeht sich das Tempo seiner Bewegungen. Es ist mit seinen Schlingen geschickter als mit den Haenden." },  // 495 grass
+  { "SERVINE", 497, 36, R_EVO, 0x3C49, 60, 60, 75, 60, 75, 83, TYPE_GRASS, TYPE_NONE, 2, "Huscht beinahe gleitend ueber den Boden und taeuscht Gegner mit agilen Manoevern, bis es mithilfe seiner Efeurute obsiegt." },  // 496 grass
+  { "SERPERIOR", 0, 0, R_EVO, 0x3C49, 75, 75, 95, 75, 95, 113, TYPE_GRASS, TYPE_NONE, 2, "Im Kampf zeigt es nur Gegnern, die seinem edlen Blick standhalten, seine wahre Kraft." },  // 497 grass
+  { "TEPIG", 499, 17, R_COMUN, 0xEA87, 65, 63, 45, 45, 45, 45, TYPE_FIRE, TYPE_NONE, 3, "Weicht flink gegnerischen Angriffen aus und schiesst Flammen aus dem Ruessel, mit denen es gern auch mal Nuesse roestet." },  // 498 fire
+  { "PIGNITE", 500, 36, R_EVO, 0xEA87, 90, 93, 55, 70, 55, 55, TYPE_FIRE, TYPE_FIGHTING, 3, "Je mehr es frisst, desto staerker werden die Flammen in seinem Magen. Dies fuehrt zu rapiden Energieschueben." },  // 499 fire/fighting
+  { "EMBOAR", 0, 0, R_EVO, 0xEA87, 110, 123, 65, 100, 65, 65, TYPE_FIRE, TYPE_FIGHTING, 3, "Steckt mit dem Feuer um sein Kinn seine Faeuste in Brand und holt zu feurigen Fausthieben aus. Zeigt grossen Teamgeist." },  // 500 fire/fighting
+  { "OSHAWOTT", 502, 17, R_COMUN, 0x4C98, 55, 55, 45, 63, 45, 45, TYPE_WATER, TYPE_NONE, 1, "Die Muschel an seinem Bauch dient ihm nicht nur als Waffe, sondern auch als Messer, mit dem es Beeren aufschneidet." },  // 501 water
+  { "DEWOTT", 503, 36, R_EVO, 0x4C98, 75, 75, 60, 83, 60, 60, TYPE_WATER, TYPE_NONE, 1, "Es eignet sich durch strenges Training elegant ineinander uebergehende Attacken mit seinen zwei Muscheln an." },  // 502 water
+  { "SAMUROTT", 0, 0, R_EVO, 0x4C98, 95, 100, 85, 108, 70, 70, TYPE_WATER, TYPE_NONE, 1, "Ehe man sichs versieht, hat es schon das Langschwert aus seinen Vorderbeinen gezogen und seinen Gegner besiegt." },  // 503 water
+  { "PATRAT", 505, 20, R_COMUN, 0x8C4D, 45, 55, 39, 35, 39, 42, TYPE_NORMAL, TYPE_NONE, 0, "Hortet in seinen Backentaschen Futter, um tagelang Wache stehen zu koennen, und gibt Kameraden ueber seine Rute Signale." },  // 504 normal
+  { "WATCHOG", 0, 0, R_EVO, 0x8C4D, 60, 85, 69, 60, 69, 77, TYPE_NORMAL, TYPE_NONE, 0, "Es kann mit einer koerpereigenen Substanz seine Augen und seinen Torso aufleuchten lassen, um Gegner zu erschrecken." },  // 505 normal
+  { "LILLIPUP", 507, 16, R_COMUN, 0x8C4D, 45, 60, 45, 25, 45, 55, TYPE_NORMAL, TYPE_NONE, 0, "Das lange Fell um sein Gesicht fungiert als Hightech-Radar, mit dem es fein saeuberlich seine Umgebung abtastet." },  // 506 normal
+  { "HERDIER", 508, 32, R_EVO, 0x8C4D, 65, 80, 65, 35, 65, 60, TYPE_NORMAL, TYPE_NONE, 0, "Dieses aeusserst treue Pokemon geht nicht nur seinem Trainer zur Hand, sondern hilft auch anderen Pokemon." },  // 507 normal
+  { "STOUTLAND", 0, 0, R_EVO, 0x8C4D, 85, 110, 90, 45, 90, 80, TYPE_NORMAL, TYPE_NONE, 0, "Es rettet Menschen, die aufgrund eines Schneesturmes im Gebirge festsitzen. Sein langes Fell schuetzt es vor Kaelte." },  // 508 normal
+  { "PURRLOIN", 510, 20, R_COMUN, 0x5A6E, 41, 50, 37, 50, 37, 66, TYPE_DARK, TYPE_NONE, 0, "Es lenkt die Menschen durch sein suesses Verhalten ab, um sie zu bestehlen. Ist es wuetend, kratzt es gern mal." },  // 509 dark
+  { "LIEPARD", 0, 0, R_EVO, 0x5A6E, 64, 88, 50, 88, 50, 106, TYPE_DARK, TYPE_NONE, 0, "Sein anmutiges Auftreten verdankt es den Muskeln, die es entwickelt hat. Es prescht lautlos durch die Nacht." },  // 510 dark
+  { "PANSAGE", 512, 30, R_COMUN, 0x3C49, 50, 53, 48, 53, 48, 64, TYPE_GRASS, TYPE_NONE, 2, "Schwaechelnden Pokemon gibt es ein paar der Kraeuter auf seinem Kopf ab und hilft ihnen so wieder auf die Beine." },  // 511 grass
+  { "SIMISAGE", 0, 0, R_EVO, 0x3C49, 75, 98, 63, 98, 63, 101, TYPE_GRASS, TYPE_NONE, 2, "Wer sich mit diesem temperamentvollen Pokemon anlegt, bekommt seinen mit Dornen bestueckten Schweif zu spueren." },  // 512 grass
+  { "PANSEAR", 514, 30, R_COMUN, 0xEA87, 50, 53, 48, 53, 48, 64, TYPE_FIRE, TYPE_NONE, 3, "Ein kultiviertes Pokemon, das Beeren vor dem Verzehr stets anbraet. Es bietet den Menschen gerne seine Hilfe an." },  // 513 fire
+  { "SIMISEAR", 0, 0, R_EVO, 0xEA87, 75, 98, 63, 98, 63, 101, TYPE_FIRE, TYPE_NONE, 3, "Es entfacht in seinem Koerper ein Feuer und verkohlt Gegner mit Funken aus seinem Kopf und Schweif." },  // 514 fire
+  { "PANPOUR", 516, 30, R_COMUN, 0x4C98, 50, 53, 48, 53, 48, 64, TYPE_WATER, TYPE_NONE, 1, "Das Bueschel auf seinem Kopf enthaelt eine sehr nahrhafte Fluessigkeit, mit der es ueber seinen Schweif Pflanzen waessert." },  // 515 water
+  { "SIMIPOUR", 0, 0, R_EVO, 0x4C98, 75, 98, 63, 98, 63, 101, TYPE_WATER, TYPE_NONE, 1, "Es schiesst mit so hohem Druck Wasser aus seinem Schweif, dass selbst Betonwaende den Kuerzeren ziehen." },  // 516 water
+  { "MUNNA", 518, 30, R_COMUN, 0xD28F, 76, 25, 45, 67, 55, 24, TYPE_PSYCHIC, TYPE_NONE, 0, "Es erscheint vor schlafenden Menschen und Pokemon und frisst ihre Alptraeume." },  // 517 psychic
+  { "MUSHARNA", 0, 0, R_EVO, 0xD28F, 116, 55, 85, 107, 95, 29, TYPE_PSYCHIC, TYPE_NONE, 0, "Der Dunst, der aus seiner Stirn tritt, enthaelt die Traeume unzaehliger Menschen und Pokemon." },  // 518 psychic
+  { "PIDOVE", 520, 21, R_COMUN, 0x8C4D, 50, 55, 50, 36, 30, 43, TYPE_NORMAL, TYPE_FLYING, 0, "Wartet oft vergeblich auf Anweisungen, obwohl es bereits einen Befehl erhalten hat. Ein sehr zerstreutes Pokemon." },  // 519 normal/flying
+  { "TRANQUILL", 521, 32, R_EVO, 0x8C4D, 62, 77, 62, 50, 42, 65, TYPE_NORMAL, TYPE_FLYING, 0, "Viele Leute glauben, dass es tief in seinem heimatlichen Wald ein Land der Harmonie gibt, wo man keine Kriege kennt." },  // 520 normal/flying
+  { "UNFEZANT", 0, 0, R_EVO, 0x8C4D, 80, 115, 80, 65, 55, 93, TYPE_NORMAL, TYPE_FLYING, 0, "Maennchen schrecken Gegner ab, indem sie ihren Kopfschmuck schuetteln. Weibchen verfuegen ueber bessere Flugfertigkeiten." },  // 521 normal/flying
+  { "BLITZLE", 523, 27, R_COMUN, 0xBCA1, 45, 60, 32, 50, 32, 76, TYPE_ELECTRIC, TYPE_NONE, 0, "Es erscheint, wenn Gewitterwolken den Himmel verdunkeln. Es faengt mit seiner Maehne Blitze und hortet ihre Energie." },  // 522 electric
+  { "ZEBSTRIKA", 0, 0, R_EVO, 0xBCA1, 75, 100, 63, 80, 63, 116, TYPE_ELECTRIC, TYPE_NONE, 0, "Ein stuermischer Geselle. Wenn es wuetend ist, feuert es ueber seine Maehne in alle Richtungen Stromsalven ab." },  // 523 electric
+  { "ROGGENROLA", 525, 25, R_COMUN, 0x9407, 55, 75, 85, 25, 25, 15, TYPE_ROCK, TYPE_NONE, 4, "Hat ein sechseckiges Ohr. Sein durch das Erdreich gepresster Koerper steht Stahl in Sachen Haerte in nichts nach." },  // 524 rock
+  { "BOLDORE", 526, 40, R_EVO, 0x9407, 70, 105, 105, 50, 40, 20, TYPE_ROCK, TYPE_NONE, 4, "Energie, die ungehindert aus seinem Koerper austrat, hat sich an ihm zu orangefarbenen Kristallen verfestigt." },  // 525 rock
+  { "GIGALITH", 0, 0, R_EVO, 0x9407, 85, 135, 130, 60, 80, 25, TYPE_ROCK, TYPE_NONE, 4, "Es verarbeitet Sonnenstrahlen in seinem Energiekern zu Lichtkugeln weiter, um sie im Kampf auf seinen Gegner abzufeuern." },  // 526 rock
+  { "WOOBAT", 0, 0, R_COMUN, 0xD28F, 65, 45, 43, 55, 43, 72, TYPE_PSYCHIC, TYPE_FLYING, 0, "Wohnt in dunklen Waeldern und Hoehlen. Es sendet Ultraschallwellen mit seiner Nase aus, um die Gegend abzutasten." },  // 527 psychic/flying
+  { "SWOOBAT", 0, 0, R_EVO, 0xD28F, 67, 57, 55, 77, 55, 114, TYPE_PSYCHIC, TYPE_FLYING, 0, "Beim Abfeuern seiner Ultraschallwellen, mit denen es selbst Beton zertruemmern kann, wedelt es eifrig mit dem Schweif." },  // 528 psychic/flying
+  { "DRILBUR", 530, 31, R_COMUN, 0xB447, 60, 85, 40, 30, 45, 68, TYPE_GROUND, TYPE_NONE, 4, "Es fuehrt seine beiden Klauen zusammen, dreht sich rapide um die eigene Achse und graebt sich ratzfatz durch das Erdreich." },  // 529 ground
+  { "EXCADRILL", 0, 0, R_EVO, 0xB447, 110, 135, 60, 50, 65, 88, TYPE_GROUND, TYPE_STEEL, 4, "Seine zu Stahl weiterentwickelten Bohrer kriegen selbst Eisenplatten klein. Im Tunnelbau ist es ein absolutes Ass." },  // 530 ground/steel
+  { "AUDINO", 0, 0, R_COMUN, 0x8C4D, 103, 60, 86, 60, 86, 50, TYPE_NORMAL, TYPE_NONE, 0, "Ueber die Fuehler an seinen Ohren kann es ertasten, wie es einer Person geht oder wann ein Pokemon aus seinem Ei schluepft." },  // 531 normal
+  { "TIMBURR", 533, 25, R_COMUN, 0xA2A5, 75, 80, 55, 25, 35, 35, TYPE_FIGHTING, TYPE_NONE, 0, "Traegt stets einen Holzbalken bei sich. Es taucht hier und da auf Baustellen auf und hilft dort den Arbeitern aus." },  // 532 fighting
+  { "GURDURR", 534, 40, R_EVO, 0xA2A5, 85, 105, 85, 40, 50, 40, TYPE_FIGHTING, TYPE_NONE, 0, "Diese durchtrainierten Muskelprotze sind im Umgang mit Stahltraegern versiert und koennen damit ganze Haeuser abreissen." },  // 533 fighting
+  { "CONKELDURR", 0, 0, R_EVO, 0xA2A5, 105, 140, 95, 55, 65, 45, TYPE_FIGHTING, TYPE_NONE, 0, "Man nimmt an, dass es der Menschheit vor ca. 2 000 Jahren das Betonmischen beigebracht hat." },  // 534 fighting
+  { "TYMPOLE", 536, 25, R_COMUN, 0x4C98, 50, 50, 40, 50, 40, 64, TYPE_WATER, TYPE_NONE, 1, "Erzeugt mit seinen Wangen fuer Menschen unhoerbare Schallwellen, um Artgenossen vor Gefahr zu warnen." },  // 535 water
+  { "PALPITOAD", 537, 36, R_EVO, 0x4C98, 75, 65, 55, 65, 55, 69, TYPE_WATER, TYPE_GROUND, 1, "Wenn es die Beulen auf seinem Kopf zum Schwingen bringt, tobt je nach Umgebung entweder das Wasser oder die Erde bebt." },  // 536 water/ground
+  { "SEISMITOAD", 0, 0, R_EVO, 0x4C98, 105, 95, 75, 85, 75, 74, TYPE_WATER, TYPE_GROUND, 1, "Wenn es die Beulen an seinen Faeusten zum Schwingen bringt, kann es doppelt so fest zuschlagen und Felsen zertruemmern." },  // 537 water/ground
+  { "THROH", 0, 0, R_COMUN, 0xA2A5, 120, 100, 85, 30, 85, 45, TYPE_FIGHTING, TYPE_NONE, 0, "Zurrt es seinen Guertel fest, gewinnt es an Kraft. Wilde Exemplare flechten sich ihren Guertel in Handarbeit aus Ranken." },  // 538 fighting
+  { "SAWK", 0, 0, R_COMUN, 0xA2A5, 75, 125, 75, 30, 75, 85, TYPE_FIGHTING, TYPE_NONE, 0, "Es lebt zurueckgezogen in den Bergen und trainiert Tag und Nacht, um seinen Karateschlag zu perfektionieren." },  // 539 fighting
+  { "SEWADDLE", 541, 20, R_COMUN, 0x7CC4, 45, 53, 70, 40, 60, 42, TYPE_BUG, TYPE_GRASS, 2, "Schneidert sich ein Kleid, indem es sich Blaetter zurechtbeisst und sie mit Klebefaeden aus seinem Mund zusammennaeht." },  // 540 bug/grass
+  { "SWADLOON", 0, 0, R_EVO, 0x7CC4, 55, 63, 90, 50, 80, 42, TYPE_BUG, TYPE_GRASS, 2, "Es wandelt herabgefallenes Laub in Naehrstoffe um. In Waeldern, wo es Folikon gibt, fuehlen sich Pflanzen pudelwohl." },  // 541 bug/grass
+  { "LEAVANNY", 0, 0, R_EVO, 0x7CC4, 75, 103, 80, 70, 80, 92, TYPE_BUG, TYPE_GRASS, 2, "Begegnet es einem jungen Pokemon, naeht es ihm mit den klebrigen Faeden aus seinem Mund ein Kleid aus Blaettern." },  // 542 bug/grass
+  { "VENIPEDE", 544, 22, R_COMUN, 0x7CC4, 30, 45, 59, 30, 39, 57, TYPE_BUG, TYPE_POISON, 2, "Mit seinen Ruten und den Fuehlern an seinem Kopf tastet es die Umgebung ab. Ein ueberaus aggressiver Geselle." },  // 543 bug/poison
+  { "WHIRLIPEDE", 545, 30, R_EVO, 0x7CC4, 40, 55, 99, 40, 79, 47, TYPE_BUG, TYPE_POISON, 2, "Von einem harten Schutzpanzer umgeben. Es greift seine Gegner an, indem es mit Karacho wie ein Rad in sie hineinrollt." },  // 544 bug/poison
+  { "SCOLIPEDE", 0, 0, R_EVO, 0x7CC4, 60, 100, 89, 55, 69, 112, TYPE_BUG, TYPE_POISON, 2, "Laehmt seine Beute, indem es sie mit den Zacken an seinem Hals aufspiesst. Mit einer Ladung Gift gibt es ihr den Rest." },  // 545 bug/poison
+  { "COTTONEE", 547, 30, R_COMUN, 0x3C49, 40, 27, 60, 37, 50, 66, TYPE_GRASS, TYPE_FAIRY, 2, "Wird es angegriffen, verstreut es zur Taeuschung Watte. Es flieht, waehrend der Gegner nach dem wahren Waumboll sucht." },  // 546 grass/fairy
+  { "WHIMSICOTT", 0, 0, R_EVO, 0x3C49, 60, 67, 85, 77, 75, 116, TYPE_GRASS, TYPE_FAIRY, 2, "Sie erscheinen mit Orkanboeen und spielen den Leuten Streiche, indem sie in Haeusern Moebel verruecken oder Watte verstreuen." },  // 547 grass/fairy
+  { "PETILIL", 549, 30, R_COMUN, 0x3C49, 45, 35, 50, 70, 50, 30, TYPE_GRASS, TYPE_NONE, 2, "Die Blaetter auf seinem Kopf schmecken furchtbar bitter, doch sie helfen ausgezeichnet gegen Erschoepfung." },  // 548 grass
+  { "LILLIGANT", 0, 0, R_EVO, 0x3C49, 70, 60, 75, 110, 75, 90, TYPE_GRASS, TYPE_NONE, 2, "Der Duft des Blumenschmucks auf seinem Kopf wirkt beruhigend. Damit der Schmuck nicht verwelkt, muss man es gut pflegen." },  // 549 grass
+  { "BASCULIN", 0, 0, R_COMUN, 0x4C98, 70, 92, 65, 80, 55, 98, TYPE_WATER, TYPE_NONE, 1, "Sie gelten als Delikatesse. Aufgrund ihrer brutalen Natur liegen rot und blau gestreifte Exemplare immer im Clinch." },  // 550 water
+  { "SANDILE", 552, 29, R_COMUN, 0xB447, 50, 72, 35, 35, 35, 65, TYPE_GROUND, TYPE_DARK, 4, "Wenn es sich durch den Sand graebt, ragen nur noch Nase und Augen hervor. Die schwarze Haut dient als Augenschutz." },  // 551 ground/dark
+  { "KROKOROK", 553, 40, R_EVO, 0xB447, 60, 82, 45, 45, 45, 74, TYPE_GROUND, TYPE_DARK, 4, "Bildet mit mehreren Artgenossen ein Rudel. Eine Membran schuetzt seine Augen vor Sandstuermen." },  // 552 ground/dark
+  { "KROOKODILE", 0, 0, R_EVO, 0xB447, 95, 117, 80, 65, 70, 92, TYPE_GROUND, TYPE_DARK, 4, "Ein aeusserst grausames Pokemon. Es greift jeden, der ihm unter die Augen kommt, mit seinen scharfen Reisszaehnen an." },  // 553 ground/dark
+  { "DARUMAKA", 555, 35, R_COMUN, 0xEA87, 70, 90, 45, 15, 45, 50, TYPE_FIRE, TYPE_NONE, 3, "Frueher nutzte man die heissen Ausscheidungen von Flampion, um sich den Koerper zu waermen." },  // 554 fire
+  { "DARMANITAN", 0, 0, R_EVO, 0xEA87, 105, 140, 55, 30, 55, 95, TYPE_FIRE, TYPE_NONE, 3, "Nimmt es in einem heissen Kampf Schaden, wird es hart wie Stein und faellt in eine Trance, um seinen Verstand zu schaerfen." },  // 555 fire
+  { "MARACTUS", 0, 0, R_COMUN, 0x3C49, 75, 86, 67, 106, 67, 60, TYPE_GRASS, TYPE_NONE, 2, "Verjagt Vogel-Pokemon, die auf seine Blueten aus sind, mit einem flotten Taenzchen und lauter Untermalung." },  // 556 grass
+  { "DWEBBLE", 558, 34, R_COMUN, 0x7CC4, 50, 65, 85, 35, 35, 55, TYPE_BUG, TYPE_ROCK, 2, "Hoehlt sich einen brauchbaren Stein aus, um darin zu wohnen. Geht er zu Bruch, ruht es nicht, bis es einen neuen findet." },  // 557 bug/rock
+  { "CRUSTLE", 0, 0, R_EVO, 0x7CC4, 70, 105, 125, 65, 75, 45, TYPE_BUG, TYPE_ROCK, 2, "Es ist hart genug im Nehmen, um mitsamt seines schweren Felsens mehrere Tage durch trockene Gebiete zu wandern." },  // 558 bug/rock
+  { "SCRAGGY", 560, 39, R_COMUN, 0x5A6E, 50, 75, 70, 35, 70, 48, TYPE_DARK, TYPE_FIGHTING, 0, "Es zieht seine gummiartige Haut bis zum Hals hinauf und nimmt eine Abwehrhaltung ein, um sich vor Schaden zu schuetzen." },  // 559 dark/fighting
+  { "SCRAFTY", 0, 0, R_EVO, 0x5A6E, 65, 90, 115, 45, 115, 58, TYPE_DARK, TYPE_FIGHTING, 0, "Es wehrt Angriffe mit seiner alten Haut ab und kontert mit Tritten. Sein Ego entspricht der Groesse seines Kamms." },  // 560 dark/fighting
+  { "SIGILYPH", 0, 0, R_COMUN, 0xD28F, 72, 58, 80, 103, 80, 97, TYPE_PSYCHIC, TYPE_FLYING, 0, "Einst war es der Waechter einer Stadt aus uralten Zeiten. Wer sich in sein Revier wagt, lernt seine Psycho-Kraefte kennen." },  // 561 psychic/flying
+  { "YAMASK", 563, 34, R_COMUN, 0x6AD3, 38, 30, 85, 55, 65, 30, TYPE_GHOST, TYPE_NONE, 0, "Es entsteht aus den Seelen von laengst begrabenen Menschen und kann sich immer noch an deren Vergangenheit erinnern." },  // 562 ghost
+  { "COFAGRIGUS", 0, 0, R_EVO, 0x6AD3, 58, 50, 145, 95, 105, 30, TYPE_GHOST, TYPE_NONE, 0, "Angeblich verschlingt es jeden, der sich ihm auch nur naehert. Besonders gern frisst es Klumpen aus reinem Gold." },  // 563 ghost
+  { "TIRTOUGA", 565, 37, R_COMUN, 0x4C98, 54, 78, 103, 53, 45, 22, TYPE_WATER, TYPE_ROCK, 1, "Schwamm bereits vor 100 Millionen Jahren durch die Meere. Ab und zu fuehrt es die Jagd auch an Land." },  // 564 water/rock
+  { "CARRACOSTA", 0, 0, R_EVO, 0x4C98, 74, 108, 133, 83, 65, 32, TYPE_WATER, TYPE_ROCK, 1, "Es lebt im Meer und an Land. Es ist so stark, dass es mit einem einzigen Hieb ein Loch in ein Schiff reissen kann." },  // 565 water/rock
+  { "ARCHEN", 567, 37, R_COMUN, 0x9407, 55, 112, 45, 74, 45, 70, TYPE_ROCK, TYPE_FLYING, 4, "Es wurde aus einem Fossil reanimiert. Man geht davon aus, dass es der Urahn aller Vogel-Pokemon ist." },  // 566 rock/flying
+  { "ARCHEOPS", 0, 0, R_EVO, 0x9407, 75, 140, 65, 112, 65, 110, TYPE_ROCK, TYPE_FLYING, 4, "Bevor es abhebt, nimmt es am Boden Anlauf. Es ist schlau genug, seine Beute zusammen mit Artgenossen zu jagen." },  // 567 rock/flying
+  { "TRUBBISH", 569, 36, R_COMUN, 0x8A73, 50, 50, 62, 40, 62, 65, TYPE_POISON, TYPE_NONE, 0, "Eine Muelltuete, der Industrieabfaelle und chemische Reaktionen neues Leben eingehaucht haben." },  // 568 poison
+  { "GARBODOR", 0, 0, R_EVO, 0x8A73, 80, 95, 82, 60, 82, 75, TYPE_POISON, TYPE_NONE, 0, "Es nimmt mit dem rechten Arm Gegner in die Mangel und gibt ihnen mit dem giftigen Gas aus seinem Maul den Rest." },  // 569 poison
+  { "ZORUA", 571, 30, R_RARO, 0x5A6E, 40, 65, 40, 80, 40, 65, TYPE_DARK, TYPE_NONE, 0, "Nicht selten ueberrumpelt es Gegner, indem es ihre Gestalt annimmt und den Ueberraschungseffekt zur Flucht nutzt." },  // 570 dark
+  { "ZOROARK", 0, 0, R_EVO, 0x5A6E, 60, 105, 60, 120, 60, 105, TYPE_DARK, TYPE_NONE, 0, "Kann auf einen Schlag grosse Massen von Menschen taeuschen. Es kreiert Illusionen, um sein Revier zu schuetzen." },  // 571 dark
+  { "MINCCINO", 573, 30, R_COMUN, 0x8C4D, 55, 50, 40, 40, 40, 75, TYPE_NORMAL, TYPE_NONE, 0, "Sie begruessen einander, indem sie ihr Gegenueber mithilfe ihres Schweifs saeubern." },  // 572 normal
+  { "CINCCINO", 0, 0, R_EVO, 0x8C4D, 75, 95, 60, 65, 60, 115, TYPE_NORMAL, TYPE_NONE, 0, "Sein weisser Flaum fuehlt sich wunderbar flauschig an und zieht weder Staub noch statische Elektrizitaet an." },  // 573 normal
+  { "GOTHITA", 575, 32, R_COMUN, 0xD28F, 45, 30, 50, 55, 65, 45, TYPE_PSYCHIC, TYPE_NONE, 0, "Die schleifenfoermigen Fuehler erhoehen seine Psycho-Kraefte. Es scheint stets irgendetwas anzustarren." },  // 574 psychic
+  { "GOTHORITA", 576, 41, R_EVO, 0xD28F, 60, 45, 70, 75, 85, 55, TYPE_PSYCHIC, TYPE_NONE, 0, "Zieht seine Energie aus dem Sternenlicht. Bei Nacht bringt es Steine zum Schweben und bildet damit Sternzeichen nach." },  // 575 psychic
+  { "GOTHITELLE", 0, 0, R_EVO, 0xD28F, 70, 55, 95, 95, 110, 65, TYPE_PSYCHIC, TYPE_NONE, 0, "Durch seine maechtigen Psycho-Kraefte kruemmt sich der Raum und Bilder eines Lichtjahre entfernten Ortes erscheinen." },  // 576 psychic
+  { "SOLOSIS", 578, 32, R_COMUN, 0xD28F, 45, 30, 40, 105, 50, 20, TYPE_PSYCHIC, TYPE_NONE, 0, "Die spezielle Fluessigkeit, die es umgibt, bietet ihm in jeder noch so gefaehrlichen Situation Schutz." },  // 577 psychic
+  { "DUOSION", 579, 41, R_EVO, 0xD28F, 65, 40, 50, 125, 60, 30, TYPE_PSYCHIC, TYPE_NONE, 0, "Wegen seines gespaltenen Denkapparates kann es vorkommen, dass es sich abrupt einer anderen Taetigkeit zuwendet." },  // 578 psychic
+  { "REUNICLUS", 0, 0, R_EVO, 0xD28F, 110, 65, 75, 125, 85, 30, TYPE_PSYCHIC, TYPE_NONE, 0, "Seine Arme bestehen aus einer speziellen Fluessigkeit. Dank seiner Psycho-Kraefte kann es mit ihnen Felsen zerschmettern." },  // 579 psychic
+  { "DUCKLETT", 581, 35, R_COMUN, 0x4C98, 62, 44, 50, 44, 50, 55, TYPE_WATER, TYPE_FLYING, 1, "Geraet es in Gefahr, versprueht es Wasser aus seinem Federkleid und nutzt den Spruehregen, um Reissaus zu nehmen." },  // 580 water/flying
+  { "SWANNA", 0, 0, R_EVO, 0x4C98, 75, 87, 63, 87, 63, 98, TYPE_WATER, TYPE_FLYING, 1, "Sie wirken zerbrechlich, aber ihre starken Schwingen tragen sie in einem Stueck bis zu 1 000 km weit." },  // 581 water/flying
+  { "VANILLITE", 583, 35, R_COMUN, 0x4DB8, 36, 50, 50, 65, 60, 44, TYPE_ICE, TYPE_NONE, 5, "Die Temperatur seines Odems liegt bei -50 Grad. Es erzeugt Eiskristalle und laesst es in seiner Umgebung schneien." },  // 582 ice
+  { "VANILLISH", 584, 47, R_EVO, 0x4DB8, 51, 65, 65, 80, 75, 59, TYPE_ICE, TYPE_NONE, 5, "Es produziert Eiskoerner, indem es die Luft um sich herum abkuehlt, und zieht mit ihnen eine Eisschicht um seinen Gegner." },  // 583 ice
+  { "VANILLUXE", 0, 0, R_EVO, 0x4DB8, 71, 95, 85, 110, 95, 79, TYPE_ICE, TYPE_NONE, 5, "Bringt man beide Koepfe in Rage, stoesst sein Horn heftige Eisboeen aus, und alles in seiner Umgebung versinkt in Schnee." },  // 584 ice
+  { "DEERLING", 586, 34, R_COMUN, 0x8C4D, 60, 60, 50, 40, 50, 75, TYPE_NORMAL, TYPE_GRASS, 0, "Unabhaengig von der Jahreszeit aendert sich seine Farbe auch bei wechselnder Temperatur oder Luftfeuchtigkeit leicht." },  // 585 normal/grass
+  { "SAWSBUCK", 0, 0, R_EVO, 0x8C4D, 80, 100, 70, 60, 70, 95, TYPE_NORMAL, TYPE_GRASS, 0, "An seinem Geweih kann man ablesen, wann eine neue Jahreszeit beginnt. Sein Revier wechselt mit jeder neuen Jahreszeit." },  // 586 normal/grass
+  { "EMOLGA", 0, 0, R_COMUN, 0xBCA1, 55, 75, 60, 75, 60, 103, TYPE_ELECTRIC, TYPE_FLYING, 0, "Lebt in den Wipfeln der Waldbaeume. Waehrend es durch die Luefte gleitet, entlaedt es Strom aus seinen Fluglappen." },  // 587 electric/flying
+  { "KARRABLAST", 589, 40, R_COMUN, 0x7CC4, 50, 75, 45, 40, 45, 60, TYPE_BUG, TYPE_NONE, 2, "Ein mysterioeses Pokemon, das sich entwickelt, wenn es zusammen mit Schnuthelm einen Stromschlag abbekommt." },  // 588 bug
+  { "ESCAVALIER", 0, 0, R_EVO, 0x7CC4, 70, 135, 105, 60, 105, 20, TYPE_BUG, TYPE_STEEL, 2, "Eine von einem Schnuthelm gestohlene Muschel dient ihm als Helm. Es greift Gegner mit seinen beiden Lanzen an." },  // 589 bug/steel
+  { "FOONGUS", 591, 39, R_COMUN, 0x3C49, 69, 55, 45, 55, 55, 15, TYPE_GRASS, TYPE_POISON, 2, "Faellt ein Trainer auf sein Aeusseres herein, das komischerweise einem Pokeball aehnelt, besprueht es ihn mit Giftsporen." },  // 590 grass/poison
+  { "AMOONGUSS", 0, 0, R_EVO, 0x3C49, 114, 85, 70, 85, 80, 30, TYPE_GRASS, TYPE_POISON, 2, "Um Beute anzulocken, bietet es seinen Hut feil, der einem Pokeball aehnelt. Doch kaum ein Pokemon faellt darauf herein." },  // 591 grass/poison
+  { "FRILLISH", 593, 40, R_COMUN, 0x4C98, 55, 40, 50, 65, 85, 40, TYPE_WATER, TYPE_GHOST, 1, "Es laehmt seine Beute mit Gift und verschleppt sie in seinen Unterschlupf, 8 km unter dem Meeresspiegel." },  // 592 water/ghost
+  { "JELLICENT", 0, 0, R_EVO, 0x4C98, 100, 60, 70, 85, 105, 60, TYPE_WATER, TYPE_GHOST, 1, "Es heisst, am Meeresboden gebe es einen Palast aus Schiffen, die es versenkt hat. Es besteht fast nur aus Meerwasser." },  // 593 water/ghost
+  { "ALOMOMOLA", 0, 0, R_COMUN, 0x4C98, 165, 75, 80, 40, 45, 65, TYPE_WATER, TYPE_NONE, 1, "Es treibt durch den Ozean. Findet es ein verletztes Pokemon, nimmt es dieses auf und traegt es zurueck an Land." },  // 594 water
+  { "JOLTIK", 596, 36, R_COMUN, 0x7CC4, 50, 47, 50, 57, 50, 65, TYPE_BUG, TYPE_ELECTRIC, 2, "Da es selbst keinen Strom erzeugen kann, klettert es auf andere Pokemon, um ihnen elektrostatische Energie abzusaugen." },  // 595 bug/electric
+  { "GALVANTULA", 0, 0, R_EVO, 0x7CC4, 70, 77, 60, 97, 60, 108, TYPE_BUG, TYPE_ELECTRIC, 2, "Laesst seine Beute in elektrisch geladene Faeden tappen. Solang diese durch den Schock gelaehmt ist, labt es sich an ihr." },  // 596 bug/electric
+  { "FERROSEED", 598, 40, R_COMUN, 0x3C49, 44, 50, 91, 24, 86, 10, TYPE_GRASS, TYPE_STEEL, 2, "Fuehlt es sich bedroht, wehrt es sich, indem es eine grosszuegige Salve Dornen abfeuert." },  // 597 grass/steel
+  { "FERROTHORN", 0, 0, R_EVO, 0x3C49, 74, 94, 131, 54, 116, 20, TYPE_GRASS, TYPE_STEEL, 2, "Es macht mit Gegnern kurzen Prozess, indem es mit seinen drei Schlingen auf sie eindrischt und Dornen auf sie abfeuert." },  // 598 grass/steel
+  { "KLINK", 600, 38, R_COMUN, 0x7C73, 40, 55, 70, 45, 60, 30, TYPE_STEEL, TYPE_NONE, 4, "Es gewinnt lebenswichtige Energie, indem es seine zwei Einzelteile ineinander verzahnt und rotieren laesst." },  // 599 steel
+  { "KLANG", 601, 49, R_EVO, 0x7C73, 60, 80, 95, 70, 85, 50, TYPE_STEEL, TYPE_NONE, 4, "Teilt Artgenossen seine Gefuehlslage mit, indem es die Umlaufrichtung aendert. Wenn es wuetend ist, dreht es sich schneller." },  // 600 steel
+  { "KLINKLANG", 0, 0, R_EVO, 0x7C73, 60, 100, 115, 70, 85, 90, TYPE_STEEL, TYPE_NONE, 4, "Indem es das Rad mit dem roten Zentrum mit hohem Tempo zum Rotieren bringt, kann es eine Turboladung durchfuehren." },  // 601 steel
+  { "TYNAMO", 603, 39, R_COMUN, 0xBCA1, 35, 55, 40, 45, 40, 60, TYPE_ELECTRIC, TYPE_NONE, 0, "Allein erzeugt es nur wenig Strom, doch tritt es geschlossen im Schwarm auf, gleicht seine Kraft der eines Blitzes." },  // 602 electric
+  { "EELEKTRIK", 604, 30, R_EVO, 0xBCA1, 65, 85, 70, 75, 70, 40, TYPE_ELECTRIC, TYPE_NONE, 0, "Schlingt sich um Gegner, laehmt sie ueber die rund gemaserten Flaechen an seinem Koerper mit Strom und beisst beherzt zu." },  // 603 electric
+  { "EELEKTROSS", 0, 0, R_EVO, 0xBCA1, 85, 115, 80, 105, 80, 50, TYPE_ELECTRIC, TYPE_NONE, 0, "Mit dem Saugnapf an seinem Maul hakt es sich an seiner Beute fest und versetzt ihr ueber seine Fangzaehne Stromschlaege." },  // 604 electric
+  { "ELGYEM", 606, 42, R_COMUN, 0xD28F, 55, 55, 55, 85, 55, 30, TYPE_PSYCHIC, TYPE_NONE, 0, "Es verfuegt ueber maechtige Psycho-Kraefte, mit denen es die Hirne seiner Gegner verwirrt, um ihnen Kopfweh zu bereiten." },  // 605 psychic
+  { "BEHEEYEM", 0, 0, R_EVO, 0xD28F, 75, 75, 75, 125, 95, 40, TYPE_PSYCHIC, TYPE_NONE, 0, "Es spricht, indem es seine Fingerspitzen leuchten laesst, doch noch konnte der Code dahinter nicht entziffert werden." },  // 606 psychic
+  { "LITWICK", 608, 41, R_COMUN, 0x6AD3, 50, 30, 55, 65, 55, 20, TYPE_GHOST, TYPE_FIRE, 0, "Es entzuendet ein Licht und gibt vor, dem Gegner den Weg zu weisen, doch eigentlich saugt es ihm seine Lebensenergie ab." },  // 607 ghost/fire
+  { "LAMPENT", 609, 30, R_EVO, 0x6AD3, 60, 40, 60, 95, 60, 55, TYPE_GHOST, TYPE_FIRE, 0, "Es naehrt seine Flamme mit den Seelen seiner Opfer. Heutzutage irrt es auf der Suche nach Seelen durch Krankenhaeuser." },  // 608 ghost/fire
+  { "CHANDELURE", 0, 0, R_EVO, 0x6AD3, 60, 55, 90, 145, 90, 80, TYPE_GHOST, TYPE_FIRE, 0, "Es saugt die Seele eines jeden auf, der in seinen Feuerkranz geraet, bis nur noch eine leere Huelle von ihm uebrig ist." },  // 609 ghost/fire
+  { "AXEW", 611, 38, R_COMUN, 0x5A98, 46, 87, 60, 30, 40, 57, TYPE_DRAGON, TYPE_NONE, 1, "Es knackt mit seinen Hauern Nuesse. Brechen seine Fangzaehne ab, waechst an ihrer Stelle ein staerkeres Ersatzpaar." },  // 610 dragon
+  { "FRAXURE", 612, 48, R_EVO, 0x5A98, 66, 117, 70, 40, 50, 67, TYPE_DRAGON, TYPE_NONE, 1, "Mit seinen Faengen kriegt es sogar Felsen klein. Gegen Artgenossen, die sein Revier passieren, geht es besonders hart vor." },  // 611 dragon
+  { "HAXORUS", 0, 0, R_EVO, 0x5A98, 76, 147, 90, 60, 70, 97, TYPE_DRAGON, TYPE_NONE, 1, "Hat eine eher sanfte Natur, doch bei Eindringlingen kennt es keine Gnade. Seine Stosszaehne durchbohren sogar Eisen." },  // 612 dragon
+  { "CUBCHOO", 614, 37, R_COMUN, 0x4DB8, 55, 70, 40, 60, 40, 40, TYPE_ICE, TYPE_NONE, 5, "Der Schleim, der stets aus seiner Nase haengt, treibt seine Attacken an. Zieht es ihn hoch, steht ein Angriff bevor." },  // 613 ice
+  { "BEARTIC", 0, 0, R_EVO, 0x4DB8, 95, 130, 80, 70, 80, 50, TYPE_ICE, TYPE_NONE, 5, "Es liebt die kalten Meere im Norden und ueberquert ihre Flaechen auf Stegen, die es mit seinem gefrorenen Atem baut." },  // 614 ice
+  { "CRYOGONAL", 0, 0, R_COMUN, 0x4DB8, 80, 50, 50, 95, 135, 105, TYPE_ICE, TYPE_NONE, 5, "Es faengt seine Beute mit Ketten, die sich aus Eiskristallen zusammensetzen. Entstanden ist es aus einer Schneewolke." },  // 615 ice
+  { "SHELMET", 617, 40, R_COMUN, 0x7CC4, 50, 40, 85, 40, 65, 25, TYPE_BUG, TYPE_NONE, 2, "Haelt sich ein Laukaps in seiner Naehe auf und kommen beide mit Strom in Beruehrung, entwickeln sie sich." },  // 616 bug
+  { "ACCELGOR", 0, 0, R_EVO, 0x7CC4, 80, 70, 40, 100, 60, 145, TYPE_BUG, TYPE_NONE, 2, "Seit es die schwere Muschel abgestreift hat, ist es viel leichter. Nun gleichen seine Kampfbewegungen denen eines Ninja." },  // 617 bug
+  { "STUNFISK", 0, 0, R_COMUN, 0xB447, 109, 66, 84, 81, 99, 32, TYPE_GROUND, TYPE_ELECTRIC, 4, "Dank seiner dicken Haut haelt es selbst das Gewicht eines Sumoringers aus. Wenn es Stromschlaege verteilt, grinst es." },  // 618 ground/electric
+  { "MIENFOO", 620, 50, R_COMUN, 0xA2A5, 45, 85, 50, 55, 50, 65, TYPE_FIGHTING, TYPE_NONE, 0, "Schnelle Angriffe sind seine Spezialitaet. Es gleicht seine Schwaechen mit der Vielfalt seines Attackenrepertoires aus." },  // 619 fighting
+  { "MIENSHAO", 0, 0, R_EVO, 0xA2A5, 65, 125, 60, 95, 60, 105, TYPE_FIGHTING, TYPE_NONE, 0, "Es benutzt das Fell an seinen Armen als Peitsche. Beide Arme bewegen sich dabei mit atemberaubender Geschwindigkeit." },  // 620 fighting
+  { "DRUDDIGON", 0, 0, R_COMUN, 0x5A98, 77, 120, 90, 60, 90, 48, TYPE_DRAGON, TYPE_NONE, 1, "Es jagt durch enge Hoehlengaenge und spiesst seine Gegner mit spitzen Klauen auf. Seine Kopfhaut ist fester als Stein." },  // 621 dragon
+  { "GOLETT", 623, 43, R_COMUN, 0xB447, 59, 74, 50, 35, 50, 35, TYPE_GROUND, TYPE_GHOST, 4, "Es wird durch eine Energie angetrieben, die seinem Koerper entspringt. Keiner weiss jedoch, woher diese Energie stammt." },  // 622 ground/ghost
+  { "GOLURK", 0, 0, R_EVO, 0xB447, 89, 124, 80, 55, 80, 55, TYPE_GROUND, TYPE_GHOST, 4, "Man munkelt, sein Schoepfer habe ihm aufgetragen, schuetzend ueber Pokemon und Menschen zu wachen." },  // 623 ground/ghost
+  { "PAWNIARD", 625, 52, R_COMUN, 0x5A6E, 45, 85, 70, 40, 40, 60, TYPE_DARK, TYPE_STEEL, 0, "Sein Koerper ist mit Klingen uebersaet, die es an Felsen eines Flussbettes schaerft, wenn sie im Kampf schartig werden." },  // 624 dark/steel
+  { "BISHARP", 0, 0, R_EVO, 0x5A6E, 65, 125, 100, 60, 70, 70, TYPE_DARK, TYPE_STEEL, 0, "Ein kaltbluetiges Pokemon, das Gegner zunaechst mit einer Schar von Gladiantri laehmt und dann zweiteilt." },  // 625 dark/steel
+  { "BOUFFALANT", 0, 0, R_COMUN, 0x8C4D, 95, 110, 95, 40, 95, 55, TYPE_NORMAL, TYPE_NONE, 0, "Rammt seine Gegner ohne Ruecksicht auf Verluste mit dem Kopf und vermag damit sogar Zuege zum Entgleisen zu bringen." },  // 626 normal
+  { "RUFFLET", 628, 54, R_COMUN, 0x8C4D, 70, 83, 50, 37, 50, 60, TYPE_NORMAL, TYPE_FLYING, 0, "Kann mit seinen Fuessen Nuesse zermalmen. Es stellt sich jedem noch so starken Gegner tapfer zum Kampf." },  // 627 normal/flying
+  { "BRAVIARY", 0, 0, R_EVO, 0x8C4D, 100, 123, 75, 57, 75, 80, TYPE_NORMAL, TYPE_FLYING, 0, "Ein tapferer Krieger der Luefte, der zum Schutz seiner Kameraden auch mit Verletzungen immer weiterkaempft." },  // 628 normal/flying
+  { "VULLABY", 630, 54, R_COMUN, 0x5A6E, 70, 55, 75, 45, 65, 60, TYPE_DARK, TYPE_FLYING, 0, "Seine Fluegel sind noch zu klein zum Fliegen. Kurz bevor es sich entwickelt, wirft es seine Schaedelwindel ab." },  // 629 dark/flying
+  { "MANDIBUZZ", 0, 0, R_EVO, 0x5A6E, 110, 65, 105, 55, 95, 80, TYPE_DARK, TYPE_FLYING, 0, "Es kreist am Himmel, bis es seine Beute findet. Nach erfolgtem Angriff traegt es sie muehelos zu seinem Nest." },  // 630 dark/flying
+  { "HEATMOR", 0, 0, R_COMUN, 0xEA87, 85, 97, 66, 105, 66, 65, TYPE_FIRE, TYPE_NONE, 3, "Mit seiner brandheissen Zunge bringt es Fermicula zum Schmelzen, um so an sein weiches Inneres zu gelangen." },  // 631 fire
+  { "DURANT", 0, 0, R_COMUN, 0x7CC4, 58, 109, 112, 48, 48, 109, TYPE_BUG, TYPE_STEEL, 2, "Eine ausgekluegelte Rollenverteilung hilft ihnen dabei, ihren natuerlichen Feind Furnifrass aus dem Nest zu verjagen." },  // 632 bug/steel
+  { "DEINO", 634, 50, R_COMUN, 0x5A6E, 52, 65, 50, 45, 50, 38, TYPE_DARK, TYPE_DRAGON, 0, "Da es nichts sehen kann, sucht es seine Umgebung mit Rempel- und Bissattacken ab und ist immer mit Wunden uebersaet." },  // 633 dark/dragon
+  { "ZWEILOUS", 635, 64, R_EVO, 0x5A6E, 72, 85, 70, 65, 70, 58, TYPE_DARK, TYPE_DRAGON, 0, "Seine zwei Koepfe sind sich spinnefeind. Beide versuchen, ueber Fresswettbewerbe die Oberhand zu gewinnen." },  // 634 dark/dragon
+  { "HYDREIGON", 0, 0, R_EVO, 0x5A6E, 92, 105, 90, 125, 90, 98, TYPE_DARK, TYPE_DRAGON, 0, "Die Koepfe an seinen beiden Armen haben kein eigenes Gehirn. Seine drei Maeuler kauen alles radikal kurz und klein." },  // 635 dark/dragon
+  { "LARVESTA", 637, 59, R_COMUN, 0x7CC4, 55, 85, 55, 50, 55, 60, TYPE_BUG, TYPE_FIRE, 2, "Es heisst, es sei ein Produkt der Sonne. Wenn es sich entwickelt, huellt es sich in Flammen, die es aus seinen Hoernern blaest." },  // 636 bug/fire
+  { "VOLCARONA", 0, 0, R_EVO, 0x7CC4, 85, 60, 65, 135, 105, 100, TYPE_BUG, TYPE_FIRE, 2, "Schuettelt sich gluehenden Staub aus seinen sechs Fluegeln und verwandelt das Umfeld in ein einziges Meer aus Flammen." },  // 637 bug/fire
+  { "COBALION", 0, 0, R_LEGENDARIO, 0x7C73, 91, 90, 129, 90, 72, 108, TYPE_STEEL, TYPE_FIGHTING, 4, "Sein Koerper und sein Herz sind aus Stahl. Ein boeser Blick genuegt und selbst die wildesten Pokemon unterwerfen sich ihm." },  // 638 steel/fighting
+  { "TERRAKION", 0, 0, R_LEGENDARIO, 0x9407, 91, 129, 90, 72, 90, 108, TYPE_ROCK, TYPE_FIGHTING, 4, "Seine Angriffskraft genuegt, um selbst maechtige Waelle niederzureissen. Ein Held zahlreicher Legenden." },  // 639 rock/fighting
+  { "VIRIZION", 0, 0, R_LEGENDARIO, 0x3C49, 91, 90, 72, 90, 129, 108, TYPE_GRASS, TYPE_FIGHTING, 2, "Das Horn an seinem Kopf ist eine scharfe Klinge. Neckt seine Gegner mit quirligen Bewegungen und greift blitzartig an." },  // 640 grass/fighting
+  { "TORNADUS", 0, 0, R_LEGENDARIO, 0x8BF8, 79, 115, 70, 125, 80, 111, TYPE_FLYING, TYPE_NONE, 0, "Sein Unterkoerper ist in eine wolkenartige Energieschicht gehuellt. Es jagt mit bis zu 300 km/h durch die Luefte." },  // 641 flying
+  { "THUNDURUS", 0, 0, R_LEGENDARIO, 0xBCA1, 79, 115, 70, 125, 80, 111, TYPE_ELECTRIC, TYPE_FLYING, 0, "Es greift mit elektrischer Ladung aus den Dornen seiner Rute an und bombardiert Einall aus der Luft mit Blitzen." },  // 642 electric/flying
+  { "RESHIRAM", 0, 0, R_LEGENDARIO, 0x5A98, 100, 120, 100, 150, 120, 90, TYPE_DRAGON, TYPE_FIRE, 1, "Ein Legendaeres Pokemon mit der Macht, die Welt mit seinen Flammen einzuaeschern. Hilft allen, die nach Wirklichkeit streben." },  // 643 dragon/fire
+  { "ZEKROM", 0, 0, R_LEGENDARIO, 0x5A98, 100, 150, 120, 120, 100, 90, TYPE_DRAGON, TYPE_ELECTRIC, 1, "Ein Legendaeres Pokemon mit der Macht, die Welt durch Donner einzuaeschern. Hilft allen, die einer Welt der Wuensche harren." },  // 644 dragon/electric
+  { "LANDORUS", 0, 0, R_LEGENDARIO, 0xB447, 89, 125, 90, 115, 80, 101, TYPE_GROUND, TYPE_FLYING, 4, "Da an Orten, wo es sich blicken laesst, mit reicher Ernte zu rechnen ist, nennt man es auch den \"Herrn des Ackerbaus\"." },  // 645 ground/flying
+  { "KYUREM", 0, 0, R_LEGENDARIO, 0x5A98, 125, 130, 90, 130, 90, 95, TYPE_DRAGON, TYPE_ICE, 1, "Ein Legendaeres Eis-Pokemon, das auf den Helden wartet, der seinen verstuemmelten Koerper mit Wunsch und Wirklichkeit heilt." },  // 646 dragon/ice
+  { "KELDEO", 0, 0, R_LEGENDARIO, 0x4C98, 91, 72, 90, 129, 90, 108, TYPE_WATER, TYPE_FIGHTING, 1, "Es kann auf dem Wasser laufen und reist auf Fluessen und Meeren um die Welt. Zu sehen in malerischen Kuestengebieten." },  // 647 water/fighting
+  { "MELOETTA", 0, 0, R_LEGENDARIO, 0x8C4D, 100, 77, 77, 128, 128, 90, TYPE_NORMAL, TYPE_PSYCHIC, 0, "Es besitzt die Macht, Pokemon, die sich in seiner Naehe aufhalten, mit seinen Melodien froh oder traurig zu stimmen." },  // 648 normal/psychic
+  { "GENESECT", 0, 0, R_LEGENDARIO, 0x7CC4, 71, 120, 95, 120, 95, 99, TYPE_BUG, TYPE_STEEL, 2, "Ein von Team Plasma modifiziertes Kaefer-Pokemon aus dem Altertum. Die Kanone auf seinem Ruecken ist nun noch staerker." },  // 649 bug/steel
+  { "CHESPIN", 651, 16, R_COMUN, 0x3C49, 56, 61, 65, 48, 45, 38, TYPE_GRASS, TYPE_NONE, 2, "Wenn es seine Kraft auf die sonst eher weichen Stacheln auf seinem Kopf konzentriert, werden diese robust genug, um damit Steine zu." },  // 650 grass/none
+  { "QUILLADIN", 652, 36, R_EVO, 0x3C49, 61, 78, 95, 56, 58, 57, TYPE_GRASS, TYPE_NONE, 2, "Der Panzer, der seinen Koerper umgibt, bietet ihm Schutz vor Angreifern und straft direkte Angriffe postwendend mit spitzen Stacheln ab." },  // 651 grass/none
+  { "CHESNAUGHT", 0, 0, R_EVO, 0x3C49, 88, 107, 122, 74, 75, 64, TYPE_GRASS, TYPE_FIGHTING, 2, "Es ist so stark, dass es selbst 50 t schwere Panzer umkippen kann. Es schuetzt seine Artgenossen, indem es sich ihnen als Schild anbietet." },  // 652 grass/fighting
+  { "FENNEKIN", 654, 16, R_COMUN, 0xEA87, 40, 45, 40, 62, 60, 60, TYPE_FIRE, TYPE_NONE, 3, "Wenn es Zweige frisst, fasst es neue Kraft und stoesst ueber seine Ohren ueber 200 C heisse Luft aus." },  // 653 fire/none
+  { "BRAIXEN", 655, 36, R_EVO, 0xEA87, 59, 59, 58, 90, 70, 73, TYPE_FIRE, TYPE_NONE, 3, "In seinem Schweif steckt ein Zweig, den es bei Bedarf mit der Reibungswaerme seiner Schweifhaare anzuendet und im Kampf einsetzt." },  // 654 fire/none
+  { "DELPHOX", 0, 0, R_EVO, 0xEA87, 75, 69, 72, 114, 100, 104, TYPE_FIRE, TYPE_PSYCHIC, 3, "Es kann die Zukunft vorhersehen, indem es konzentriert in die Flamme an der Spitze seines Zweiges blickt." },  // 655 fire/psychic
+  { "FROAKIE", 657, 16, R_COMUN, 0x4C98, 41, 56, 40, 62, 44, 71, TYPE_WATER, TYPE_NONE, 1, "Es stoesst aus Brust und Ruecken elastische Blasen aus, mit denen es gegnerische Angriffe abfaengt und so den erlittenen Schaden verringert." },  // 656 water/none
+  { "FROGADIER", 658, 36, R_EVO, 0x4C98, 54, 63, 52, 83, 56, 97, TYPE_WATER, TYPE_NONE, 1, "Es kann kleine in Blasen gehuellte Steine mit solcher Praezision werfen, dass es selbst 30 m entfernte Dosen problemlos trifft." },  // 657 water/none
+  { "GRENINJA", 0, 0, R_EVO, 0x4C98, 72, 95, 67, 103, 71, 122, TYPE_WATER, TYPE_DARK, 1, "Es stellt Wurfsterne aus komprimiertem Wasser her, die durch ihre hohe Drehgeschwindigkeit beim Werfen sogar Metall durchtrennen." },  // 658 water/dark
+  { "BUNNELBY", 660, 20, R_COMUN, 0x8C4D, 38, 36, 38, 32, 36, 57, TYPE_NORMAL, TYPE_NONE, 0, "Mit seinen grossen Ohren schaufelt es sich einen Bau. Es kann die ganze Nacht ohne Pause durchschaufeln." },  // 659 normal/none
+  { "DIGGERSBY", 0, 0, R_EVO, 0x8C4D, 85, 56, 77, 50, 77, 78, TYPE_NORMAL, TYPE_GROUND, 0, "Seine grossen Ohren besitzen die Kraft, selbst Felsen, die 1 t schwer sind, muehelos hochzuheben. Es wird daher oft auf Baustellen." },  // 660 normal/ground
+  { "FLETCHLING", 662, 17, R_COMUN, 0x8C4D, 45, 50, 43, 40, 38, 62, TYPE_NORMAL, TYPE_FLYING, 0, "Ein sehr zutrauliches Pokmon. Durch Zwitschern und Bewegen der Schwanzfedern sendet es Signale an seine Gefaehrten." },  // 661 normal/flying
+  { "FLETCHINDER", 663, 35, R_EVO, 0xEA87, 62, 73, 55, 56, 52, 84, TYPE_FIRE, TYPE_FLYING, 3, "Es speit Funken aus seinem Schnabel und faengt die Beute, die ueberrascht aus dem angesengten Gras hervorspringt." },  // 662 fire/flying
+  { "TALONFLAME", 0, 0, R_EVO, 0xEA87, 78, 81, 71, 74, 69, 126, TYPE_FIRE, TYPE_FLYING, 3, "Die Aufregung eines harten Kampfes veranlasst es dazu, im Flug Funken aus den Zwischenraeumen seines Gefieders zu spruehen." },  // 663 fire/flying
+  { "SCATTERBUG", 665, 9, R_COMUN, 0x7CC4, 38, 35, 40, 27, 25, 35, TYPE_BUG, TYPE_NONE, 2, "Wird es von einem fliegenden Pokmon angegriffen, verstreut es schwarzen Puder. Der giftige Puder loest bei Beruehrung Paralyse aus." },  // 664 bug/none
+  { "SPEWPA", 666, 12, R_EVO, 0x7CC4, 45, 22, 60, 27, 30, 29, TYPE_BUG, TYPE_NONE, 2, "Es lebt versteckt im schattigen Dickicht. Wird es von einem Feind angegriffen, stellt es sein Fell zur Abschreckung zu scharfen Spitzen auf." },  // 665 bug/none
+  { "VIVILLON", 0, 0, R_EVO, 0x7CC4, 80, 52, 50, 90, 50, 89, TYPE_BUG, TYPE_FLYING, 2, "Vivillon kommen weltweit mit den unterschiedlichsten Musterungen vor. Das Klima ihres Habitats hat Einfluss auf ihre Fluegelmusterung." },  // 666 bug/flying
+  { "LITLEO", 668, 35, R_COMUN, 0xEA87, 62, 50, 58, 73, 54, 72, TYPE_FIRE, TYPE_NORMAL, 3, "Je staerker sein Gegner ist, desto heisser wird seine Maehne und umso kraftvoller wird es." },  // 667 fire/normal
+  { "PYROAR MALE", 0, 0, R_EVO, 0xEA87, 86, 68, 72, 109, 66, 106, TYPE_FIRE, TYPE_NORMAL, 3, "Das Maennchen mit der praechtigsten Feuermaehne fuehrt das Rudel an." },  // 668 fire/normal
+  { "FLABEBE", 670, 19, R_COMUN, 0x8C4D, 44, 38, 39, 61, 79, 42, TYPE_FAIRY, TYPE_NONE, 0, "Es entlockt Blumen ihre geheimen Kraefte und kontrolliert diese nach Belieben. Die Blume, die es traegt, ist wie ein Teil seines Koerpers." },  // 669 fairy/none
+  { "FLOETTE", 671, 30, R_EVO, 0x8C4D, 54, 45, 47, 75, 98, 52, TYPE_FAIRY, TYPE_NONE, 0, "Es fliegt auf Wiesen umher und kuemmert sich um welkende Blumen. Es setzt deren geheime Kraefte frei und nutzt diese zum Kaempfen." },  // 670 fairy/none
+  { "FLORGES", 0, 0, R_EVO, 0x8C4D, 78, 65, 68, 112, 154, 75, TYPE_FAIRY, TYPE_NONE, 0, "Wunderschoene Blumengaerten sind sein Revier. Es badet in der von bluehenden Blumen freigesetzten Energie und zieht daraus seine Kraft." },  // 671 fairy/none
+  { "SKIDDO", 673, 32, R_COMUN, 0x3C49, 66, 65, 48, 62, 57, 52, TYPE_GRASS, TYPE_NONE, 2, "Man sagt, es sei eines der ersten Pokmon, die mit Menschen zusammengelebt haben. Es ist sehr ruhig und friedfertig." },  // 672 grass/none
+  { "GOGOAT", 0, 0, R_EVO, 0x3C49, 123, 100, 62, 97, 81, 68, TYPE_GRASS, TYPE_NONE, 2, "Es kann die Stimmung seines Trainers an der kleinsten Veraenderung dessen Griffes um seine Hoerner ablesen und galoppiert sofort los, wenn." },  // 673 grass/none
+  { "PANCHAM", 675, 32, R_COMUN, 0xA2A5, 67, 82, 62, 46, 48, 43, TYPE_FIGHTING, TYPE_NONE, 0, "Es starrt den Gegner finster an, um nicht unterschaetzt zu werden, hat aber nur wenig Erfolg damit. Das Kauen auf einem Blatt ist sein." },  // 674 fighting/none
+  { "PANGORO", 0, 0, R_EVO, 0xA2A5, 95, 124, 78, 69, 71, 58, TYPE_FIGHTING, TYPE_DARK, 0, "Es ist sehr grob und streitlustig, laesst es aber nicht zu, dass Schwaechere gemobbt werden. Mit seinem Blatt erspuert es die Bewegungen." },  // 675 fighting/dark
+  { "FURFROU", 0, 0, R_COMUN, 0x8C4D, 75, 80, 60, 65, 90, 102, TYPE_NORMAL, TYPE_NONE, 0, "Schneidet man sein Fell zurecht, wird es nicht nur schoener, sondern auch beweglicher." },  // 676 normal/none
+  { "ESPURR", 678, 25, R_COMUN, 0xD28F, 62, 48, 54, 63, 60, 68, TYPE_PSYCHIC, TYPE_NONE, 0, "Damit die starken Psycho-Kraefte dieses Pokmon nicht unkontrolliert nach aussen dringen, ist das Organ, das diese freisetzt, von seinen." },  // 677 psychic/none
+  { "MEOWSTIC MALE", 0, 0, R_EVO, 0xD28F, 74, 48, 76, 83, 81, 104, TYPE_PSYCHIC, TYPE_NONE, 0, "In Gefahrensituationen hebt es seine Ohren an und setzt Psycho-Kraefte frei, die einen 10 t schweren LKW zu Schrott verarbeiten koennen." },  // 678 psychic/none
+  { "HONEDGE", 680, 35, R_COMUN, 0x7C73, 45, 80, 100, 35, 37, 28, TYPE_STEEL, TYPE_GHOST, 4, "Dieses Pokmon wird geboren, wenn die Seele eines Verstorbenen sich in einem Schwert festsetzt. Es heftet sich an Menschen und saugt deren." },  // 679 steel/ghost
+  { "DOUBLADE", 681, 30, R_EVO, 0x7C73, 59, 110, 150, 45, 49, 35, TYPE_STEEL, TYPE_GHOST, 4, "Bei seiner Entwicklung hat es sich in zwei Schwerter geteilt. Es begegnet seinen Gegnern mit Attacken, die es mittels Telepathie." },  // 680 steel/ghost
+  { "AEGISLASH SHIELD", 0, 0, R_EVO, 0x7C73, 60, 50, 140, 50, 140, 60, TYPE_STEEL, TYPE_GHOST, 4, "Generationen von Koenigen hatten dieses Pokmon an ihrer Seite. Mit seiner mysterioesen Kraft kann es Menschen und Pokmon gleichermassen." },  // 681 steel/ghost
+  { "SPRITZEE", 683, 32, R_COMUN, 0x8C4D, 78, 52, 60, 63, 65, 23, TYPE_FAIRY, TYPE_NONE, 0, "Der von ihm verstroemte Duft verzueckt jeden, der ihn riecht. Je nachdem, was es frisst, aendert sich sein Duft." },  // 682 fairy/none
+  { "AROMATISSE", 0, 0, R_EVO, 0x8C4D, 101, 72, 72, 99, 89, 29, TYPE_FAIRY, TYPE_NONE, 0, "Es produziert verschiedene Duefte. Im Kampf verschafft es sich einen Vorteil, indem es einen Duft verstroemt, der dem Gegner zuwider ist." },  // 683 fairy/none
+  { "SWIRLIX", 685, 32, R_COMUN, 0x8C4D, 62, 48, 66, 59, 57, 49, TYPE_FAIRY, TYPE_NONE, 0, "Es stoesst weisse Faeden aus, die so suess und klebrig wie Zuckerwatte sind. Mit ihnen umwickelt es den Gegner und hindert ihn daran, sich." },  // 684 fairy/none
+  { "SLURPUFF", 0, 0, R_EVO, 0x8C4D, 82, 80, 86, 85, 75, 72, TYPE_FAIRY, TYPE_NONE, 0, "Es verfuegt ueber einen feinen Geruchssinn, mit dem es selbst die schwaechsten Gerueche erkennen kann. Es hilft deshalb oft in." },  // 685 fairy/none
+  { "INKAY", 687, 30, R_COMUN, 0x5A6E, 53, 54, 53, 37, 46, 45, TYPE_DARK, TYPE_PSYCHIC, 2, "Gegner, die auf die blinkenden Punkte an seinem Koerper blicken, werden geblendet und verlieren den Willen zu kaempfen." },  // 686 dark/psychic
+  { "MALAMAR", 0, 0, R_EVO, 0x5A6E, 86, 92, 88, 68, 75, 73, TYPE_DARK, TYPE_PSYCHIC, 2, "Unter allen Pokmon verfuegt es ueber die staerksten hypnotischen Kraefte, mit denen es Gegner nach Belieben kontrollieren kann." },  // 687 dark/psychic
+  { "BINACLE", 689, 39, R_COMUN, 0x9407, 42, 52, 67, 39, 56, 50, TYPE_ROCK, TYPE_WATER, 4, "Bithora bewohnen jeweils zu zweit einen Felsen. Entzweien sie sich im Streit, sucht sich eines der beiden einen neuen Felsen als Unterkunft." },  // 688 rock/water
+  { "BARBARACLE", 0, 0, R_EVO, 0x9407, 72, 105, 115, 54, 86, 68, TYPE_ROCK, TYPE_WATER, 4, "Es entsteht bei der entwicklungsbedingten Aufspaltung der beiden Bithora in sieben Vertreter ihrer Art. Gemeinsam verfuegen sie ueber die." },  // 689 rock/water
+  { "SKRELP", 691, 48, R_COMUN, 0x8A73, 50, 60, 60, 60, 60, 30, TYPE_POISON, TYPE_WATER, 2, "Als verfaulter Seetang getarnt, lauert es auf Beute und bespritzt alles und jeden, der sich ahnungslos naehert, mit fluessigem Gift, bevor." },  // 690 poison/water
+  { "DRAGALGE", 0, 0, R_EVO, 0x8A73, 65, 75, 90, 97, 123, 44, TYPE_POISON, TYPE_DRAGON, 2, "Das Gift, mit dem es Eindringlinge in seinem Revier bespritzt, ist aetzend genug, um sich durch den Stahl eines Tankschiffes zu fressen." },  // 691 poison/dragon
+  { "CLAUNCHER", 693, 37, R_COMUN, 0x4C98, 50, 53, 62, 58, 63, 44, TYPE_WATER, TYPE_NONE, 1, "Mit Salven komprimierten Wassers, die es wie Pistolenkugeln aus seinen Scheren abfeuert, schiesst es fliegende Beute ab." },  // 692 water/none
+  { "CLAWITZER", 0, 0, R_EVO, 0x4C98, 71, 73, 88, 120, 89, 59, TYPE_WATER, TYPE_NONE, 1, "Aus seinen gewaltigen Scheren feuert es maechtige Wassergeschosse ab, die selbst den Rumpf eines Tankschiffes durchdringen." },  // 693 water/none
+  { "HELIOPTILE", 695, 30, R_COMUN, 0xBCA1, 44, 38, 33, 61, 43, 70, TYPE_ELECTRIC, TYPE_NORMAL, 0, "Es ist in der Wueste zu Hause und wandelt die Energie der Sonne in Koerperkraft um, wodurch es auch ohne Nahrung auskommt." },  // 694 electric/normal
+  { "HELIOLISK", 0, 0, R_EVO, 0xBCA1, 62, 55, 52, 109, 94, 109, TYPE_ELECTRIC, TYPE_NORMAL, 0, "Die Strommenge, die ein Elezard mit ausgebreiteten Hautlappen durch Umwandlung von Sonnenstrahlen erzeugt, genuegt zur Versorgung eines." },  // 695 electric/normal
+  { "TYRUNT", 697, 39, R_COMUN, 0x9407, 58, 89, 77, 45, 45, 48, TYPE_ROCK, TYPE_DRAGON, 4, "Dieses Pokmon wurde aus einem Fossil neu belebt. Missfaellt ihm etwas, rastet es vollkommen aus." },  // 696 rock/dragon
+  { "TYRANTRUM", 0, 0, R_EVO, 0x9407, 82, 121, 119, 69, 59, 71, TYPE_ROCK, TYPE_DRAGON, 4, "Aufgrund der Zerstoerungskraft seines Kiefers, der Stahl zerreissen kann, als waere es Papier, galt es in seiner Zeit als unbesiegbar." },  // 697 rock/dragon
+  { "AMAURA", 699, 39, R_COMUN, 0x9407, 77, 59, 50, 67, 63, 46, TYPE_ROCK, TYPE_ICE, 4, "Dieses antike Pokmon wurde aus Teilen seines Koerpers neu belebt, die 100 Millionen Jahre lang im ewigen Eis geschlummert hatten." },  // 698 rock/ice
+  { "AURORUS", 0, 0, R_EVO, 0x9407, 123, 77, 72, 99, 92, 58, TYPE_ROCK, TYPE_ICE, 4, "Mit der -150 C kalten Luft, die den diamantfoermigen Kristallen auf seinem Koerper entstroemt, friert es Gegner ein." },  // 699 rock/ice
+  { "SYLVEON", 0, 0, R_EVO, 0x8C4D, 95, 65, 65, 110, 130, 60, TYPE_FAIRY, TYPE_NONE, 0, "Seinen bandfoermigen Fuehlern laesst es beruhigende Wellen entstroemen, die das Ende von Kaempfen herbeifuehren." },  // 700 fairy/none
+  { "HAWLUCHA", 0, 0, R_COMUN, 0xA2A5, 78, 92, 75, 74, 63, 118, TYPE_FIGHTING, TYPE_FLYING, 0, "Ungeachtet seines kleinen Wuchses, erweist es sich, dank seiner Kampftechnik, gegenueber groesseren Gegnern wie Machomei oder Hariyama als." },  // 701 fighting/flying
+  { "DEDENNE", 0, 0, R_COMUN, 0xBCA1, 67, 58, 57, 81, 67, 101, TYPE_ELECTRIC, TYPE_FAIRY, 0, "Seine Schnurrhaare dienen ihm als Antennen. Durch das Senden und Empfangen von elektrischen Wellen kann es mit weit entfernten Freunden." },  // 702 electric/fairy
+  { "CARBINK", 0, 0, R_COMUN, 0x9407, 50, 50, 150, 50, 150, 50, TYPE_ROCK, TYPE_FAIRY, 4, "Dieses Pokmon entstand aus Druck und Hitze in den tiefsten Erdschichten. Mithilfe des Steines in seinem Kopf feuert es Energiestrahlen ab." },  // 703 rock/fairy
+  { "GOOMY", 705, 40, R_COMUN, 0x5A98, 45, 50, 35, 55, 75, 40, TYPE_DRAGON, TYPE_NONE, 0, "Dieses schwaechste aller Drachen-Pokmon lebt an feuchten und schattigen Plaetzen, um seinen glitschigen Koerper vor dem Austrocknen zu." },  // 704 dragon/none
+  { "SLIGGOO", 706, 50, R_EVO, 0x5A98, 68, 75, 53, 83, 113, 60, TYPE_DRAGON, TYPE_NONE, 0, "Es verjagt Gegner durch Absonderung eines alles zersetzenden Schleims. Die zurueckgebildeten Augaepfel des Pokmon gewaehren ihm keine Sicht." },  // 705 dragon/none
+  { "GOODRA", 0, 0, R_EVO, 0x5A98, 90, 100, 70, 110, 150, 80, TYPE_DRAGON, TYPE_NONE, 0, "Dieses aeusserst freundliche Drachen-Pokmon neigt dazu, seinen geliebten Trainer zu umarmen und so mit einer dicken Schleimschicht zu." },  // 706 dragon/none
+  { "KLEFKI", 0, 0, R_COMUN, 0x7C73, 57, 80, 91, 80, 87, 75, TYPE_STEEL, TYPE_FAIRY, 4, "Dieses Pokmon sammelt eifrig Schluessel, mit denen es wild herumfuchtelt, um Gegner abzuschrecken." },  // 707 steel/fairy
+  { "PHANTUMP", 709, 32, R_COMUN, 0x6AD3, 43, 70, 48, 50, 60, 38, TYPE_GHOST, TYPE_GRASS, 2, "Bei diesen Pokmon handelt es sich um verrottete und von Geistern besessene Baumstuempfe, die sich in von Menschen gemiedene Waelder." },  // 708 ghost/grass
+  { "TREVENANT", 0, 0, R_EVO, 0x6AD3, 85, 110, 76, 65, 82, 56, TYPE_GHOST, TYPE_GRASS, 2, "Die Baeume des Waldes folgen ihm blind. Menschen, die dem Wald Schaden zufuegen, haelt es bis an ihr Lebensende darin gefangen." },  // 709 ghost/grass
+  { "PUMPKABOO AVERAGE", 711, 32, R_COMUN, 0x6AD3, 49, 66, 70, 44, 55, 51, TYPE_GHOST, TYPE_GRASS, 2, "Es entsteht aus der Vereinigung einer in der Welt der Lebenden gefangenen Seele mit einem Kuerbis. Es wird erst nach Sonnenuntergang aktiv." },  // 710 ghost/grass
+  { "GOURGEIST AVERAGE", 0, 0, R_EVO, 0x6AD3, 65, 90, 122, 58, 75, 84, TYPE_GHOST, TYPE_GRASS, 2, "Unter unheimlichen Gesaengen durchstreift es in Neumondnaechten Staedte und Doerfer. Wer dem unheilvollen Gesang lauscht, wird verflucht." },  // 711 ghost/grass
+  { "BERGMITE", 713, 37, R_COMUN, 0x4DB8, 55, 69, 85, 32, 35, 28, TYPE_ICE, TYPE_NONE, 5, "Es wehrt gegnerische Angriffe mit seinem in Eis gehuellten Koerper ab. Bruchstellen bessert es mit aus kalter Luft gewonnenem neuen Eis aus." },  // 712 ice/none
+  { "AVALUGG", 0, 0, R_EVO, 0x4DB8, 95, 117, 184, 44, 46, 28, TYPE_ICE, TYPE_NONE, 5, "Sein eisbedeckter Koerper ist so hart wie Stahl. Es nutzt diese stahlharte Huelle, um Hindernisse zu zerschmettern und sich so seinen Weg." },  // 713 ice/none
+  { "NOIBAT", 715, 48, R_COMUN, 0x8BF8, 40, 30, 35, 45, 40, 55, TYPE_FLYING, TYPE_DRAGON, 0, "Es lebt im Inneren pechschwarzer Hoehlen. Seine riesigen Ohren setzen Ultraschallwellen von 200 000 Hz frei." },  // 714 flying/dragon
+  { "NOIVERN", 0, 0, R_EVO, 0x8BF8, 85, 70, 80, 97, 80, 123, TYPE_FLYING, TYPE_DRAGON, 0, "Es fliegt in finsterer, mondloser Nacht umher und macht Jagd auf achtlose Beute. Ist bei Dunkelheit jedem Gegner ueberlegen." },  // 715 flying/dragon
+  { "XERNEAS", 0, 0, R_LEGENDARIO, 0x8C4D, 126, 131, 95, 131, 98, 99, TYPE_FAIRY, TYPE_NONE, 0, "Legenden nach kann dieses Pokmon ewiges Leben spenden. In Gestalt eines Baumes ist es aus seinem tausendjaehrigen Schlaf erwacht." },  // 716 fairy/none
+  { "YVELTAL", 0, 0, R_LEGENDARIO, 0x5A6E, 126, 131, 95, 131, 98, 99, TYPE_DARK, TYPE_FLYING, 2, "Wenn Schwingen und Schwanzgefieder dieses Legendaeren Pokmon rot leuchten, entzieht es Lebewesen deren Energie." },  // 717 dark/flying
+  { "ZYGARDE 50", 0, 0, R_LEGENDARIO, 0x5A98, 108, 100, 121, 81, 95, 95, TYPE_DRAGON, TYPE_GROUND, 0, "Wenn das Oekosystem der Kalos-Region kippt, erscheint dieses Pokmon und offenbart seine geheimen Kraefte." },  // 718 dragon/ground
+  { "DIANCIE", 0, 0, R_LEGENDARIO, 0x9407, 50, 100, 150, 100, 150, 50, TYPE_ROCK, TYPE_FAIRY, 4, "Dieses Pokmon ist eine Mutation von Rocara. Sein rosafarben schimmernder Koerper gilt als schoenster Anblick ueberhaupt." },  // 719 rock/fairy
+  { "HOOPA", 0, 0, R_LEGENDARIO, 0xD28F, 80, 110, 60, 150, 130, 70, TYPE_PSYCHIC, TYPE_GHOST, 0, "Mittels seiner Ringe, die Raumkruemmungen verursachen, verfrachtet dieser Unruhestifter alles und jeden an die entlegensten Orte." },  // 720 psychic/ghost
+  { "VOLCANION", 0, 0, R_LEGENDARIO, 0xEA87, 80, 110, 120, 130, 90, 70, TYPE_FIRE, TYPE_WATER, 3, "Es stoesst Wasserdampf aus und versteckt sich im dadurch entstehenden dichten Nebel. Es lebt in Bergen, die von Menschen gemieden werden." },  // 721 fire/water
+  { "ROWLET", 723, 17, R_COMUN, 0x3C49, 68, 55, 55, 50, 50, 42, TYPE_GRASS, TYPE_FLYING, 2, "Ein wachsames und nachtaktives Pokmon. Tagsueber sammelt es per Photosynthese Kraefte, um fit fuer die Nacht zu sein." },  // 722 grass/flying
+  { "DARTRIX", 724, 34, R_EVO, 0x3C49, 78, 75, 75, 70, 70, 52, TYPE_GRASS, TYPE_FLYING, 2, "Dieses affektierte Pokmon pflegt sein Gefieder, wann immer es kann. Mit verschmutzten Federn hat es naemlich oft keine Lust zu kaempfen." },  // 723 grass/flying
+  { "DECIDUEYE", 0, 0, R_EVO, 0x3C49, 78, 107, 75, 100, 100, 70, TYPE_GRASS, TYPE_GHOST, 2, "Dieses Pokmon kann die Federn seiner Fluegel wie Pfeile verschiessen. Dabei ist es so praezise, dass es einen Kiesel auf 100 m durchbohrt." },  // 724 grass/ghost
+  { "LITTEN", 726, 17, R_COMUN, 0xEA87, 45, 65, 40, 60, 40, 70, TYPE_FIRE, TYPE_NONE, 3, "Es verbrennt Haare, die es bei der Koerperpflege verschluckt hat, indem es Feuer speit. Die Flammen variieren je nach Art des Speiens." },  // 725 fire/none
+  { "TORRACAT", 727, 34, R_EVO, 0xEA87, 65, 85, 50, 80, 50, 90, TYPE_FIRE, TYPE_NONE, 3, "Es traegt ein feuriges Gloeckchen um den Hals. Immer, wenn es Flammen ausstoesst, ertoent ein helles Laeuten." },  // 726 fire/none
+  { "INCINEROAR", 0, 0, R_EVO, 0xEA87, 95, 115, 90, 80, 90, 60, TYPE_FIRE, TYPE_DARK, 3, "Ein raues und selbstsuechtiges Pokmon. Wenn es keine Lust hat, ignoriert es auch schon mal die Befehle seines Trainers." },  // 727 fire/dark
+  { "POPPLIO", 729, 17, R_COMUN, 0x4C98, 50, 54, 54, 66, 56, 40, TYPE_WATER, TYPE_NONE, 1, "Dieses Pokmon ist fuer seine Willensstaerke bekannt. Blaest es Koerperfluessigkeit durch die Nase, entsteht eine Blase, die als Waffe." },  // 728 water/none
+  { "BRIONNE", 730, 34, R_EVO, 0x4C98, 60, 69, 69, 91, 81, 50, TYPE_WATER, TYPE_NONE, 1, "Dieser begnadete Taenzer erzeugt beim Tanzen eine Wasserblase nach der anderen und greift damit seine Feinde an." },  // 729 water/none
+  { "PRIMARINA", 0, 0, R_EVO, 0x4C98, 80, 74, 74, 126, 116, 60, TYPE_WATER, TYPE_FAIRY, 1, "Es kontrolliert mit seinem Gesang Wasserblasen. Die Melodie, die ueber Generationen im Rudel ueberliefert wird, lernt es von seinen." },  // 730 water/fairy
+  { "PIKIPEK", 732, 14, R_COMUN, 0x8C4D, 35, 75, 30, 30, 30, 65, TYPE_NORMAL, TYPE_FLYING, 0, "Pickt 16-mal pro Sekunde auf Baeume ein, um Loecher ins Holz zu schlagen. Diese nutzt es dann als Futterspeicher oder Nest." },  // 731 normal/flying
+  { "TRUMBEAK", 733, 28, R_EVO, 0x8C4D, 55, 85, 50, 40, 50, 75, TYPE_NORMAL, TYPE_FLYING, 0, "Sammelt Beerensamen in seinem Schnabel. Begegnet es Feinden oder Beute, kann es alle auf einmal verschiessen." },  // 732 normal/flying
+  { "TOUCANNON", 0, 0, R_EVO, 0x8C4D, 80, 120, 75, 75, 75, 60, TYPE_NORMAL, TYPE_FLYING, 0, "Erhitzt vor jedem Kampf seinen Schnabel auf ueber 100 C. Dadurch erleiden Gepiesackte schwere Verbrennungen." },  // 733 normal/flying
+  { "YUNGOOS", 735, 20, R_COMUN, 0x8C4D, 48, 70, 30, 30, 30, 45, TYPE_NORMAL, TYPE_NONE, 0, "Mit seinen scharfen Zaehnen schnappt es nach allem. Es lebte urspruenglich nicht in Alola und wurde aus einer anderen Region eingefuehrt." },  // 734 normal/none
+  { "GUMSHOOS", 0, 0, R_EVO, 0x8C4D, 88, 110, 60, 55, 60, 45, TYPE_NORMAL, TYPE_NONE, 0, "Findet es Spuren potenzieller Beute, legt es sich sofort auf die Lauer. Spaetestens bei Sonnenuntergang nickt es aber ein." },  // 735 normal/none
+  { "GRUBBIN", 737, 20, R_COMUN, 0x7CC4, 47, 62, 45, 55, 45, 46, TYPE_BUG, TYPE_NONE, 2, "Mit seinem robusten Kiefer schabt es an Baeumen, um an ihren Pflanzensaft zu gelangen. Es lebt normalerweise im Erdreich." },  // 736 bug/none
+  { "CHARJABUG", 738, 32, R_EVO, 0x7CC4, 57, 82, 95, 55, 75, 36, TYPE_BUG, TYPE_ELECTRIC, 2, "Speichert Elektrizitaet in seinem Koerper. Bei einem Campingausflug kann man wohl kein praktischeres Pokmon dabeihaben!" },  // 737 bug/electric
+  { "VIKAVOLT", 0, 0, R_EVO, 0x7CC4, 77, 70, 90, 145, 75, 43, TYPE_BUG, TYPE_ELECTRIC, 2, "Es fliegt umher und wartet auf seine Chance. In seinem grossen Kiefer speichert es elektrische Energie, die es auf Feinde abfeuern kann." },  // 738 bug/electric
+  { "CRABRAWLER", 740, 32, R_COMUN, 0xA2A5, 47, 82, 57, 42, 47, 63, TYPE_FIGHTING, TYPE_NONE, 0, "Schuetzt mit den Scheren seine Schwachstellen und bereitet einen Gegenschlag vor. Verliert es, blaest es Truebsal." },  // 739 fighting/none
+  { "CRABOMINABLE", 0, 0, R_EVO, 0xA2A5, 97, 132, 77, 62, 67, 43, TYPE_FIGHTING, TYPE_ICE, 0, "Es wollte auf eine verschneite Bergspitze, hat sich aber verlaufen. In der Kaelte wuchs ihm dann ein Fell und es entwickelte sich weiter." },  // 740 fighting/ice
+  { "ORICORIO BAILE", 0, 0, R_COMUN, 0xEA87, 75, 70, 70, 98, 70, 93, TYPE_FIRE, TYPE_FLYING, 3, "Schlaegt es mit den Fluegeln, gibt es Zunder! Mit eleganten Ausfallschritten laesst es dann Feuer auf seine Gegner herabregnen." },  // 741 fire/flying
+  { "CUTIEFLY", 743, 25, R_COMUN, 0x7CC4, 40, 45, 40, 55, 40, 84, TYPE_BUG, TYPE_FAIRY, 2, "Es ernaehrt sich von Bluetenstaub und Honig. Da es die Aura von Lebewesen wahrnehmen kann, spuert es, wenn eine Blume bald bluehen wird." },  // 742 bug/fairy
+  { "RIBOMBEE", 0, 0, R_EVO, 0x7CC4, 60, 55, 60, 95, 70, 124, TYPE_BUG, TYPE_FAIRY, 2, "Dieses Pokmon rollt Bluetenstaub zu Kugeln. Manche dieser Pollenknoedel dienen als Nahrung, andere setzt es aber auch im Kampf ein." },  // 743 bug/fairy
+  { "ROCKRUFF", 745, 25, R_COMUN, 0x9407, 45, 65, 40, 30, 40, 60, TYPE_ROCK, TYPE_NONE, 4, "Dieses sehr zutrauliche Pokmon wird oft frischgebackenen Trainern empfohlen. Mit dem Alter wird es jedoch immer wilder." },  // 744 rock/none
+  { "LYCANROC MIDDAY", 0, 0, R_EVO, 0x9407, 75, 115, 65, 55, 65, 112, TYPE_ROCK, TYPE_NONE, 4, "Irritiert seine Feinde mit schnellen Bewegungen. Als Waffen hat es nicht nur Krallen und Hauer, sondern auch die spitzen Felsen seiner." },  // 745 rock/none
+  { "WISHIWASHI SOLO", 0, 0, R_COMUN, 0x4C98, 45, 20, 20, 25, 25, 40, TYPE_WATER, TYPE_NONE, 1, "Geraet es in Not, traenen seine Augen. Ihr Glaenzen lockt Artgenossen an, mit denen es dann im Verbund den Feind angreift." },  // 746 water/none
+  { "MAREANIE", 748, 38, R_COMUN, 0x8A73, 50, 53, 62, 43, 52, 45, TYPE_POISON, TYPE_WATER, 2, "Mit seinem Giftstachel am Kopf attackiert es Beute. Ist diese geschwaecht, umschlingt es sie mit seinen zehn Tentakeln und gibt ihr den." },  // 747 poison/water
+  { "TOXAPEX", 0, 0, R_EVO, 0x8A73, 50, 63, 152, 53, 142, 35, TYPE_POISON, TYPE_WATER, 2, "Kriecht mit seinen zwoelf Beinen ueber den Meeresboden. Es hinterlaesst oft etliche Ueberreste von Corasonn." },  // 748 poison/water
+  { "MUDBRAY", 750, 30, R_COMUN, 0xB447, 70, 100, 70, 45, 55, 45, TYPE_GROUND, TYPE_NONE, 4, "Der ganze Schlamm an seinen Fuessen sorgt fuer die noetige Bodenhaftung, die es fuer seinen kraftvollen Lauf braucht." },  // 749 ground/none
+  { "MUDSDALE", 0, 0, R_EVO, 0xB447, 100, 125, 100, 55, 85, 35, TYPE_GROUND, TYPE_NONE, 4, "Der Schlamm, den es ausspuckt, schuetzt gegen Wind und Wetter, wenn er hart wird. Deshalb hat man frueher auch Hauswaende damit verstaerkt." },  // 750 ground/none
+  { "DEWPIDER", 752, 22, R_COMUN, 0x4C98, 38, 40, 52, 40, 72, 27, TYPE_WATER, TYPE_BUG, 1, "Die Futtersuche treibt es an Land. Eine Wasserblase versorgt es mit Atemluft und schuetzt zugleich seinen weichen Kopf." },  // 751 water/bug
+  { "ARAQUANID", 0, 0, R_EVO, 0x4C98, 68, 70, 92, 50, 132, 42, TYPE_WATER, TYPE_BUG, 1, "Es verteilt mit seiner Wasserblase Kopfstoesse. Kleine Pokmon werden dabei hineingezogen und ertrinken." },  // 752 water/bug
+  { "FOMANTIS", 754, 34, R_COMUN, 0x3C49, 40, 55, 35, 50, 35, 35, TYPE_GRASS, TYPE_NONE, 2, "Mittags badet es in der Sonne und haelt Nickerchen. Nachts muss es sich aber einen sichereren Schlafplatz suchen und zieht los." },  // 753 grass/none
+  { "LURANTIS", 0, 0, R_EVO, 0x3C49, 70, 105, 90, 80, 90, 45, TYPE_GRASS, TYPE_NONE, 2, "Es erfordert viel Arbeit, seine Farbenpracht zu erhalten, doch zum Glueck gibt es Passionierte, die den hohen Aufwand nicht scheuen." },  // 754 grass/none
+  { "MORELULL", 756, 24, R_COMUN, 0x3C49, 40, 35, 55, 65, 75, 15, TYPE_GRASS, TYPE_FAIRY, 2, "Es streut blinkende Sporen aus. Jeder, der dieses Licht sieht, schlaeft fest ein." },  // 755 grass/fairy
+  { "SHIINOTIC", 0, 0, R_EVO, 0x3C49, 60, 45, 80, 90, 100, 30, TYPE_GRASS, TYPE_FAIRY, 2, "Nachts sollte man Waelder meiden, in denen Lamellux leben. Ihr unheimliches Licht raubt jedem die Orientierung." },  // 756 grass/fairy
+  { "SALANDIT", 758, 33, R_COMUN, 0x8A73, 48, 44, 40, 71, 40, 77, TYPE_POISON, TYPE_FIRE, 2, "Durch Verbrennung von Koerperfluessigkeit erzeugt es ein Gas, das Feinde schwindelig und so zu leichten Zielen macht." },  // 757 poison/fire
+  { "SALAZZLE", 0, 0, R_EVO, 0x8A73, 68, 64, 60, 111, 60, 117, TYPE_POISON, TYPE_FIRE, 2, "Bisher wurden nur Weibchen entdeckt. Sie werden von maennlichen Molunk verehrt und leben mit einer Gruppe von ihnen zusammen." },  // 758 poison/fire
+  { "STUFFUL", 760, 27, R_COMUN, 0x8C4D, 70, 75, 50, 45, 50, 50, TYPE_NORMAL, TYPE_FIGHTING, 0, "Es sieht sehr suess aus, aber wehe, es wird wuetend. Mit seinen Armen wirbelnd haut es selbst den staerksten Wrestler um." },  // 759 normal/fighting
+  { "BEWEAR", 0, 0, R_EVO, 0x8C4D, 120, 125, 80, 55, 60, 60, TYPE_NORMAL, TYPE_FIGHTING, 0, "Dieses Pokmon verfuegt ueber immense Muskelkraft und ist aeusserst gefaehrlich. Sein Habitat ist generell Sperrgebiet." },  // 760 normal/fighting
+  { "BOUNSWEET", 762, 18, R_COMUN, 0x3C49, 42, 30, 38, 30, 38, 32, TYPE_GRASS, TYPE_NONE, 2, "Sein Koerper verstroemt einen koestlichen Duft, der leider seinen Fressfeind Tukanon anlockt. Dem kommt ein aromatischer Snack hoechst." },  // 761 grass/none
+  { "STEENEE", 763, 40, R_EVO, 0x3C49, 52, 40, 48, 40, 48, 62, TYPE_GRASS, TYPE_NONE, 2, "Seinen Bluetenkelch hat es zum Selbstschutz ausgebildet. Er ist so hart, dass selbst das Picken von Vogel-Pokmon es nicht stoert." },  // 762 grass/none
+  { "TSAREENA", 0, 0, R_EVO, 0x3C49, 72, 120, 98, 50, 98, 72, TYPE_GRASS, TYPE_NONE, 2, "Dieses Pokmon ist fuer seine heftigen Tritte bekannt. Oft tritt es auch noch nach und lacht, um seinen Sieg an die grosse Glocke zu haengen." },  // 763 grass/none
+  { "COMFEY", 0, 0, R_COMUN, 0x8C4D, 51, 52, 90, 82, 110, 100, TYPE_FAIRY, TYPE_NONE, 0, "Dieses Pokmon sieht aus, als haette man Blueten an einer nahrhaften Ranke angebracht. Diese bluehen auf und sind aeusserst wohlriechend." },  // 764 fairy/none
+  { "ORANGURU", 0, 0, R_COMUN, 0x8C4D, 90, 60, 80, 90, 110, 60, TYPE_NORMAL, TYPE_PSYCHIC, 0, "Es ist als extrem schlaues Pokmon bekannt. Nicht so beliebt bei unerfahrenen Trainern, doch Veteranen wissen es zu schaetzen." },  // 765 normal/psychic
+  { "PASSIMIAN", 0, 0, R_COMUN, 0xA2A5, 100, 120, 90, 40, 60, 80, TYPE_FIGHTING, TYPE_NONE, 0, "Es gruendet Gruppen von etwa 20 Exemplaren. Der Zusammenhalt der Gruppe ist extrem stark, kein Kamerad wird jemals im Stich gelassen." },  // 766 fighting/none
+  { "WIMPOD", 768, 30, R_COMUN, 0x7CC4, 25, 35, 40, 20, 30, 80, TYPE_BUG, TYPE_WATER, 2, "Es ist so feige, dass es wild mit seinen vielen Fuessen herumschlaegt und verzweifelt davonlaeuft. Nach seiner Flucht glaenzt der Boden." },  // 767 bug/water
+  { "GOLISOPOD", 0, 0, R_EVO, 0x7CC4, 75, 125, 140, 60, 90, 40, TYPE_BUG, TYPE_WATER, 2, "Mithilfe seiner riesigen, glitzernden Klauen zerteilt es selbst Luft und Salzwasser mit einem Hieb." },  // 768 bug/water
+  { "SANDYGAST", 770, 42, R_COMUN, 0x6AD3, 55, 55, 80, 70, 45, 15, TYPE_GHOST, TYPE_GROUND, 2, "Der Groll eines verstorbenen Reisenden fuhr in einen Sandhuegel, den ein Kind gebaut hatte, und brachte dieses Pokmon in die Welt." },  // 769 ghost/ground
+  { "PALOSSAND", 0, 0, R_EVO, 0x6AD3, 85, 75, 110, 100, 75, 35, TYPE_GHOST, TYPE_GROUND, 2, "Brachte Menschen dazu, den Sandhuegel zu einer stattlichen Sandburg auszubauen. Auch seine Flueche haben an Staerke gewonnen." },  // 770 ghost/ground
+  { "PYUKUMUKU", 0, 0, R_COMUN, 0x4C98, 55, 60, 130, 30, 130, 5, TYPE_WATER, TYPE_NONE, 1, "Es lebt an Straenden oder in flachen Gewaessern. Im Kampf und zum Schnappen von Beute laesst es seine Organe hervorschnellen." },  // 771 water/none
+  { "TYPE NULL", 773, 40, R_LEGENDARIO, 0x8C4D, 95, 95, 95, 95, 95, 59, TYPE_NORMAL, TYPE_NONE, 0, "Seine schwere Maske unterdrueckt seine wahre Macht. In ihm schlummern naemlich besondere Kraefte." },  // 772 normal/none
+  { "SILVALLY", 0, 0, R_LEGENDARIO, 0x8C4D, 95, 95, 95, 95, 95, 95, TYPE_NORMAL, TYPE_NONE, 0, "Das Vertrauen zu seinem Trainer weckt seine Kraefte. Es kann seinen Typ im Kampf nach Belieben wechseln." },  // 773 normal/none
+  { "MINIOR RED METEOR", 0, 0, R_COMUN, 0x9407, 60, 60, 100, 60, 100, 60, TYPE_ROCK, TYPE_FLYING, 4, "Eigentlich lebt es in der Ozonschicht, doch wenn seine Schale zu schwer wird, stuerzt es auf die Erde." },  // 774 rock/flying
+  { "KOMALA", 0, 0, R_COMUN, 0x8C4D, 65, 115, 65, 75, 95, 65, TYPE_NORMAL, TYPE_NONE, 0, "Es wird schlafend geboren und stirbt schlafend. Sein ganzes Leben ist ein Traum, seine einzige koerperliche Aktivitaet das Umdrehen im." },  // 775 normal/none
+  { "TURTONATOR", 0, 0, R_COMUN, 0xEA87, 60, 78, 135, 91, 85, 36, TYPE_FIRE, TYPE_DRAGON, 3, "Sein Rueckenpanzer ist explosiv, man sollte ihm also niemals auf den Ruecken klopfen. Das Loch in seinem Bauch ist seine Schwachstelle." },  // 776 fire/dragon
+  { "TOGEDEMARU", 0, 0, R_COMUN, 0xBCA1, 65, 98, 63, 40, 73, 96, TYPE_ELECTRIC, TYPE_STEEL, 0, "Normalerweise liegen seine Stacheln am Ruecken an, aber wenn es sich aufregt, stellen sie sich auf und stechen angreifende Gegner." },  // 777 electric/steel
+  { "MIMIKYU DISGUISED", 0, 0, R_COMUN, 0x6AD3, 55, 90, 80, 50, 105, 96, TYPE_GHOST, TYPE_FAIRY, 2, "Niemand weiss, wie es wirklich aussieht. Ein Forscher, der unter seinen Lumpen blickte, soll sich buchstaeblich zu Tode erschreckt haben." },  // 778 ghost/fairy
+  { "BRUXISH", 0, 0, R_COMUN, 0x4C98, 68, 105, 70, 70, 70, 92, TYPE_WATER, TYPE_PSYCHIC, 1, "Wenn es ueber den Fortsatz an seinem Kopf Psycho-Kraefte freisetzt, ertoent in seiner Umgebung ein unangenehmes Zaehneknirschen." },  // 779 water/psychic
+  { "DRAMPA", 0, 0, R_COMUN, 0x8C4D, 78, 60, 85, 135, 91, 36, TYPE_NORMAL, TYPE_DRAGON, 0, "Es hat ein freundliches Wesen, aber wenn es zur Weissglut gebracht wird, zerstoert es mit einem heftigen Hauch die gesamte Umgebung." },  // 780 normal/dragon
+  { "DHELMISE", 0, 0, R_COMUN, 0x6AD3, 70, 131, 100, 86, 90, 40, TYPE_GHOST, TYPE_GRASS, 2, "Wenn es seinen riesigen Anker schwingt, kann es sogar ein Wailord mit einem Schlag K.O. hauen. Der gruene Seetang ist sein Koerper." },  // 781 ghost/grass
+  { "JANGMO O", 783, 35, R_COMUN, 0x5A98, 45, 55, 65, 45, 45, 45, TYPE_DRAGON, TYPE_NONE, 0, "Es uebermittelt seine Gefuehle durch das Rasseln seiner Schuppen, wodurch im Hochgebirge, in dem es lebt, ein metallisches Geraeusch." },  // 782 dragon/none
+  { "HAKAMO O", 784, 45, R_EVO, 0x5A98, 55, 75, 90, 65, 70, 65, TYPE_DRAGON, TYPE_FIGHTING, 0, "Mit einem Kampfschrei stuerzt es sich auf seine Beute und reisst sie mithilfe seiner Schuppen in kleine Stuecke." },  // 783 dragon/fighting
+  { "KOMMO O", 0, 0, R_EVO, 0x5A98, 75, 110, 125, 100, 105, 85, TYPE_DRAGON, TYPE_FIGHTING, 0, "Wenn es einen Gegner sieht, rasselt es drohend mit seinen Schwanzschuppen. Schwache Gegner verlieren dadurch die Fassung und fliehen." },  // 784 dragon/fighting
+  { "TAPU KOKO", 0, 0, R_LEGENDARIO, 0xBCA1, 70, 115, 85, 95, 75, 130, TYPE_ELECTRIC, TYPE_FAIRY, 0, "Der neugierige und lebhafte Schutzpatron von Mele-Mele. Es kann Gewitterwolken rufen und Blitze in seinem Koerper speichern." },  // 785 electric/fairy
+  { "TAPU LELE", 0, 0, R_LEGENDARIO, 0xD28F, 70, 85, 75, 130, 115, 95, TYPE_PSYCHIC, TYPE_FAIRY, 0, "Der arglose, doch unbarmherzige Schutzpatron von Akala. Seine Energie zieht es aus dem lieblichen Duft von Blumen." },  // 786 psychic/fairy
+  { "TAPU BULU", 0, 0, R_LEGENDARIO, 0x3C49, 70, 130, 115, 85, 95, 75, TYPE_GRASS, TYPE_FAIRY, 2, "Dieses Pokmon entwurzelt grosse Baeume und schwingt sie herum. Es laesst Pflanzen ueppig gedeihen und absorbiert dann ihre Energie." },  // 787 grass/fairy
+  { "TAPU FINI", 0, 0, R_LEGENDARIO, 0x4C98, 70, 75, 115, 95, 130, 85, TYPE_WATER, TYPE_FAIRY, 1, "Es fuehrt Gegner mit dichtem Nebel in die Irre und schickt sie so in ihren Untergang. Seine Energie gewinnt es aus der Meeresstroemung." },  // 788 water/fairy
+  { "COSMOG", 790, 43, R_LEGENDARIO, 0xD28F, 43, 29, 31, 29, 31, 37, TYPE_PSYCHIC, TYPE_NONE, 0, "Sein Koerper besteht aus fluechtigem Gas. Es waechst durch das Sammeln von Staub aus der Luft." },  // 789 psychic/none
+  { "COSMOEM", 792, 53, R_LEGENDARIO, 0xD28F, 43, 29, 131, 29, 131, 37, TYPE_PSYCHIC, TYPE_NONE, 0, "Es ist voellig reglos, als waere es tot. Beruehrt man es, fuehlt es sich jedoch leicht warm an. Vor langer Zeit wurde es Sternenkokon." },  // 790 psychic/none
+  { "SOLGALEO", 0, 0, R_LEGENDARIO, 0xD28F, 137, 137, 107, 113, 89, 97, TYPE_PSYCHIC, TYPE_STEEL, 0, "Es heisst, es komme aus einer anderen Welt. Sein ganzer Koerper leuchtet strahlend hell und macht die finsterste Nacht zum Tage." },  // 791 psychic/steel
+  { "LUNALA", 0, 0, R_LEGENDARIO, 0xD28F, 137, 113, 89, 137, 107, 97, TYPE_PSYCHIC, TYPE_GHOST, 0, "Es heisst, es sei die weibliche Endstufe der Entwicklungsreihe von Cosmog. Ist sein drittes Auge aktiviert, zieht es in eine andere Welt." },  // 792 psychic/ghost
+  { "NIHILEGO", 0, 0, R_COMUN, 0x9407, 109, 53, 47, 127, 131, 103, TYPE_ROCK, TYPE_POISON, 4, "Eine raetselhafte Ultrabestie. Einigen Berichten zufolge verwandelt sie harmlose Stadtbewohner per Symbiose in aeusserst aggressive." },  // 793 rock/poison
+  { "BUZZWOLE", 0, 0, R_COMUN, 0x7CC4, 107, 139, 139, 53, 53, 79, TYPE_BUG, TYPE_FIGHTING, 2, "Eine Ultrabestie aus einer anderen Welt. Niemand weiss, ob sie ihren Koerper aus Stolz oder zur Abschreckung staehlt." },  // 794 bug/fighting
+  { "PHEROMOSA", 0, 0, R_COMUN, 0x7CC4, 71, 137, 37, 137, 37, 151, TYPE_BUG, TYPE_FIGHTING, 2, "Diese bedrohliche Ultrabestie wurde dabei beobachtet, wie sie mit ungeheuerlicher Geschwindigkeit ueber die Erde hinwegfegt." },  // 795 bug/fighting
+  { "XURKITREE", 0, 0, R_COMUN, 0xBCA1, 83, 89, 71, 173, 71, 83, TYPE_ELECTRIC, TYPE_NONE, 0, "Eine geheimnisvolle Ultrabestie, aus deren Koerper furchterregende Mengen an elektrischer Energie stroemen." },  // 796 electric/none
+  { "CELESTEELA", 0, 0, R_COMUN, 0x7C73, 97, 101, 103, 107, 101, 61, TYPE_STEEL, TYPE_FLYING, 4, "Eine Ultrabestie, die mit extremer Geschwindigkeit durch die Luefte rast. Sie ist durch die Ultrapforte gekommen." },  // 797 steel/flying
+  { "KARTANA", 0, 0, R_COMUN, 0x3C49, 59, 181, 131, 59, 31, 109, TYPE_GRASS, TYPE_STEEL, 2, "Eine Ultrabestie, die zwar nicht von sich aus anzugreifen scheint, deren rasiermesserscharfer Koerper aber eine gefaehrliche Waffe." },  // 798 grass/steel
+  { "GUZZLORD", 0, 0, R_COMUN, 0x5A6E, 223, 101, 53, 97, 53, 43, TYPE_DARK, TYPE_DRAGON, 2, "Eine Ultrabestie, die einigen Berichten zufolge ganze Berge vertilgt und selbst mehrstoeckige Gebaeude verschlingen kann." },  // 799 dark/dragon
+  { "NECROZMA", 0, 0, R_LEGENDARIO, 0xD28F, 97, 107, 101, 127, 89, 79, TYPE_PSYCHIC, TYPE_NONE, 0, "Diese einer Ultrabestie aehnelnde Kreatur ist wohl vor Urzeiten aus einer anderen Welt gekommen und ruhte lange Zeit unter der Erde." },  // 800 psychic/none
+  { "MAGEARNA", 0, 0, R_LEGENDARIO, 0x7C73, 80, 95, 115, 130, 115, 65, TYPE_STEEL, TYPE_FAIRY, 4, "Dieses Pokmon wurde vor ueber 500 Jahren kuenstlich erschaffen. Es versteht die Sprache der Menschen, ohne sie selbst zu sprechen." },  // 801 steel/fairy
+  { "MARSHADOW", 0, 0, R_LEGENDARIO, 0xA2A5, 90, 125, 80, 90, 90, 125, TYPE_FIGHTING, TYPE_GHOST, 0, "Da es sich im Schatten verbergen und so fuer menschliche Augen unsichtbar werden kann, war seine Existenz lange bezweifelt worden." },  // 802 fighting/ghost
+  { "POIPOLE", 804, 40, R_COMUN, 0x8A73, 67, 73, 67, 73, 67, 73, TYPE_POISON, TYPE_NONE, 2, "Diese Ultrabestie wird in der Welt, aus der sie kommt, so gemocht, dass sie oft als Partner fuer Reisen gewaehlt wird." },  // 803 poison/none
+  { "NAGANADEL", 0, 0, R_EVO, 0x8A73, 73, 73, 73, 127, 73, 121, TYPE_POISON, TYPE_DRAGON, 2, "Eines der Lebewesen, die Ultrabestien genannt werden. In seinem Koerper bewahrt es Hunderte Liter giftiger Fluessigkeit auf." },  // 804 poison/dragon
+  { "STAKATAKA", 0, 0, R_COMUN, 0x9407, 61, 131, 211, 53, 101, 13, TYPE_ROCK, TYPE_STEEL, 4, "Diese Kreatur kam durch eine Ultrapforte. Sie besteht anscheinend aus mehreren aufeinandergestapelten Wesen." },  // 805 rock/steel
+  { "BLACEPHALON", 0, 0, R_COMUN, 0xEA87, 53, 127, 53, 151, 79, 107, TYPE_FIRE, TYPE_GHOST, 3, "Dieses Wesen ist vermutlich eine Ultrabestie. Es naehert sich Menschen taenzelnd, nur um dann ploetzlich seinen Kopf explodieren zu lassen." },  // 806 fire/ghost
+  { "ZERAORA", 0, 0, R_LEGENDARIO, 0xBCA1, 88, 112, 75, 102, 80, 143, TYPE_ELECTRIC, TYPE_NONE, 0, "Mit seinen elektrisierten Krallen reisst es Gegner in Stuecke. Selbst wenn sie ausweichen, werden sie von elektrisch geladenen Funken." },  // 807 electric/none
+  { "MELTAN", 0, 0, R_LEGENDARIO, 0x7C73, 46, 65, 65, 55, 35, 34, TYPE_STEEL, TYPE_NONE, 4, "Sein Koerper besteht aus geschmolzenem Stahl. Es bringt Eisen und andere Metalle im Boden zum Schmelzen, um sie dann zu absorbieren." },  // 808 steel/none
+  { "MELMETAL", 0, 0, R_LEGENDARIO, 0x7C73, 135, 143, 143, 80, 65, 34, TYPE_STEEL, TYPE_NONE, 4, "Einst wurde es fuer seine Faehigkeit verehrt, Eisen erschaffen zu koennen. Nach 3000 Jahren ist es aus einem unerfindlichen Grund wieder." },  // 809 steel/none
+  { "GROOKEY", 811, 16, R_COMUN, 0x3C49, 50, 65, 50, 40, 40, 65, TYPE_GRASS, TYPE_NONE, 2, "Der Rhythmus, den es mit seinem besonderen Schlaegel erzeugt, verbreitet Schallwellen, die Pflanzen neue Vitalitaet verleihen koennen." },  // 810 grass/none
+  { "THWACKEY", 812, 35, R_EVO, 0x3C49, 70, 85, 70, 55, 60, 80, TYPE_GRASS, TYPE_NONE, 2, "Je wilder der Beat, den ein Chimstix mit seinen zwei Schlaegeln erzeugt, desto mehr wird es von seinen Artgenossen respektiert." },  // 811 grass/none
+  { "RILLABOOM", 0, 0, R_EVO, 0x3C49, 100, 125, 90, 60, 70, 85, TYPE_GRASS, TYPE_NONE, 2, "Es kontrolliert die Macht seines speziellen Baumstumpfes durch Trommeln. Im Kampf manipuliert es damit Wurzeln." },  // 812 grass/none
+  { "SCORBUNNY", 814, 16, R_COMUN, 0xEA87, 50, 71, 40, 40, 40, 69, TYPE_FIRE, TYPE_NONE, 3, "Erhoeht es durch Rennen seine Koerpertemperatur, stroemt Feuer-Energie durch seinen Koerper. Dann kann es seine wahre Kraft entfesseln." },  // 813 fire/none
+  { "RABOOT", 815, 35, R_EVO, 0xEA87, 65, 86, 60, 55, 60, 94, TYPE_FIRE, TYPE_NONE, 3, "Sein flauschiges Fell schuetzt es vor Kaelte und ermoeglicht es ihm, noch heissere Feuer-Attacken auszuteilen." },  // 814 fire/none
+  { "CINDERACE", 0, 0, R_EVO, 0xEA87, 80, 116, 75, 65, 75, 119, TYPE_FIRE, TYPE_NONE, 3, "Es jongliert kleine Steine mit den Fuessen und erschafft daraus einen Flammenfussball. Seine Gegner verbrennt es mit scharfen Schuessen." },  // 815 fire/none
+  { "SOBBLE", 817, 16, R_COMUN, 0x4C98, 50, 40, 40, 70, 40, 70, TYPE_WATER, TYPE_NONE, 1, "Hat es Angst, vergiesst es Traenen, die Reizstoffe enthalten, welche andere ebenfalls zum Weinen bringen. Sie sind so stark wie 100." },  // 816 water/none
+  { "DRIZZILE", 818, 35, R_EVO, 0x4C98, 65, 60, 55, 95, 55, 90, TYPE_WATER, TYPE_NONE, 1, "Das Sekret, das aus seinen Handflaechen austritt, formt es zu Wasserkugeln. Diese nutzt es im Kampf fuer taktisch ausgekluegelte Angriffe." },  // 817 water/none
+  { "INTELEON", 0, 0, R_EVO, 0x4C98, 70, 85, 65, 125, 65, 120, TYPE_WATER, TYPE_NONE, 1, "Zu seinen vielen geheimen Talenten gehoert es, Wasser aus den Fingern zu schiessen und mit der Membran am Ruecken durch die Luefte zu." },  // 818 water/none
+  { "SKWOVET", 820, 24, R_COMUN, 0x8C4D, 70, 55, 55, 35, 35, 25, TYPE_NORMAL, TYPE_NONE, 0, "Es ist ueberall in der Galar-Region anzutreffen. Hat es keine Beeren, die es in seinen beiden Backen horten kann, wird es unruhig." },  // 819 normal/none
+  { "GREEDENT", 0, 0, R_EVO, 0x8C4D, 120, 95, 95, 55, 75, 20, TYPE_NORMAL, TYPE_NONE, 0, "Es hortet in seinem Schweif Beeren. Versucht es, zu viele unterzubringen, fallen sie heraus. Da es jedoch nicht allzu clever ist, bemerkt." },  // 820 normal/none
+  { "ROOKIDEE", 822, 18, R_COMUN, 0x8BF8, 38, 47, 35, 33, 35, 57, TYPE_FLYING, TYPE_NONE, 0, "Es ist von Natur aus sehr mutig und fordert daher jeden noch so starken Feind heraus. Selbst wenn es den Kuerzeren zieht, dient dies." },  // 821 flying/none
+  { "CORVISQUIRE", 823, 38, R_EVO, 0x8BF8, 68, 67, 55, 43, 55, 77, TYPE_FLYING, TYPE_NONE, 0, "Es weiss Objekte geschickt einzusetzen. So greift und wirft es zum Beispiel kleine Steine mit seinen Krallen oder wickelt Seile um Gegner." },  // 822 flying/none
+  { "CORVIKNIGHT", 0, 0, R_EVO, 0x8BF8, 98, 87, 105, 53, 85, 67, TYPE_FLYING, TYPE_STEEL, 0, "Niemand wagt es, ihm den Himmel ueber Galar streitig zu machen. Sein schwarz glaenzendes, staehlernes Aeusseres schuechtert jeden Gegner." },  // 823 flying/steel
+  { "BLIPBUG", 825, 10, R_COMUN, 0x7CC4, 25, 20, 20, 25, 45, 45, TYPE_BUG, TYPE_NONE, 2, "Sensect ist ein schlaues Pokmon, da es immer fleissig Informationen sammelt. Seine Staerke laesst jedoch zu wuenschen uebrig." },  // 824 bug/none
+  { "DOTTLER", 826, 30, R_EVO, 0x7CC4, 50, 35, 80, 50, 90, 30, TYPE_BUG, TYPE_PSYCHIC, 2, "Obwohl es sich fast nie bewegt, ist es am Leben. Es sollen Psycho-Kraefte in ihm erwacht sein, als es ohne Nahrung in seinem Panzer." },  // 825 bug/psychic
+  { "ORBEETLE", 0, 0, R_EVO, 0x7CC4, 60, 45, 110, 80, 120, 90, TYPE_BUG, TYPE_PSYCHIC, 2, "Es ist allseits als sehr schlaues Pokmon bekannt. Sein grosses Gehirn ist ein Indiz dafuer, dass es ueber maechtige Psycho-Kraefte verfuegt." },  // 826 bug/psychic
+  { "NICKIT", 828, 18, R_COMUN, 0x5A6E, 40, 28, 28, 47, 52, 50, TYPE_DARK, TYPE_NONE, 2, "Es stibitzt Futter, das andere Pokmon gefunden haben. Dank der samtweichen Ballen an seinen Pfoten ist sein Gang lautlos." },  // 827 dark/none
+  { "THIEVUL", 0, 0, R_EVO, 0x5A6E, 70, 58, 58, 87, 92, 90, TYPE_DARK, TYPE_NONE, 2, "Es markiert heimlich die Beute, auf die es ein Auge geworfen hat. Dann folgt es dem Geruch und stiehlt sie, wenn sich die Gelegenheit." },  // 828 dark/none
+  { "GOSSIFLEUR", 830, 20, R_COMUN, 0x3C49, 40, 40, 60, 40, 60, 10, TYPE_GRASS, TYPE_NONE, 2, "Steckt es sein Beinchen fest in den Boden und badet dann ausgiebig im Sonnenlicht, nimmt seine Bluete eine kraeftigere Farbe an." },  // 829 grass/none
+  { "ELDEGOSS", 0, 0, R_EVO, 0x3C49, 60, 50, 90, 80, 120, 60, TYPE_GRASS, TYPE_NONE, 2, "Die Saat seines Wollflaums steckt voller Naehrstoffe. Es verstreut sie im Wind und heilt damit Pflanzen und Pokmon." },  // 830 grass/none
+  { "WOOLOO", 832, 24, R_COMUN, 0x8C4D, 42, 40, 55, 40, 45, 48, TYPE_NORMAL, TYPE_NONE, 0, "Sein stark gelocktes Fell hat eine sehr polsternde Wirkung. Selbst eine Klippe hinunterzufallen macht ihm nichts aus." },  // 831 normal/none
+  { "DUBWOOL", 0, 0, R_EVO, 0x8C4D, 72, 80, 100, 60, 90, 88, TYPE_NORMAL, TYPE_NONE, 0, "Spannt man einen aus den elastischen Haaren von Zwollock gewobenen Teppich auf, kann man darauf huepfen wie auf einem Trampolin." },  // 832 normal/none
+  { "CHEWTLE", 834, 22, R_COMUN, 0x4C98, 50, 64, 50, 38, 38, 44, TYPE_WATER, TYPE_NONE, 1, "Es schnappt sofort nach allem, was ihm unterkommt. Der Grund dafuer ist anscheinend, dass seine wachsenden Vorderzaehne jucken." },  // 833 water/none
+  { "DREDNAW", 0, 0, R_EVO, 0x4C98, 90, 115, 90, 48, 68, 74, TYPE_WATER, TYPE_ROCK, 1, "Dieses von Natur aus aggressive Pokmon beisst seine Beute mit seinem kraeftigen Kiefer, der selbst Eisenstangen zermalmen kann." },  // 834 water/rock
+  { "YAMPER", 836, 25, R_COMUN, 0xBCA1, 59, 45, 50, 40, 50, 26, TYPE_ELECTRIC, TYPE_NONE, 0, "Beim Rennen erzeugt es Elektrizitaet in seinem Schwanzansatz. In der Galar-Region erfreut es sich bei Hirten grosser Beliebtheit." },  // 835 electric/none
+  { "BOLTUND", 0, 0, R_EVO, 0xBCA1, 69, 90, 60, 90, 60, 121, TYPE_ELECTRIC, TYPE_NONE, 0, "Es generiert Strom und laesst ihn zur Unterstuetzung beim Rennen in seine Beine fliessen. Dadurch kann es drei Tage und Naechte ohne Pause." },  // 836 electric/none
+  { "ROLYCOLY", 838, 18, R_COMUN, 0x9407, 30, 40, 50, 40, 50, 30, TYPE_ROCK, TYPE_NONE, 4, "Es wurde vor circa 400 Jahren in einer Kohlemine entdeckt. Sein Koerper besteht fast aus denselben Komponenten wie Steinkohle." },  // 837 rock/none
+  { "CARKOL", 839, 34, R_EVO, 0x9407, 80, 60, 90, 60, 70, 50, TYPE_ROCK, TYPE_FIRE, 4, "Es produziert Steinkohle in seinem Koerper. Die von ihm abfallende Kohle wurde frueher in der Galar-Region fuers taegliche Leben genutzt." },  // 838 rock/fire
+  { "COALOSSAL", 0, 0, R_EVO, 0x9407, 110, 80, 120, 80, 90, 30, TYPE_ROCK, TYPE_FIRE, 4, "Meist ist es friedfertig, aber wenn Menschen eine Mine zugrunde richten, sieht es rot und verbrennt sie mit 1500 C heissen Flammen." },  // 839 rock/fire
+  { "APPLIN", 1011, 30, R_COMUN, 0x3C49, 40, 40, 80, 40, 40, 20, TYPE_GRASS, TYPE_DRAGON, 2, "Es verbringt sein ganzes Leben im Inneren eines Apfels. Um sich vor Vogel-Pokmon, seinen Fressfeinden, zu schuetzen, imitiert es einen." },  // 840 grass/dragon
+  { "FLAPPLE", 0, 0, R_EVO, 0x3C49, 70, 110, 80, 95, 60, 70, TYPE_GRASS, TYPE_DRAGON, 2, "Nach dem Verzehr eines sauren Apfels hat es sich entwickelt. In den Backentaschen speichert es eine saure Substanz, die zu Verbrennungen." },  // 841 grass/dragon
+  { "APPLETUN", 0, 0, R_EVO, 0x3C49, 110, 85, 80, 100, 80, 30, TYPE_GRASS, TYPE_DRAGON, 2, "Nach dem Verzehr eines suessen Apfels hat es sich entwickelt. Es verstroemt einen suessen Duft und lockt damit sein Futter an Kaefer-Pokmon." },  // 842 grass/dragon
+  { "SILICOBRA", 844, 36, R_COMUN, 0xB447, 52, 57, 75, 35, 50, 46, TYPE_GROUND, TYPE_NONE, 4, "Den Sand, den es beim Graben von Loechern verzehrt, speichert es in einem Beutel in seinem Hals. Dieser kann bis zu 8 kg Sand aufnehmen." },  // 843 ground/none
+  { "SANDACONDA", 0, 0, R_EVO, 0xB447, 72, 107, 125, 65, 70, 71, TYPE_GROUND, TYPE_NONE, 4, "Zieht es seinen ganzen Koerper zusammen, kann es 100 kg Sand aus seinen Nasenloechern feuern. Geht ihm der Sand aus, verliert es den Mut." },  // 844 ground/none
+  { "CRAMORANT", 0, 0, R_COMUN, 0x8BF8, 70, 85, 55, 85, 95, 85, TYPE_FLYING, TYPE_WATER, 0, "Es ist so stark, dass es seine Gegner mit einem Angriff vernichten koennte, aber zerstreut wie es ist, vergisst es oefters, wen es gerade." },  // 845 flying/water
+  { "ARROKUDA", 847, 26, R_COMUN, 0x4C98, 41, 63, 40, 40, 30, 66, TYPE_WATER, TYPE_NONE, 1, "Sein spitz zulaufender Kiefer ist sein ganzer Stolz. Erblickt es etwas, das sich auch nur ein bisschen bewegt, setzt es geradewegs zum." },  // 846 water/none
+  { "BARRASKEWDA", 0, 0, R_EVO, 0x4C98, 61, 123, 60, 60, 50, 136, TYPE_WATER, TYPE_NONE, 1, "Sein Kiefer ist spitz wie ein Speer und hart wie Stahl. Ausserdem soll Barrakiefa ueberraschend delizioes sein." },  // 847 water/none
+  { "TOXEL", 849, 30, R_COMUN, 0xBCA1, 40, 38, 35, 54, 35, 40, TYPE_ELECTRIC, TYPE_POISON, 0, "Das Gift aus dem Giftsack in seinem Koerper sondert es ueber die Haut ab. Beruehrt man es, bekommt man einen laehmenden Schock verpasst." },  // 848 electric/poison
+  { "TOXTRICITY AMPED", 0, 0, R_EVO, 0xBCA1, 75, 98, 70, 114, 70, 75, TYPE_ELECTRIC, TYPE_POISON, 0, "Wenn es am Fortsatz an seiner Brust kratzt und dadurch Strom erzeugt, dann erklingt in der Umgebung ein Ton wie von einer Gitarre." },  // 849 electric/poison
+  { "SIZZLIPEDE", 851, 28, R_COMUN, 0xEA87, 50, 65, 45, 50, 50, 45, TYPE_FIRE, TYPE_BUG, 3, "Mit dem entzuendlichen Gas in seinem Koerper erzeugt es Hitze. Die gelben Stellen an seinem Bauch werden besonders heiss." },  // 850 fire/bug
+  { "CENTISKORCH", 0, 0, R_EVO, 0xEA87, 100, 115, 65, 90, 90, 65, TYPE_FIRE, TYPE_BUG, 3, "Wenn es Hitze erzeugt, betraegt seine Temperatur etwa 800 C. Es bewegt seinen Koerper wie eine Peitsche, um dann den Gegner anzuspringen." },  // 851 fire/bug
+  { "CLOBBOPUS", 853, 40, R_COMUN, 0xA2A5, 50, 68, 60, 50, 50, 32, TYPE_FIGHTING, TYPE_NONE, 0, "Zur Futtersuche kommt es an Land. Es ist sehr neugierig, weshalb es alles, was es sieht, zunaechst einmal mit seinen Tentakeln haut." },  // 852 fighting/none
+  { "GRAPPLOCT", 0, 0, R_EVO, 0xA2A5, 80, 118, 90, 70, 80, 42, TYPE_FIGHTING, TYPE_NONE, 0, "Sein Koerper besteht gaenzlich aus Muskeln. Die schiere Staerke seines Wuergegriffs, bei dem es seine Tentakel einsetzt, ist sagenhaft." },  // 853 fighting/none
+  { "SINISTEA", 855, 30, R_COMUN, 0x6AD3, 40, 45, 45, 74, 54, 50, TYPE_GHOST, TYPE_NONE, 2, "Es heisst, eine einsame Seele habe Besitz von einer abgestellten, kalten Tasse Schwarztee ergriffen und sei zu diesem Pokmon geworden." },  // 854 ghost/none
+  { "POLTEAGEIST", 0, 0, R_EVO, 0x6AD3, 60, 65, 65, 134, 114, 70, TYPE_GHOST, TYPE_NONE, 2, "Sie lassen sich in alten Teekannen nieder. Die meisten dieser Kannen sind billige Faelschungen, aber es gibt auch ein paar sehr seltene." },  // 855 ghost/none
+  { "HATENNA", 857, 32, R_COMUN, 0xD28F, 42, 30, 45, 56, 53, 39, TYPE_PSYCHIC, TYPE_NONE, 0, "Mit dem Fortsatz an seinem Kopf kann es die Gefuehle von Lebewesen wahrnehmen. Es oeffnet nur geruhsam veranlagten Leuten sein Herz." },  // 856 psychic/none
+  { "HATTREM", 858, 42, R_EVO, 0xD28F, 57, 40, 65, 86, 73, 49, TYPE_PSYCHIC, TYPE_NONE, 0, "Empfindet jemand starke Emotionen, bringt es ihn auf gewaltsame Art zum Schweigen, egal, um wen es sich dabei handelt." },  // 857 psychic/none
+  { "HATTERENE", 0, 0, R_EVO, 0xD28F, 57, 90, 95, 136, 103, 29, TYPE_PSYCHIC, TYPE_FAIRY, 0, "Die starken Psycho-Kraefte, die es ausstrahlt, rufen Kopfschmerzen hervor. So haelt es andere Lebewesen von sich fern." },  // 858 psychic/fairy
+  { "IMPIDIMP", 860, 32, R_COMUN, 0x5A6E, 45, 45, 30, 55, 40, 50, TYPE_DARK, TYPE_FAIRY, 2, "Es wird kraeftiger, indem es die von unzufriedenen Menschen und Pokmon ausgestossene negative Energie einatmet." },  // 859 dark/fairy
+  { "MORGREM", 861, 42, R_EVO, 0x5A6E, 65, 60, 45, 75, 55, 70, TYPE_DARK, TYPE_FAIRY, 2, "Es nutzt eine Taktik, bei der es sich niederwirft und vorgibt, sich zu entschuldigen, nur um dann mit seinem speerartigen Haar zuzustossen." },  // 860 dark/fairy
+  { "GRIMMSNARL", 0, 0, R_EVO, 0x5A6E, 95, 120, 65, 95, 75, 60, TYPE_DARK, TYPE_FAIRY, 2, "Wickelt es seine Haare um den ganzen Koerper, verstaerkt dies seine Muskelkraft. Das macht es so stark, dass es sogar Machomei bezwingen." },  // 861 dark/fairy
+  { "OBSTAGOON", 0, 0, R_EVO, 0x5A6E, 93, 90, 101, 60, 81, 95, TYPE_DARK, TYPE_NORMAL, 2, "Es verfuegt ueber eine beeindruckende Stimmkraft. Sein von Schreien begleitetes Drohverhalten nennt man auch Abblocker." },  // 862 dark/normal
+  { "PERRSERKER", 0, 0, R_EVO, 0x7C73, 70, 110, 100, 50, 60, 50, TYPE_STEEL, TYPE_NONE, 4, "Die Haare auf seinem Kopf haben sich zu etwas verhaertet, das an einen eisernen Helm erinnert. Es ist von Natur aus kriegerisch veranlagt." },  // 863 steel/none
+  { "CURSOLA", 0, 0, R_EVO, 0x6AD3, 60, 95, 50, 145, 130, 30, TYPE_GHOST, TYPE_NONE, 2, "In ihm wuchs eine mysterioese Kraft und so loeste es sich von seinem Panzer los. Sein geisterhaftes Ektoplasma schuetzt die Seele im Kern." },  // 864 ghost/none
+  { "SIRFETCHD", 0, 0, R_EVO, 0xA2A5, 62, 135, 95, 68, 82, 65, TYPE_FIGHTING, TYPE_NONE, 0, "Porenta, die viele Schlachten ueberstanden haben, entwickeln sich zu Lauchzelot. Verwelkt seine Lauchstange, zieht es sich vom Kaempfen." },  // 865 fighting/none
+  { "MR RIME", 0, 0, R_EVO, 0x4DB8, 80, 85, 75, 110, 100, 70, TYPE_ICE, TYPE_PSYCHIC, 5, "Dieser begnadete Stepptaenzer schwingt einen aus Eis geformten Gehstock und gibt mit leichtem Fuss seinen Tanz zum Besten." },  // 866 ice/psychic
+  { "RUNERIGUS", 0, 0, R_EVO, 0xB447, 58, 95, 145, 50, 105, 30, TYPE_GROUND, TYPE_GHOST, 4, "Eine antike Malerei, die mit einem maechtigen Fluch versehen wurde, nahm die Seele eines Makabaja auf und erwachte zum Leben." },  // 867 ground/ghost
+  { "MILCERY", 869, 32, R_COMUN, 0x8C4D, 45, 40, 40, 50, 61, 34, TYPE_FAIRY, TYPE_NONE, 0, "Sein Koerper besteht aus Sahne. Es entstand aus einer Ansammlung suesser Geruchspartikel in der Luft." },  // 868 fairy/none
+  { "ALCREMIE", 0, 0, R_EVO, 0x8C4D, 65, 60, 75, 110, 121, 64, TYPE_FAIRY, TYPE_NONE, 0, "Es macht einem Trainer, dem es vertraut, mit Beeren samt Sahnedekoration eine Freude." },  // 869 fairy/none
+  { "FALINKS", 0, 0, R_COMUN, 0xA2A5, 65, 100, 100, 70, 60, 75, TYPE_FIGHTING, TYPE_NONE, 0, "Dieses Pokmon besteht aus fuenf Untergebenen und einem Anfuehrer. Die Befehle des Anfuehrers werden nie in Frage gestellt." },  // 870 fighting/none
+  { "PINCURCHIN", 0, 0, R_COMUN, 0xBCA1, 48, 101, 95, 91, 85, 15, TYPE_ELECTRIC, TYPE_NONE, 0, "Aus den Spitzen seiner Stacheln setzt es Elektrizitaet frei. Mit seinen scharfen Zaehnen schabt es Algen von Steinen ab und frisst sie." },  // 871 electric/none
+  { "SNOM", 873, 40, R_COMUN, 0x4DB8, 30, 25, 35, 45, 30, 20, TYPE_ICE, TYPE_BUG, 5, "Es spinnt einen eiskalten Faden, mit dem es sich an einen Ast haengt. Dabei tut es so, als waere es ein Eiszapfen, um in Ruhe schlafen zu." },  // 872 ice/bug
+  { "FROSMOTH", 0, 0, R_EVO, 0x4DB8, 70, 65, 60, 125, 90, 65, TYPE_ICE, TYPE_BUG, 5, "Seine Fluegel sind -180 C kalt. Waehrend es ueber Felder und Berge fliegt, verstreut es mit Kaelte versetzten Fluegelstaub, der wie Schnee." },  // 873 ice/bug
+  { "STONJOURNER", 0, 0, R_COMUN, 0x9407, 100, 125, 135, 20, 20, 70, TYPE_ROCK, TYPE_NONE, 4, "Es verweilt auf weitlaeufigen Wiesen und beobachtet den Lauf der Sonne. Dynamische Trittangriffe sind sein Spezialgebiet." },  // 874 rock/none
+  { "EISCUE ICE", 0, 0, R_COMUN, 0x4DB8, 75, 80, 110, 65, 90, 50, TYPE_ICE, TYPE_NONE, 5, "Es kam von einem extrem kalten Ort, indem es sich treiben liess und schliesslich angespuelt wurde. Es kuehlt unablaessig sein Gesicht mit." },  // 875 ice/none
+  { "INDEEDEE MALE", 0, 0, R_COMUN, 0xD28F, 60, 65, 55, 105, 95, 95, TYPE_PSYCHIC, TYPE_NORMAL, 0, "Mit den Hoernern auf seinem Kopf erfasst es die Gefuehle seines Gegenuebers. Maennchen kuemmern sich wie Bedienstete um ihren Trainer." },  // 876 psychic/normal
+  { "MORPEKO FULL BELLY", 0, 0, R_COMUN, 0xBCA1, 58, 95, 58, 70, 58, 97, TYPE_ELECTRIC, TYPE_DARK, 0, "Dieses immerzu hungrige Pokmon frisst Samen, die es in seinen beutelartigen Taschen verwahrt, und produziert so Elektrizitaet." },  // 877 electric/dark
+  { "CUFANT", 879, 34, R_COMUN, 0x7C73, 72, 80, 49, 40, 49, 40, TYPE_STEEL, TYPE_NONE, 4, "Dieses Pokmon verfuegt ueber eine Staerke, mit der es problemlos fuenf Tonnen stemmen kann. Es nutzt seinen Ruessel, um in der Erde zu." },  // 878 steel/none
+  { "COPPERAJAH", 0, 0, R_EVO, 0x7C73, 122, 130, 69, 80, 69, 30, TYPE_STEEL, TYPE_NONE, 4, "Seine gruene Haut ist wasserresistent. Es kam vor langer Zeit aus einer anderen Region und verrichtete mit den Menschen Arbeiten." },  // 879 steel/none
+  { "DRACOZOLT", 0, 0, R_COMUN, 0xBCA1, 90, 100, 90, 80, 70, 75, TYPE_ELECTRIC, TYPE_DRAGON, 0, "Dank seines kraeftigen Unterkoerpers war es in der Urzeit unbesiegbar, doch es frass seine Pflanzennahrung restlos auf und starb daher aus." },  // 880 electric/dragon
+  { "ARCTOZOLT", 0, 0, R_COMUN, 0xBCA1, 90, 100, 90, 90, 80, 55, TYPE_ELECTRIC, TYPE_ICE, 0, "Durch das Zittern seines gefrorenen Oberkoerpers entsteht Elektrizitaet. Das Laufen faellt ihm aeusserst schwer." },  // 881 electric/ice
+  { "DRACOVISH", 0, 0, R_COMUN, 0x4C98, 90, 90, 100, 70, 80, 75, TYPE_WATER, TYPE_DRAGON, 1, "Dank der enormen Kraft seiner Beine und seines Kiefers war es in der Urzeit unbesiegbar, doch es fing seine Beute restlos weg und starb." },  // 882 water/dragon
+  { "ARCTOVISH", 0, 0, R_COMUN, 0x4C98, 90, 90, 100, 80, 90, 55, TYPE_WATER, TYPE_ICE, 1, "Es faengt seine Beute, indem es seine Umgebung einfriert, doch da sich sein Maul oben auf seinem Kopf befindet, ist Fressen fuer es sehr." },  // 883 water/ice
+  { "DURALUDON", 1018, 30, R_COMUN, 0x7C73, 70, 95, 115, 120, 50, 85, TYPE_STEEL, TYPE_DRAGON, 4, "Sein an aufpoliertes Metall erinnernder Koerper ist nicht nur leicht, sondern auch robust. Er hat jedoch den Nachteil, schnell zu rosten." },  // 884 steel/dragon
+  { "DREEPY", 886, 50, R_COMUN, 0x5A98, 28, 60, 30, 40, 30, 82, TYPE_DRAGON, TYPE_GHOST, 0, "In der Urzeit lebte es im Meer. Nun ist es als Geister-Pokmon wiedererwacht und irrt rastlos durch seinen frueheren Lebensraum." },  // 885 dragon/ghost
+  { "DRAKLOAK", 887, 60, R_EVO, 0x5A98, 68, 80, 50, 60, 50, 102, TYPE_DRAGON, TYPE_GHOST, 0, "Beim Fliegen ist es bis zu 200 kmh schnell. Es kaempft gemeinsam mit Grolldra und kuemmert sich bis zu dessen Entwicklung um es." },  // 886 dragon/ghost
+  { "DRAGAPULT", 0, 0, R_EVO, 0x5A98, 88, 120, 75, 100, 75, 142, TYPE_DRAGON, TYPE_GHOST, 0, "Es transportiert Grolldra in den Loechern an seinen Hoernern. Kommt es zum Kampf, schiesst es diese mit Mach-Geschwindigkeit ab." },  // 887 dragon/ghost
+  { "ZACIAN", 0, 0, R_LEGENDARIO, 0x8C4D, 92, 120, 115, 80, 115, 138, TYPE_FAIRY, TYPE_NONE, 0, "Dieses Pokmon gilt als legendaerer Held. Es nimmt Metall auf, wandelt dies in eine Waffe um und kaempft damit." },  // 888 fairy/none
+  { "ZAMAZENTA", 0, 0, R_LEGENDARIO, 0xA2A5, 92, 120, 115, 80, 115, 138, TYPE_FIGHTING, TYPE_NONE, 0, "Dieses Pokmon vereinte seine Kraefte mit einem Menschenkoenig und rettete die Galar-Region. Es nimmt Metall in sich auf und kaempft damit." },  // 889 fighting/none
+  { "ETERNATUS", 0, 0, R_LEGENDARIO, 0x8A73, 140, 85, 95, 145, 95, 130, TYPE_POISON, TYPE_DRAGON, 2, "Indem der Kern in seinem Brustkorb die Energie absorbiert, die aus dem Boden der Galar-Region stroemt, wird es aktiv." },  // 890 poison/dragon
+  { "KUBFU", 892, 32, R_LEGENDARIO, 0xA2A5, 60, 90, 60, 53, 50, 72, TYPE_FIGHTING, TYPE_NONE, 0, "Durch rigoroses Training perfektioniert es seine Kampftechnik. Diese bestimmt, welche Form Dakuma nach der Entwicklung annimmt." },  // 891 fighting/none
+  { "URSHIFU SINGLE STRIKE", 0, 0, R_LEGENDARIO, 0xA2A5, 100, 130, 100, 63, 60, 97, TYPE_FIGHTING, TYPE_DARK, 0, "Es ist darauf spezialisiert, Gegner mit nur einem Treffer zu bezwingen, indem es sie schlagartig anfaellt und einen fokussierten Hieb." },  // 892 fighting/dark
+  { "ZARUDE", 0, 0, R_LEGENDARIO, 0x5A6E, 105, 120, 105, 70, 95, 105, TYPE_DARK, TYPE_GRASS, 2, "Zarude leben gruppenweise in dichten Waeldern und werden von den anderen Pokmon dort gefuerchtet, da sie sehr aggressiv sind." },  // 893 dark/grass
+  { "REGIELEKI", 0, 0, R_LEGENDARIO, 0xBCA1, 80, 100, 50, 100, 50, 200, TYPE_ELECTRIC, TYPE_NONE, 0, "Es besteht aus gebuendelter elektrischer Energie. Werden die Ringe an seinem Koerper entfernt, setzt das angeblich seine verborgenen." },  // 894 electric/none
+  { "REGIDRAGO", 0, 0, R_LEGENDARIO, 0x5A98, 200, 100, 50, 100, 50, 80, TYPE_DRAGON, TYPE_NONE, 0, "Einer unbestaetigten Theorie zufolge sind seine Arme wie der Kopf eines urzeitlichen Drachen-Pokmon geformt." },  // 895 dragon/none
+  { "GLASTRIER", 0, 0, R_LEGENDARIO, 0x4DB8, 100, 145, 130, 65, 110, 30, TYPE_ICE, TYPE_NONE, 5, "Aus seinen Hufen verstroemt es eisige Kaelte. Dieses ungestueme Pokmon nimmt sich alles, was es will, mit roher Gewalt." },  // 896 ice/none
+  { "SPECTRIER", 0, 0, R_LEGENDARIO, 0x6AD3, 100, 65, 60, 145, 80, 130, TYPE_GHOST, TYPE_NONE, 2, "Um sein Umfeld zu erkunden, nutzt es all seine Sinne bis auf den Sehsinn. Wer von Phantoross getreten wird, verliert angeblich seine Seele." },  // 897 ghost/none
+  { "CALYREX", 0, 0, R_LEGENDARIO, 0xD28F, 100, 80, 80, 80, 80, 80, TYPE_PSYCHIC, TYPE_GRASS, 0, "Ein warmherziges Pokmon, das ueber heilende und segnende Kraefte verfuegt. In laengst vergangenen Zeiten herrschte es ueber Galar." },  // 898 psychic/grass
+  { "WYRDEER", 0, 0, R_EVO, 0x8C4D, 103, 105, 72, 105, 75, 65, TYPE_NORMAL, TYPE_PSYCHIC, 0, "The black orbs shine with an uncanny light when the Pokmon is erecting invisible barriers. The fur shed from its beard retains heat well." },  // 899 normal/psychic
+  { "KLEAVOR", 0, 0, R_EVO, 0x7CC4, 70, 135, 95, 45, 70, 85, TYPE_BUG, TYPE_ROCK, 2, "A violent creature that fells towering trees with its crude axes and shields itself with hard stone. If one should chance upon this Pokmon." },  // 900 bug/rock
+  { "URSALUNA", 0, 0, R_EVO, 0xB447, 130, 140, 105, 45, 80, 50, TYPE_GROUND, TYPE_NORMAL, 4, "I believe it was Hisui's swampy terrain that gave Ursaluna its burly physique and newfound capacity to manipulate peat at will." },  // 901 ground/normal
+  { "BASCULEGION MALE", 0, 0, R_EVO, 0x4C98, 120, 112, 65, 80, 75, 78, TYPE_WATER, TYPE_GHOST, 1, "Clads itself in the souls of comrades that perished before fulfilling their goals of journeying upstream. No other species throughout all." },  // 902 water/ghost
+  { "SNEASLER", 0, 0, R_EVO, 0xA2A5, 80, 130, 60, 40, 80, 120, TYPE_FIGHTING, TYPE_POISON, 0, "Because of Sneasler's virulent poison and daunting physical prowess, no other species could hope to best it on the frozen highlands.." },  // 903 fighting/poison
+  { "OVERQWIL", 0, 0, R_EVO, 0x5A6E, 85, 115, 95, 65, 65, 85, TYPE_DARK, TYPE_POISON, 2, "Its lancelike spikes and savage temperament have earned it the nickname sea fiend. It slurps up poison to nourish itself." },  // 904 dark/poison
+  { "ENAMORUS INCARNATE", 0, 0, R_LEGENDARIO, 0x8C4D, 74, 115, 70, 135, 80, 106, TYPE_FAIRY, TYPE_FLYING, 0, "When it flies to this land from across the sea, the bitter winter comes to an end. According to legend, this Pokmon's love gives rise to." },  // 905 fairy/flying
+  { "SPRIGATITO", 907, 16, R_COMUN, 0x3C49, 40, 61, 54, 45, 45, 65, TYPE_GRASS, TYPE_NONE, 2, "Its fluffy fur is similar in composition to plants. This Pokmon frequently washes its face to keep it from drying out." },  // 906 grass/none
+  { "FLORAGATO", 908, 36, R_EVO, 0x3C49, 61, 80, 63, 60, 63, 83, TYPE_GRASS, TYPE_NONE, 2, "Floragato deftly wields the vine hidden beneath its long fur, slamming the hard flower bud against its opponents." },  // 907 grass/none
+  { "MEOWSCARADA", 0, 0, R_EVO, 0x3C49, 76, 110, 70, 81, 70, 123, TYPE_GRASS, TYPE_DARK, 2, "This Pokmon uses the reflective fur lining its cape to camouflage the stem of its flower, creating the illusion that the flower is floating." },  // 908 grass/dark
+  { "FUECOCO", 910, 16, R_COMUN, 0xEA87, 67, 45, 59, 63, 40, 36, TYPE_FIRE, TYPE_NONE, 3, "It lies on warm rocks and uses the heat absorbed by its square-shaped scales to create fire energy." },  // 909 fire/none
+  { "CROCALOR", 911, 36, R_EVO, 0xEA87, 81, 55, 78, 90, 58, 49, TYPE_FIRE, TYPE_NONE, 3, "The combination of Crocalors fire energy and overflowing vitality has caused an egg-shaped fireball to appear on the Pokmons head." },  // 910 fire/none
+  { "SKELEDIRGE", 0, 0, R_EVO, 0xEA87, 104, 75, 100, 110, 75, 66, TYPE_FIRE, TYPE_GHOST, 3, "The fiery bird changes shape when Skeledirge sings. Rumor has it that the bird was born when the fireball on Skeledirges head gained a soul." },  // 911 fire/ghost
+  { "QUAXLY", 913, 16, R_COMUN, 0x4C98, 55, 65, 45, 50, 45, 50, TYPE_WATER, TYPE_NONE, 1, "This Pokmon migrated to Paldea from distant lands long ago. The gel secreted by its feathers repels water and grime." },  // 912 water/none
+  { "QUAXWELL", 914, 36, R_EVO, 0x4C98, 70, 85, 65, 65, 60, 65, TYPE_WATER, TYPE_NONE, 1, "These Pokmon constantly run through shallow waters to train their legs, then compete with each other to see which of them kicks most." },  // 913 water/none
+  { "QUAQUAVAL", 0, 0, R_EVO, 0x4C98, 85, 120, 80, 85, 75, 85, TYPE_WATER, TYPE_FIGHTING, 1, "A single kick from a Quaquaval can send a truck rolling. This Pokmon uses its powerful legs to perform striking dances from far-off lands." },  // 914 water/fighting
+  { "LECHONK", 916, 18, R_COMUN, 0x8C4D, 54, 45, 40, 35, 45, 35, TYPE_NORMAL, TYPE_NONE, 0, "It searches for food all day. It possesses a keen sense of smell but doesnt use it for anything other than foraging." },  // 915 normal/none
+  { "OINKOLOGNE MALE", 0, 0, R_EVO, 0x8C4D, 110, 100, 75, 59, 80, 65, TYPE_NORMAL, TYPE_NONE, 0, "Oinkologne is proud of its fine, glossy skin. It emits a concentrated scent from the tip of its tail." },  // 916 normal/none
+  { "TAROUNTULA", 918, 15, R_COMUN, 0x7CC4, 35, 41, 45, 29, 40, 20, TYPE_BUG, TYPE_NONE, 2, "The ball of threads wrapped around its body is elastic enough to deflect the scythes of Scyther, this Pokmons natural enemy." },  // 917 bug/none
+  { "SPIDOPS", 0, 0, R_EVO, 0x7CC4, 60, 79, 92, 52, 86, 35, TYPE_BUG, TYPE_NONE, 2, "It clings to branches and ceilings using its threads and moves without a sound. It takes out its prey before the prey even notices it." },  // 918 bug/none
+  { "NYMBLE", 920, 24, R_COMUN, 0x7CC4, 33, 46, 40, 21, 25, 45, TYPE_BUG, TYPE_NONE, 2, "It has its third set of legs folded up. When its in a tough spot, this Pokmon jumps over 30 feet using the strength of its legs." },  // 919 bug/none
+  { "LOKIX", 0, 0, R_EVO, 0x7CC4, 71, 102, 78, 52, 55, 92, TYPE_BUG, TYPE_DARK, 2, "When it decides to fight all out, it stands on its previously folded legs to enter Showdown Mode. It neutralizes its enemies in short order." },  // 920 bug/dark
+  { "PAWMI", 922, 18, R_COMUN, 0xBCA1, 45, 50, 20, 40, 25, 60, TYPE_ELECTRIC, TYPE_NONE, 0, "It has underdeveloped electric sacs on its cheeks. These sacs can produce electricity only if Pawmi rubs them furiously with the pads on." },  // 921 electric/none
+  { "PAWMO", 923, 32, R_EVO, 0xBCA1, 60, 75, 40, 50, 40, 85, TYPE_ELECTRIC, TYPE_FIGHTING, 0, "When its group is attacked, Pawmo is the first to leap into battle, defeating enemies with a fighting technique that utilizes electric." },  // 922 electric/fighting
+  { "PAWMOT", 0, 0, R_EVO, 0xBCA1, 70, 115, 70, 70, 60, 105, TYPE_ELECTRIC, TYPE_FIGHTING, 0, "This Pokmon normally is slow to react, but once it enters battle, it will strike down its enemies with lightning-fast movements." },  // 923 electric/fighting
+  { "TANDEMAUS", 925, 25, R_COMUN, 0x8C4D, 50, 50, 45, 40, 45, 75, TYPE_NORMAL, TYPE_NONE, 0, "Exhibiting great teamwork, they use their incisors to cut pieces out of any material that might be useful for a nest, then make off with." },  // 924 normal/none
+  { "MAUSHOLD FAMILY OF FOUR", 0, 0, R_EVO, 0x8C4D, 74, 75, 70, 65, 75, 111, TYPE_NORMAL, TYPE_NONE, 0, "The two little ones just appeared one day. The group might be a family of related Pokmon, but nobody knows for sure." },  // 925 normal/none
+  { "FIDOUGH", 927, 26, R_COMUN, 0x8C4D, 37, 55, 70, 30, 55, 65, TYPE_FAIRY, TYPE_NONE, 0, "This Pokmon is smooth and moist to the touch. Yeast in Fidoughs breath induces fermentation in the Pokmons vicinity." },  // 926 fairy/none
+  { "DACHSBUN", 0, 0, R_EVO, 0x8C4D, 57, 80, 115, 50, 80, 95, TYPE_FAIRY, TYPE_NONE, 0, "The pleasant aroma that emanates from this Pokmons body helps wheat grow, so Dachsbun has been treasured by farming villages." },  // 927 fairy/none
+  { "SMOLIV", 929, 25, R_COMUN, 0x3C49, 41, 35, 45, 58, 51, 30, TYPE_GRASS, TYPE_NORMAL, 2, "It protects itself from enemies by emitting oil from the fruit on its head. This oil is bitter and astringent enough to make someone flinch." },  // 928 grass/normal
+  { "DOLLIV", 930, 35, R_EVO, 0x3C49, 52, 53, 60, 78, 78, 33, TYPE_GRASS, TYPE_NORMAL, 2, "Dolliv shares its tasty, fresh-scented oil with others. This species has coexisted with humans since times long gone." },  // 929 grass/normal
+  { "ARBOLIVA", 0, 0, R_EVO, 0x3C49, 78, 69, 90, 125, 109, 39, TYPE_GRASS, TYPE_NORMAL, 2, "This calm Pokmon is very compassionate. It will share its delicious, nutrient-rich oil with weakened Pokmon." },  // 930 grass/normal
+  { "SQUAWKABILLY GREEN PLUMAGE", 0, 0, R_COMUN, 0x8C4D, 82, 96, 51, 45, 51, 92, TYPE_NORMAL, TYPE_FLYING, 0, "These Pokmon prefer to live in cities. They form flocks based on the color of their feathers, and they fight over territory." },  // 931 normal/flying
+  { "NACLI", 933, 24, R_COMUN, 0x9407, 55, 55, 75, 35, 35, 25, TYPE_ROCK, TYPE_NONE, 4, "It was born in a layer of rock salt deep under the earth. This species was particularly treasured in the old days, as they would share." },  // 932 rock/none
+  { "NACLSTACK", 934, 38, R_EVO, 0x9407, 60, 60, 100, 35, 65, 35, TYPE_ROCK, TYPE_NONE, 4, "This Pokmon dry cures its prey by spraying salt over them. The curing process steals away the water in the preys body." },  // 933 rock/none
+  { "GARGANACL", 0, 0, R_EVO, 0x9407, 100, 100, 130, 45, 90, 35, TYPE_ROCK, TYPE_NONE, 4, "Garganacl will rub its fingertips together and sprinkle injured Pokmon with salt. Even severe wounds will promptly heal afterward." },  // 934 rock/none
+  { "CHARCADET", 937, 30, R_COMUN, 0xEA87, 40, 50, 40, 50, 40, 35, TYPE_FIRE, TYPE_NONE, 3, "Burnt charcoal came to life and became a Pokmon. Possessing a fiery fighting spirit, Charcadet will battle even tough opponents." },  // 935 fire/none
+  { "ARMAROUGE", 0, 0, R_EVO, 0xEA87, 85, 60, 100, 125, 80, 75, TYPE_FIRE, TYPE_PSYCHIC, 3, "Armarouge evolved through the use of a set of armor that belonged to a distinguished warrior. This Pokmon is incredibly loyal." },  // 936 fire/psychic
+  { "CERULEDGE", 0, 0, R_EVO, 0xEA87, 75, 125, 80, 60, 100, 85, TYPE_FIRE, TYPE_GHOST, 3, "The fiery blades on its arms burn fiercely with the lingering resentment of a sword wielder who fell before accomplishing their goal." },  // 937 fire/ghost
+  { "TADBULB", 939, 30, R_COMUN, 0xBCA1, 61, 31, 41, 59, 35, 45, TYPE_ELECTRIC, TYPE_NONE, 0, "Tadbulb shakes its tail to generate electricity. If it senses danger, it will make its head blink on and off to alert its allies." },  // 938 electric/none
+  { "BELLIBOLT", 0, 0, R_EVO, 0xBCA1, 109, 64, 91, 103, 83, 45, TYPE_ELECTRIC, TYPE_NONE, 0, "When this Pokmon expands and contracts its wobbly body, the belly-button dynamo in its stomach produces a huge amount of electricity." },  // 939 electric/none
+  { "WATTREL", 941, 25, R_COMUN, 0xBCA1, 40, 40, 35, 55, 40, 70, TYPE_ELECTRIC, TYPE_FLYING, 0, "When its wings catch the wind, the bones within produce electricity. This Pokmon dives into the ocean, catching prey by electrocuting them." },  // 940 electric/flying
+  { "KILOWATTREL", 0, 0, R_EVO, 0xBCA1, 70, 70, 60, 105, 60, 125, TYPE_ELECTRIC, TYPE_FLYING, 0, "Kilowattrel inflates its throat sac to amplify its electricity. By riding the wind, this Pokmon can fly over 430 miles in a day." },  // 941 electric/flying
+  { "MASCHIFF", 943, 30, R_COMUN, 0x5A6E, 60, 78, 60, 40, 51, 51, TYPE_DARK, TYPE_NONE, 2, "It always scowls in an attempt to make opponents take it seriously, but even crying children will burst into laughter when they see." },  // 942 dark/none
+  { "MABOSSTIFF", 0, 0, R_EVO, 0x5A6E, 80, 120, 90, 60, 70, 85, TYPE_DARK, TYPE_NONE, 2, "This Pokmon can store energy in its large dewlap. Mabosstiff unleashes this energy all at once to blow away enemies." },  // 943 dark/none
+  { "SHROODLE", 945, 28, R_COMUN, 0x8A73, 40, 65, 35, 40, 35, 75, TYPE_POISON, TYPE_NORMAL, 2, "Though usually a mellow Pokmon, it will sink its sharp, poison-soaked front teeth into any that anger it, causing paralysis in the object." },  // 944 poison/normal
+  { "GRAFAIAI", 0, 0, R_EVO, 0x8A73, 63, 95, 65, 80, 72, 110, TYPE_POISON, TYPE_NORMAL, 2, "The color of the poisonous saliva depends on what the Pokmon eats. Grafaiai covers its fingers in its saliva and draws patterns on trees." },  // 945 poison/normal
+  { "BRAMBLIN", 947, 32, R_COMUN, 0x3C49, 40, 65, 30, 45, 35, 60, TYPE_GRASS, TYPE_GHOST, 2, "A soul unable to move on to the afterlife was blown around by the wind until it got tangled up with dried grass and became a Pokmon." },  // 946 grass/ghost
+  { "BRAMBLEGHAST", 0, 0, R_EVO, 0x3C49, 55, 115, 70, 80, 70, 90, TYPE_GRASS, TYPE_GHOST, 2, "It will open the branches of its head to envelop its prey. Once it absorbs all the life energy it needs, it expels the prey and discards it." },  // 947 grass/ghost
+  { "TOEDSCOOL", 949, 30, R_COMUN, 0xB447, 40, 40, 35, 50, 100, 70, TYPE_GROUND, TYPE_GRASS, 4, "Toedscool lives in muggy forests. The flaps that fall from its body are chewy and very delicious." },  // 948 ground/grass
+  { "TOEDSCRUEL", 0, 0, R_EVO, 0xB447, 80, 70, 65, 80, 120, 100, TYPE_GROUND, TYPE_GRASS, 4, "These Pokmon gather into groups and form colonies deep within forests. They absolutely hate it when strangers approach." },  // 949 ground/grass
+  { "KLAWF", 0, 0, R_COMUN, 0x9407, 70, 100, 115, 35, 55, 75, TYPE_ROCK, TYPE_NONE, 4, "Klawf hangs upside-down from cliffs, waiting for prey. But Klawf cant remain in this position for long because its blood rushes to its head." },  // 950 rock/none
+  { "CAPSAKID", 952, 30, R_COMUN, 0x3C49, 50, 62, 40, 62, 40, 50, TYPE_GRASS, TYPE_NONE, 2, "The more sunlight this Pokmon bathes in, the more spicy chemicals are produced by its body, and thus the spicier its moves become." },  // 951 grass/none
+  { "SCOVILLAIN", 0, 0, R_EVO, 0x3C49, 65, 108, 65, 108, 65, 75, TYPE_GRASS, TYPE_FIRE, 2, "The red head converts spicy chemicals into fire energy and blasts the surrounding area with a super spicy stream of flame." },  // 952 grass/fire
+  { "RELLOR", 954, 32, R_COMUN, 0x7CC4, 41, 50, 60, 31, 58, 30, TYPE_BUG, TYPE_NONE, 2, "This Pokmon creates a mud ball by mixing sand and dirt with psychic energy. It treasures its mud ball more than its own life." },  // 953 bug/none
+  { "RABSCA", 0, 0, R_EVO, 0x7CC4, 75, 50, 85, 115, 100, 45, TYPE_BUG, TYPE_PSYCHIC, 2, "The body that supports the ball barely moves. Therefore, it is thought that the true body of this Pokmon is actually inside the ball." },  // 954 bug/psychic
+  { "FLITTLE", 956, 35, R_COMUN, 0xD28F, 30, 35, 30, 55, 30, 75, TYPE_PSYCHIC, TYPE_NONE, 0, "Flittles toes levitate about half an inch above the ground because of the psychic power emitted from the frills on the Pokmons belly." },  // 955 psychic/none
+  { "ESPATHRA", 0, 0, R_EVO, 0xD28F, 95, 60, 60, 101, 60, 105, TYPE_PSYCHIC, TYPE_NONE, 0, "It immobilizes opponents by bathing them in psychic power from its large eyes. Despite its appearance, it has a vicious temperament." },  // 956 psychic/none
+  { "TINKATINK", 958, 24, R_COMUN, 0x8C4D, 50, 45, 45, 35, 64, 58, TYPE_FAIRY, TYPE_STEEL, 0, "It swings its handmade hammer around to protect itself, but the hammer is often stolen by Pokmon that eat metal." },  // 957 fairy/steel
+  { "TINKATUFF", 959, 38, R_EVO, 0x8C4D, 65, 55, 55, 45, 82, 78, TYPE_FAIRY, TYPE_STEEL, 0, "This Pokmon will attack groups of Pawniard and Bisharp, gathering metal from them in order to create a large and sturdy hammer." },  // 958 fairy/steel
+  { "TINKATON", 0, 0, R_EVO, 0x8C4D, 85, 75, 77, 70, 105, 94, TYPE_FAIRY, TYPE_STEEL, 0, "This intelligent Pokmon has a very daring disposition. It knocks rocks into the sky with its hammer, aiming for flying Corviknight." },  // 959 fairy/steel
+  { "WIGLETT", 961, 26, R_COMUN, 0x4C98, 10, 55, 25, 35, 25, 95, TYPE_WATER, TYPE_NONE, 1, "This Pokmon can pick up the scent of a Veluza just over 65 feet away and will hide itself in the sand." },  // 960 water/none
+  { "WUGTRIO", 0, 0, R_EVO, 0x4C98, 35, 100, 50, 50, 70, 120, TYPE_WATER, TYPE_NONE, 1, "It has a vicious temperament, contrary to what its appearance may suggest. It wraps its long bodies around prey, then drags the prey into." },  // 961 water/none
+  { "BOMBIRDIER", 0, 0, R_COMUN, 0x8BF8, 70, 103, 85, 60, 85, 82, TYPE_FLYING, TYPE_DARK, 0, "It gathers things up in an apron made from shed feathers added to the Pokmons chest feathers, then drops those things from high places for." },  // 962 flying/dark
+  { "FINIZEN", 964, 38, R_COMUN, 0x4C98, 70, 45, 40, 45, 40, 75, TYPE_WATER, TYPE_NONE, 1, "It likes playing with others of its kind using the water ring on its tail. It uses ultrasonic waves to sense the emotions of other living." },  // 963 water/none
+  { "PALAFIN ZERO", 0, 0, R_EVO, 0x4C98, 100, 70, 72, 53, 62, 100, TYPE_WATER, TYPE_NONE, 1, "This Pokmon changes its appearance if it hears its allies calling for help. Palafin will never show anybody its moment of transformation." },  // 964 water/none
+  { "VAROOM", 966, 40, R_COMUN, 0x7C73, 45, 70, 63, 30, 45, 47, TYPE_STEEL, TYPE_POISON, 4, "It is said that this Pokmon was born when an unknown poison Pokmon entered and inspirited an engine left at a scrap-processing factory." },  // 965 steel/poison
+  { "REVAVROOM", 0, 0, R_EVO, 0x7C73, 80, 119, 90, 54, 67, 90, TYPE_STEEL, TYPE_POISON, 4, "It creates a gas out of poison and minerals from rocks. It then detonates the gas in its cylindersnow numbering eightto generate energy." },  // 966 steel/poison
+  { "CYCLIZAR", 0, 0, R_COMUN, 0x5A98, 70, 95, 65, 85, 65, 121, TYPE_DRAGON, TYPE_NORMAL, 0, "Apparently Cyclizar has been allowing people to ride on its back since ancient times. Depictions of this have been found in." },  // 967 dragon/normal
+  { "ORTHWORM", 0, 0, R_COMUN, 0x7C73, 70, 85, 145, 60, 55, 65, TYPE_STEEL, TYPE_NONE, 4, "When attacked, this Pokmon will wield the tendrils on its body like fists and pelt the opponent with a storm of punches." },  // 968 steel/none
+  { "GLIMMET", 970, 35, R_COMUN, 0x9407, 48, 35, 42, 105, 60, 60, TYPE_ROCK, TYPE_POISON, 4, "It absorbs nutrients from cave walls. The petals it wears are made of crystallized poison." },  // 969 rock/poison
+  { "GLIMMORA", 0, 0, R_EVO, 0x9407, 83, 55, 90, 130, 81, 86, TYPE_ROCK, TYPE_POISON, 4, "When this Pokmon detects danger, it will open up its crystalline petals and fire beams from its conical body." },  // 970 rock/poison
+  { "GREAVARD", 972, 30, R_COMUN, 0x6AD3, 50, 61, 60, 30, 55, 34, TYPE_GHOST, TYPE_NONE, 2, "It is said that a dog Pokmon that died in the wild without ever interacting with a human was reborn as this Pokmon." },  // 971 ghost/none
+  { "HOUNDSTONE", 0, 0, R_EVO, 0x6AD3, 72, 101, 100, 50, 97, 68, TYPE_GHOST, TYPE_NONE, 2, "Houndstone spends most of its time sleeping in graveyards. Among all the dog Pokmon, this one is most loyal to its master." },  // 972 ghost/none
+  { "FLAMIGO", 0, 0, R_COMUN, 0x8BF8, 82, 115, 74, 75, 64, 90, TYPE_FLYING, TYPE_FIGHTING, 0, "This Pokmon apparently ties the base of its neck into a knot so that energy stored in its belly does not escape from its beak." },  // 973 flying/fighting
+  { "CETODDLE", 975, 30, R_COMUN, 0x4DB8, 108, 68, 45, 30, 40, 43, TYPE_ICE, TYPE_NONE, 5, "This species left the ocean and began living on land a very long time ago. It seems to be closely related to Wailmer." },  // 974 ice/none
+  { "CETITAN", 0, 0, R_EVO, 0x4DB8, 170, 113, 65, 45, 55, 73, TYPE_ICE, TYPE_NONE, 5, "This Pokmon wanders around snowy, icy areas. It protects its body with powerful muscles and a thick layer of fat under its skin." },  // 975 ice/none
+  { "VELUZA", 0, 0, R_COMUN, 0x4C98, 90, 102, 73, 78, 65, 70, TYPE_WATER, TYPE_PSYCHIC, 1, "When Veluza discards unnecessary flesh, its mind becomes honed and its psychic power increases. The spare flesh has a mild but delicious." },  // 976 water/psychic
+  { "DONDOZO", 0, 0, R_COMUN, 0x4C98, 150, 100, 115, 65, 65, 35, TYPE_WATER, TYPE_NONE, 1, "This Pokmon is a glutton, but its bad at getting food. It teams up with a Tatsugiri to catch prey." },  // 977 water/none
+  { "TATSUGIRI CURLY", 0, 0, R_COMUN, 0x5A98, 68, 50, 60, 120, 95, 82, TYPE_DRAGON, TYPE_WATER, 0, "This is a small dragon Pokmon. It lives inside the mouth of Dondozo to protect itself from enemies on the outside." },  // 978 dragon/water
+  { "ANNIHILAPE", 0, 0, R_EVO, 0xA2A5, 110, 115, 80, 50, 90, 90, TYPE_FIGHTING, TYPE_GHOST, 0, "When its anger rose beyond a critical point, this Pokmon gained power that is unfettered by the limits of its physical body." },  // 979 fighting/ghost
+  { "CLODSIRE", 0, 0, R_EVO, 0x8A73, 130, 75, 60, 45, 100, 20, TYPE_POISON, TYPE_GROUND, 2, "When attacked, this Pokmon will retaliate by sticking thick spines out from its body. Its a risky move that puts everything on the line." },  // 980 poison/ground
+  { "FARIGIRAF", 0, 0, R_EVO, 0x8C4D, 120, 90, 70, 110, 70, 60, TYPE_NORMAL, TYPE_PSYCHIC, 0, "Now that the brain waves from the head and tail are synced up, the psychic power of this Pokmon is 10 times stronger than Girafarigs." },  // 981 normal/psychic
+  { "DUDUNSPARCE TWO SEGMENT", 0, 0, R_EVO, 0x8C4D, 125, 100, 80, 85, 75, 55, TYPE_NORMAL, TYPE_NONE, 0, "This Pokmon uses its hard tail to make its nest by boring holes into bedrock deep underground. The nest can reach lengths of over six miles." },  // 982 normal/none
+  { "KINGAMBIT", 0, 0, R_EVO, 0x5A6E, 100, 135, 120, 60, 85, 50, TYPE_DARK, TYPE_STEEL, 2, "Only a Bisharp that stands above all others in its vast army can evolve into Kingambit." },  // 983 dark/steel
+  { "GREAT TUSK", 0, 0, R_COMUN, 0xB447, 115, 131, 131, 53, 53, 87, TYPE_GROUND, TYPE_FIGHTING, 4, "Sightings of this Pokmon have occurred in recent years. The name Great Tusk was taken from a creature listed in a certain book." },  // 984 ground/fighting
+  { "SCREAM TAIL", 0, 0, R_COMUN, 0x8C4D, 115, 65, 99, 65, 115, 111, TYPE_FAIRY, TYPE_PSYCHIC, 0, "There has been only one reported sighting of this Pokmon. It resembles a mysterious creature depicted in an old expedition journal." },  // 985 fairy/psychic
+  { "BRUTE BONNET", 0, 0, R_COMUN, 0x3C49, 111, 127, 99, 79, 99, 55, TYPE_GRASS, TYPE_DARK, 2, "It is possible that the creature listed as Brute Bonnet in a certain book could actually be this Pokmon." },  // 986 grass/dark
+  { "FLUTTER MANE", 0, 0, R_COMUN, 0x6AD3, 55, 55, 55, 135, 135, 135, TYPE_GHOST, TYPE_FAIRY, 2, "This Pokmon has characteristics similar to those of Flutter Mane, a creature mentioned in a certain book." },  // 987 ghost/fairy
+  { "SLITHER WING", 0, 0, R_COMUN, 0x7CC4, 85, 135, 79, 85, 105, 81, TYPE_BUG, TYPE_FIGHTING, 2, "This mysterious Pokmon has some similarities to a creature that an old book introduced as Slither Wing." },  // 988 bug/fighting
+  { "SANDY SHOCKS", 0, 0, R_COMUN, 0xBCA1, 85, 81, 97, 121, 85, 101, TYPE_ELECTRIC, TYPE_GROUND, 0, "No records exist of this Pokmon being caught. Data is lacking, but the Pokmons traits match up with a creature shown in an expedition." },  // 989 electric/ground
+  { "IRON TREADS", 0, 0, R_COMUN, 0xB447, 90, 112, 120, 72, 70, 106, TYPE_GROUND, TYPE_STEEL, 4, "This Pokmon closely resembles a scientific weapon that a paranormal magazine claimed was sent to this planet by aliens." },  // 990 ground/steel
+  { "IRON BUNDLE", 0, 0, R_COMUN, 0x4DB8, 56, 80, 114, 124, 60, 136, TYPE_ICE, TYPE_WATER, 5, "Its shape is similar to a robot featured in a paranormal magazine article. The robot was said to have been created by an ancient." },  // 991 ice/water
+  { "IRON HANDS", 0, 0, R_COMUN, 0xA2A5, 154, 140, 108, 50, 68, 50, TYPE_FIGHTING, TYPE_ELECTRIC, 0, "It is very similar to a cyborg covered exclusively by a paranormal magazine. The cyborg was said to be the modified form of a certain." },  // 992 fighting/electric
+  { "IRON JUGULIS", 0, 0, R_COMUN, 0x5A6E, 94, 80, 86, 122, 80, 108, TYPE_DARK, TYPE_FLYING, 2, "It resembles a certain Pokmon introduced in a paranormal magazine, described as the offspring of a Hydreigon that fell in love with a robot." },  // 993 dark/flying
+  { "IRON MOTH", 0, 0, R_COMUN, 0xEA87, 80, 70, 60, 140, 110, 110, TYPE_FIRE, TYPE_POISON, 3, "This Pokmon resembles an unknown object described in a paranormal magazine as a UFO sent to observe humanity." },  // 994 fire/poison
+  { "IRON THORNS", 0, 0, R_COMUN, 0x9407, 100, 134, 110, 70, 84, 72, TYPE_ROCK, TYPE_ELECTRIC, 4, "It has some similarities to a Pokmon introduced in a dubious magazine as a Tyranitar from one billion years into the future." },  // 995 rock/electric
+  { "FRIGIBAX", 997, 35, R_COMUN, 0x5A98, 65, 75, 45, 35, 45, 55, TYPE_DRAGON, TYPE_ICE, 0, "Frigibax absorbs heat through its dorsal fin and converts the heat into ice energy. The higher the temperature, the more energy Frigibax." },  // 996 dragon/ice
+  { "ARCTIBAX", 998, 54, R_EVO, 0x5A98, 90, 95, 66, 45, 65, 62, TYPE_DRAGON, TYPE_ICE, 0, "Arctibax freezes the air around it, protecting its face with an ice mask and turning its dorsal fin into a blade of ice." },  // 997 dragon/ice
+  { "BAXCALIBUR", 0, 0, R_EVO, 0x5A98, 115, 145, 92, 75, 86, 87, TYPE_DRAGON, TYPE_ICE, 0, "This Pokmon blasts cryogenic air out from its mouth. This air can instantly freeze even liquid-hot lava." },  // 998 dragon/ice
+  { "GIMMIGHOUL", 1000, 32, R_COMUN, 0x6AD3, 45, 30, 70, 75, 70, 10, TYPE_GHOST, TYPE_NONE, 2, "This Pokmon was born inside a treasure chest about 1,500 years ago. It sucks the life-force out of scoundrels who try to steal the treasure." },  // 999 ghost/none
+  { "GHOLDENGO", 0, 0, R_EVO, 0x7C73, 87, 60, 95, 133, 91, 84, TYPE_STEEL, TYPE_GHOST, 4, "Its body seems to be made up of 1,000 coins. This Pokmon gets along well with others and is quick to make friends with anybody." },  // 1000 steel/ghost
+  { "WO CHIEN", 0, 0, R_LEGENDARIO, 0x5A6E, 85, 85, 100, 95, 135, 70, TYPE_DARK, TYPE_GRASS, 2, "The grudge of a person punished for writing the kings evil deeds upon wooden tablets has clad itself in dead leaves to become a Pokmon." },  // 1001 dark/grass
+  { "CHIEN PAO", 0, 0, R_LEGENDARIO, 0x5A6E, 80, 120, 80, 90, 65, 135, TYPE_DARK, TYPE_ICE, 2, "This Pokmon can control 100 tons of fallen snow. It plays around innocently by leaping in and out of avalanches it has caused." },  // 1002 dark/ice
+  { "TING LU", 0, 0, R_LEGENDARIO, 0x5A6E, 155, 110, 125, 55, 80, 45, TYPE_DARK, TYPE_GROUND, 2, "The fear poured into an ancient ritual vessel has clad itself in rocks and dirt to become a Pokmon." },  // 1003 dark/ground
+  { "CHI YU", 0, 0, R_LEGENDARIO, 0x5A6E, 55, 80, 80, 135, 120, 100, TYPE_DARK, TYPE_FIRE, 2, "It controls flames burning at over 5,400 degrees Fahrenheit. It casually swims through the sea of lava it creates by melting rock and sand." },  // 1004 dark/fire
+  { "ROARING MOON", 0, 0, R_COMUN, 0x5A98, 105, 139, 71, 55, 101, 119, TYPE_DRAGON, TYPE_DARK, 0, "It is possible that this is the creature listed as Roaring Moon in an expedition journal that still holds many mysteries." },  // 1005 dragon/dark
+  { "IRON VALIANT", 0, 0, R_COMUN, 0x8C4D, 74, 130, 90, 120, 60, 116, TYPE_FAIRY, TYPE_FIGHTING, 0, "It has some similarities to a mad scientists invention covered in a paranormal magazine." },  // 1006 fairy/fighting
+  { "KORAIDON", 0, 0, R_LEGENDARIO, 0xA2A5, 100, 135, 115, 85, 100, 135, TYPE_FIGHTING, TYPE_DRAGON, 0, "This seems to be the Winged King mentioned in an old expedition journal. It was said to have split the land with its bare fists." },  // 1007 fighting/dragon
+  { "MIRAIDON", 0, 0, R_LEGENDARIO, 0xBCA1, 100, 85, 100, 135, 115, 135, TYPE_ELECTRIC, TYPE_DRAGON, 0, "Much remains unknown about this creature. It resembles Cyclizar, but it is far more ruthless and powerful." },  // 1008 electric/dragon
+  { "WALKING WAKE", 0, 0, R_COMUN, 0x4C98, 99, 83, 91, 125, 83, 109, TYPE_WATER, TYPE_DRAGON, 1, "This ferocious creature is shrouded in mystery. It's named after an aquatic monster mentioned in an old expedition journal." },  // 1009 water/dragon
+  { "IRON LEAVES", 0, 0, R_COMUN, 0x3C49, 90, 130, 88, 70, 108, 104, TYPE_GRASS, TYPE_PSYCHIC, 2, "Many of its physical characteristics match those of a Virizion from the future that was covered in a paranormal magazine." },  // 1010 grass/psychic
+  { "DIPPLIN", 1019, 40, R_EVO, 0x3C49, 80, 80, 110, 95, 80, 40, TYPE_GRASS, TYPE_DRAGON, 2, "Dipplin is two creatures in one Pokmon. Its evolution was triggered by a special apple grown only in one place." },  // 1011 grass/dragon
+  { "POLTCHAGEIST", 1013, 30, R_COMUN, 0x3C49, 40, 45, 45, 74, 54, 50, TYPE_GRASS, TYPE_GHOST, 2, "Supposedly, the regrets of a tea ceremony master who died before perfecting his craft lingered in some matcha and became a Pokmon." },  // 1012 grass/ghost
+  { "SINISTCHA", 0, 0, R_EVO, 0x3C49, 71, 60, 106, 121, 80, 70, TYPE_GRASS, TYPE_GHOST, 2, "It pretends to be tea, trying to fool people into drinking it so it can drain their life-force. Its ruse is generally unsuccessful." },  // 1013 grass/ghost
+  { "OKIDOGI", 0, 0, R_LEGENDARIO, 0x8A73, 88, 128, 115, 58, 86, 80, TYPE_POISON, TYPE_FIGHTING, 2, "After all its muscles were stimulated by the toxic chain around its neck, Okidogi transformed and gained a powerful physique." },  // 1014 poison/fighting
+  { "MUNKIDORI", 0, 0, R_LEGENDARIO, 0x8A73, 88, 75, 66, 130, 90, 106, TYPE_POISON, TYPE_PSYCHIC, 2, "The chain is made from toxins that enhance capabilities. It stimulated Munkidori's brain and caused the Pokmon's psychic powers to bloom." },  // 1015 poison/psychic
+  { "FEZANDIPITI", 0, 0, R_LEGENDARIO, 0x8A73, 88, 91, 82, 70, 125, 99, TYPE_POISON, TYPE_FAIRY, 2, "Fezandipiti owes its beautiful looks and lovely voice to the toxic stimulants emanating from the chain wrapped around its body." },  // 1016 poison/fairy
+  { "OGERPON", 0, 0, R_LEGENDARIO, 0x3C49, 80, 120, 84, 60, 96, 110, TYPE_GRASS, TYPE_NONE, 2, "This Pokmon's type changes based on which mask it's wearing. It confounds its enemies with nimble movements and kicks." },  // 1017 grass/none
+  { "ARCHALUDON", 0, 0, R_EVO, 0x7C73, 90, 105, 130, 125, 65, 85, TYPE_STEEL, TYPE_DRAGON, 4, "It gathers static electricity from its surroundings. The beams it launches when down on all fours are tremendously powerful." },  // 1018 steel/dragon
+  { "HYDRAPPLE", 0, 0, R_EVO, 0x3C49, 106, 80, 110, 120, 80, 44, TYPE_GRASS, TYPE_DRAGON, 2, "Seven syrpents live inside an apple made of syrup. The syrpent in the center is the commander." },  // 1019 grass/dragon
+  { "GOUGING FIRE", 0, 0, R_COMUN, 0xEA87, 105, 115, 121, 65, 93, 91, TYPE_FIRE, TYPE_DRAGON, 3, "There are scant few reports of this creature being sighted. One short video shows it rampaging and spouting pillars of flame." },  // 1020 fire/dragon
+  { "RAGING BOLT", 0, 0, R_COMUN, 0xBCA1, 125, 73, 91, 137, 89, 75, TYPE_ELECTRIC, TYPE_DRAGON, 0, "It's said to incinerate everything around it with lightning launched from its fur. Very little is known about this creature." },  // 1021 electric/dragon
+  { "IRON BOULDER", 0, 0, R_COMUN, 0x9407, 90, 120, 80, 68, 108, 124, TYPE_ROCK, TYPE_PSYCHIC, 4, "It resembles a Pokmon described in a dubious magazine as a Terrakion that had been modified by an evil organization." },  // 1022 rock/psychic
+  { "IRON CROWN", 0, 0, R_COMUN, 0x7C73, 90, 72, 100, 122, 108, 98, TYPE_STEEL, TYPE_PSYCHIC, 4, "It resembles a mysterious object introduced in a paranormal magazine as a cutting-edge weapon shaped like a Cobalion." },  // 1023 steel/psychic
+  { "TERAPAGOS", 0, 0, R_LEGENDARIO, 0x8C4D, 90, 65, 85, 65, 85, 60, TYPE_NORMAL, TYPE_NONE, 0, "Terapagos protects itself using its power to transform energy into hard crystals. This Pokmon is the source of the Terastal phenomenon." },  // 1024 normal/none
+  { "PECHARUNT", 0, 0, R_LEGENDARIO, 0x8A73, 88, 88, 160, 88, 88, 88, TYPE_POISON, TYPE_GHOST, 2, "It feeds others toxic mochi that draw out desires and capabilities. Those who eat the mochi fall under Pecharunts control, chained to its." },  // 1025 poison/ghost
 };
 
-// Nombres oficiales de FR y DE (en gen 1 son los unicos que difieren del
-// ingles; ES/IT/PT usan el de DEX_TBL). nullptr = sin nombre propio.
-static const char *const DEX_NAME_FR[DEX_COUNT + 1] = {
-  nullptr, "BULBIZARRE", "HERBIZARRE", "FLORIZARRE",
-  "SALAMECHE", "REPTINCEL", "DRACAUFEU", "CARAPUCE",
-  "CARABAFFE", "TORTANK", "CHENIPAN", "CHRYSACIER",
-  "PAPILUSION", "ASPICOT", "COCONFORT", "DARDARGNAN",
-  "ROUCOOL", "ROUCOUPS", "ROUCARNAGE", nullptr,
-  "RATTATAC", "PIAFABEC", "RAPASDEPIC", "ABO",
-  nullptr, nullptr, nullptr, "SABELETTE",
-  "SABLAIREAU", nullptr, nullptr, nullptr,
-  nullptr, nullptr, nullptr, "MELOFEE",
-  "MELODELFE", "GOUPIX", "FEUNARD", "RONDOUDOU",
-  "GRODOUDOU", "NOSFERAPTI", "NOSFERALTO", "MYSTHERBE",
-  "ORTIDE", "RAFFLESIA", nullptr, nullptr,
-  "MIMITOSS", "AEROMITE", "TAUPIQUEUR", "TRIOPIKEUR",
-  "MIAOUSS", nullptr, "PSYKOKWAK", "AKWAKWAK",
-  "FEROSINGE", "COLOSSINGE", "CANINOS", "ARCANIN",
-  "PTITARD", "TETARTE", "TARTARD", nullptr,
-  nullptr, nullptr, "MACHOC", "MACHOPEUR",
-  "MACKOGNEUR", "CHETIFLOR", "BOUSTIFLOR", "EMPIFLOR",
-  nullptr, nullptr, "RACAILLOU", "GRAVALANCH",
-  "GROLEM", nullptr, "GALOPA", "RAMOLOSS",
-  "FLAGADOSS", "MAGNETI", nullptr, "CANARTICHO",
-  nullptr, nullptr, "OTARIA", "LAMANTINE",
-  "TADMORV", "GROTADMORV", "KOKIYAS", "CRUSTABRI",
-  "FANTOMINUS", "SPECTRUM", "ECTOPLASMA", nullptr,
-  "SOPORIFIK", "HYPNOMADE", nullptr, "KRABBOSS",
-  "VOLTORBE", nullptr, "NOEUNOEUF", "NOADKOKO",
-  "OSSELAIT", "OSSATUEUR", "KICKLEE", "TYGNON",
-  "EXCELANGUE", "SMOGO", "SMOGOGO", "RHINOCORNE",
-  "RHINOFEROS", "LEVEINARD", "SAQUEDENEU", "KANGOUREX",
-  "HYPOTREMPE", "HYPOCEAN", "POISSIRENE", "POISSOROY",
-  "STARI", "STAROSS", "M. MIME", "INSECATEUR",
-  "LIPPOUTOU", "ELEKTEK", nullptr, "SCARABRUTE",
-  nullptr, "MAGICARPE", "LEVIATOR", "LOKHLASS",
-  "METAMORPH", "EVOLI", "AQUALI", "VOLTALI",
-  "PYROLI", nullptr, "AMONITA", "AMONISTAR",
-  nullptr, nullptr, "PTERA", "RONFLEX",
-  "ARTIKODIN", "ELECTHOR", "SULFURA", "MINIDRACO",
-  "DRACO", "DRACOLOSSE", nullptr, nullptr,
+// Evoluciones, incluidas ramas y condiciones especiales.
+static const EvolutionRule EVOLUTION_RULES[] = {
+  { 1, 2, 16, EVO_LEVEL },
+  { 2, 3, 32, EVO_LEVEL },
+  { 4, 5, 16, EVO_LEVEL },
+  { 5, 6, 36, EVO_LEVEL },
+  { 7, 8, 16, EVO_LEVEL },
+  { 8, 9, 36, EVO_LEVEL },
+  { 10, 11, 7, EVO_LEVEL },
+  { 11, 12, 10, EVO_LEVEL },
+  { 13, 14, 7, EVO_LEVEL },
+  { 14, 15, 10, EVO_LEVEL },
+  { 16, 17, 18, EVO_LEVEL },
+  { 17, 18, 36, EVO_LEVEL },
+  { 19, 20, 20, EVO_LEVEL },
+  { 21, 22, 20, EVO_LEVEL },
+  { 23, 24, 22, EVO_LEVEL },
+  { 25, 26, 30, EVO_LEVEL },
+  { 27, 28, 22, EVO_LEVEL },
+  { 29, 30, 16, EVO_LEVEL },
+  { 30, 31, 30, EVO_LEVEL },
+  { 32, 33, 16, EVO_LEVEL },
+  { 33, 34, 30, EVO_LEVEL },
+  { 35, 36, 30, EVO_LEVEL },
+  { 37, 38, 30, EVO_LEVEL },
+  { 39, 40, 30, EVO_LEVEL },
+  { 41, 42, 22, EVO_LEVEL },
+  { 43, 44, 21, EVO_LEVEL },
+  { 44, 45, 36, EVO_LEVEL },
+  { 46, 47, 24, EVO_LEVEL },
+  { 48, 49, 31, EVO_LEVEL },
+  { 50, 51, 26, EVO_LEVEL },
+  { 52, 53, 28, EVO_LEVEL },
+  { 54, 55, 33, EVO_LEVEL },
+  { 56, 57, 28, EVO_LEVEL },
+  { 58, 59, 30, EVO_LEVEL },
+  { 60, 61, 25, EVO_LEVEL },
+  { 61, 62, 36, EVO_LEVEL },
+  { 63, 64, 16, EVO_LEVEL },
+  { 64, 65, 40, EVO_LEVEL },
+  { 66, 67, 28, EVO_LEVEL },
+  { 67, 68, 40, EVO_LEVEL },
+  { 69, 70, 21, EVO_LEVEL },
+  { 70, 71, 36, EVO_LEVEL },
+  { 72, 73, 30, EVO_LEVEL },
+  { 74, 75, 25, EVO_LEVEL },
+  { 75, 76, 40, EVO_LEVEL },
+  { 77, 78, 40, EVO_LEVEL },
+  { 79, 80, 37, EVO_LEVEL },
+  { 81, 82, 30, EVO_LEVEL },
+  { 82, 462, 30, EVO_LEVEL },
+  { 84, 85, 31, EVO_LEVEL },
+  { 86, 87, 34, EVO_LEVEL },
+  { 88, 89, 38, EVO_LEVEL },
+  { 90, 91, 30, EVO_LEVEL },
+  { 92, 93, 25, EVO_LEVEL },
+  { 93, 94, 40, EVO_LEVEL },
+  { 96, 97, 26, EVO_LEVEL },
+  { 98, 99, 28, EVO_LEVEL },
+  { 100, 101, 30, EVO_LEVEL },
+  { 102, 103, 30, EVO_LEVEL },
+  { 104, 105, 28, EVO_LEVEL },
+  { 108, 463, 30, EVO_LEVEL },
+  { 109, 110, 35, EVO_LEVEL },
+  { 111, 112, 42, EVO_LEVEL },
+  { 112, 464, 40, EVO_LEVEL },
+  { 114, 465, 30, EVO_LEVEL },
+  { 116, 117, 32, EVO_LEVEL },
+  { 118, 119, 33, EVO_LEVEL },
+  { 120, 121, 30, EVO_LEVEL },
+  { 125, 466, 40, EVO_LEVEL },
+  { 126, 467, 40, EVO_LEVEL },
+  { 129, 130, 20, EVO_LEVEL },
+  { 133, 134, 30, EVO_LEVEL },
+  { 138, 139, 40, EVO_LEVEL },
+  { 140, 141, 40, EVO_LEVEL },
+  { 147, 148, 30, EVO_LEVEL },
+  { 148, 149, 55, EVO_LEVEL },
+  { 152, 153, 16, EVO_LEVEL },
+  { 153, 154, 32, EVO_LEVEL },
+  { 155, 156, 14, EVO_LEVEL },
+  { 156, 157, 36, EVO_LEVEL },
+  { 158, 159, 18, EVO_LEVEL },
+  { 159, 160, 30, EVO_LEVEL },
+  { 161, 162, 15, EVO_LEVEL },
+  { 163, 164, 20, EVO_LEVEL },
+  { 165, 166, 18, EVO_LEVEL },
+  { 167, 168, 22, EVO_LEVEL },
+  { 170, 171, 27, EVO_LEVEL },
+  { 172, 25, 10, EVO_BOND },
+  { 173, 35, 10, EVO_BOND },
+  { 174, 39, 10, EVO_BOND },
+  { 175, 176, 10, EVO_BOND },
+  { 176, 468, 30, EVO_LEVEL },
+  { 177, 178, 25, EVO_LEVEL },
+  { 179, 180, 15, EVO_LEVEL },
+  { 180, 181, 30, EVO_LEVEL },
+  { 183, 184, 18, EVO_LEVEL },
+  { 187, 188, 18, EVO_LEVEL },
+  { 188, 189, 27, EVO_LEVEL },
+  { 190, 424, 30, EVO_LEVEL },
+  { 191, 192, 20, EVO_LEVEL },
+  { 193, 469, 30, EVO_LEVEL },
+  { 194, 195, 20, EVO_LEVEL },
+  { 198, 430, 30, EVO_LEVEL },
+  { 200, 429, 30, EVO_LEVEL },
+  { 204, 205, 31, EVO_LEVEL },
+  { 207, 472, 30, EVO_LEVEL },
+  { 209, 210, 23, EVO_LEVEL },
+  { 215, 461, 30, EVO_LEVEL },
+  { 216, 217, 30, EVO_LEVEL },
+  { 218, 219, 38, EVO_LEVEL },
+  { 220, 221, 33, EVO_LEVEL },
+  { 221, 473, 30, EVO_LEVEL },
+  { 223, 224, 25, EVO_LEVEL },
+  { 228, 229, 24, EVO_LEVEL },
+  { 231, 232, 25, EVO_LEVEL },
+  { 233, 474, 40, EVO_LEVEL },
+  { 236, 106, 20, EVO_ATK_GT_DEF },
+  { 236, 107, 20, EVO_DEF_GT_ATK },
+  { 236, 237, 20, EVO_ATK_EQ_DEF },
+  { 238, 124, 30, EVO_LEVEL },
+  { 239, 125, 30, EVO_LEVEL },
+  { 240, 126, 30, EVO_LEVEL },
+  { 246, 247, 30, EVO_LEVEL },
+  { 247, 248, 55, EVO_LEVEL },
+  { 252, 253, 16, EVO_LEVEL },
+  { 253, 254, 36, EVO_LEVEL },
+  { 255, 256, 16, EVO_LEVEL },
+  { 256, 257, 36, EVO_LEVEL },
+  { 258, 259, 16, EVO_LEVEL },
+  { 259, 260, 36, EVO_LEVEL },
+  { 261, 262, 18, EVO_LEVEL },
+  { 263, 264, 20, EVO_LEVEL },
+  { 265, 266, 7, EVO_LEVEL },
+  { 266, 267, 10, EVO_LEVEL },
+  { 268, 269, 10, EVO_LEVEL },
+  { 270, 271, 14, EVO_LEVEL },
+  { 273, 274, 14, EVO_LEVEL },
+  { 276, 277, 22, EVO_LEVEL },
+  { 278, 279, 25, EVO_LEVEL },
+  { 280, 281, 20, EVO_LEVEL },
+  { 281, 282, 30, EVO_LEVEL },
+  { 283, 284, 22, EVO_LEVEL },
+  { 285, 286, 23, EVO_LEVEL },
+  { 287, 288, 18, EVO_LEVEL },
+  { 288, 289, 36, EVO_LEVEL },
+  { 290, 291, 20, EVO_LEVEL },
+  { 293, 294, 20, EVO_LEVEL },
+  { 294, 295, 40, EVO_LEVEL },
+  { 296, 297, 24, EVO_LEVEL },
+  { 298, 183, 20, EVO_BOND },
+  { 299, 476, 30, EVO_LEVEL },
+  { 304, 305, 32, EVO_LEVEL },
+  { 305, 306, 42, EVO_LEVEL },
+  { 307, 308, 37, EVO_LEVEL },
+  { 309, 310, 26, EVO_LEVEL },
+  { 315, 407, 30, EVO_LEVEL },
+  { 316, 317, 26, EVO_LEVEL },
+  { 318, 319, 30, EVO_LEVEL },
+  { 320, 321, 40, EVO_LEVEL },
+  { 322, 323, 33, EVO_LEVEL },
+  { 325, 326, 32, EVO_LEVEL },
+  { 328, 329, 35, EVO_LEVEL },
+  { 329, 330, 45, EVO_LEVEL },
+  { 331, 332, 32, EVO_LEVEL },
+  { 333, 334, 35, EVO_LEVEL },
+  { 339, 340, 30, EVO_LEVEL },
+  { 341, 342, 30, EVO_LEVEL },
+  { 343, 344, 36, EVO_LEVEL },
+  { 345, 346, 40, EVO_LEVEL },
+  { 347, 348, 40, EVO_LEVEL },
+  { 353, 354, 37, EVO_LEVEL },
+  { 355, 356, 37, EVO_LEVEL },
+  { 356, 477, 40, EVO_LEVEL },
+  { 361, 362, 42, EVO_LEVEL },
+  { 363, 364, 32, EVO_LEVEL },
+  { 364, 365, 44, EVO_LEVEL },
+  { 371, 372, 30, EVO_LEVEL },
+  { 372, 373, 50, EVO_LEVEL },
+  { 374, 375, 20, EVO_LEVEL },
+  { 375, 376, 45, EVO_LEVEL },
+  { 387, 388, 18, EVO_LEVEL },
+  { 388, 389, 32, EVO_LEVEL },
+  { 390, 391, 14, EVO_LEVEL },
+  { 391, 392, 36, EVO_LEVEL },
+  { 393, 394, 16, EVO_LEVEL },
+  { 394, 395, 36, EVO_LEVEL },
+  { 396, 397, 14, EVO_LEVEL },
+  { 397, 398, 34, EVO_LEVEL },
+  { 399, 400, 15, EVO_LEVEL },
+  { 401, 402, 10, EVO_LEVEL },
+  { 403, 404, 15, EVO_LEVEL },
+  { 404, 405, 30, EVO_LEVEL },
+  { 408, 409, 30, EVO_LEVEL },
+  { 410, 411, 30, EVO_LEVEL },
+  { 412, 413, 20, EVO_LEVEL },
+  { 415, 416, 21, EVO_LEVEL },
+  { 418, 419, 26, EVO_LEVEL },
+  { 420, 421, 25, EVO_LEVEL },
+  { 422, 423, 30, EVO_LEVEL },
+  { 425, 426, 28, EVO_LEVEL },
+  { 431, 432, 38, EVO_LEVEL },
+  { 434, 435, 34, EVO_LEVEL },
+  { 436, 437, 33, EVO_LEVEL },
+  { 438, 185, 30, EVO_LEVEL },
+  { 439, 122, 30, EVO_LEVEL },
+  { 440, 113, 30, EVO_LEVEL },
+  { 443, 444, 24, EVO_LEVEL },
+  { 444, 445, 48, EVO_LEVEL },
+  { 449, 450, 34, EVO_LEVEL },
+  { 451, 452, 40, EVO_LEVEL },
+  { 453, 454, 37, EVO_LEVEL },
+  { 456, 457, 31, EVO_LEVEL },
+  { 458, 226, 30, EVO_LEVEL },
+  { 459, 460, 40, EVO_LEVEL },
+  { 489, 490, 30, EVO_LEVEL },
+  { 495, 496, 17, EVO_LEVEL },
+  { 496, 497, 36, EVO_LEVEL },
+  { 498, 499, 17, EVO_LEVEL },
+  { 499, 500, 36, EVO_LEVEL },
+  { 501, 502, 17, EVO_LEVEL },
+  { 502, 503, 36, EVO_LEVEL },
+  { 504, 505, 20, EVO_LEVEL },
+  { 506, 507, 16, EVO_LEVEL },
+  { 507, 508, 32, EVO_LEVEL },
+  { 509, 510, 20, EVO_LEVEL },
+  { 511, 512, 30, EVO_LEVEL },
+  { 513, 514, 30, EVO_LEVEL },
+  { 515, 516, 30, EVO_LEVEL },
+  { 517, 518, 30, EVO_LEVEL },
+  { 519, 520, 21, EVO_LEVEL },
+  { 520, 521, 32, EVO_LEVEL },
+  { 522, 523, 27, EVO_LEVEL },
+  { 524, 525, 25, EVO_LEVEL },
+  { 525, 526, 40, EVO_LEVEL },
+  { 529, 530, 31, EVO_LEVEL },
+  { 532, 533, 25, EVO_LEVEL },
+  { 533, 534, 40, EVO_LEVEL },
+  { 535, 536, 25, EVO_LEVEL },
+  { 536, 537, 36, EVO_LEVEL },
+  { 540, 541, 20, EVO_LEVEL },
+  { 543, 544, 22, EVO_LEVEL },
+  { 544, 545, 30, EVO_LEVEL },
+  { 546, 547, 30, EVO_LEVEL },
+  { 548, 549, 30, EVO_LEVEL },
+  { 551, 552, 29, EVO_LEVEL },
+  { 552, 553, 40, EVO_LEVEL },
+  { 554, 555, 35, EVO_LEVEL },
+  { 557, 558, 34, EVO_LEVEL },
+  { 559, 560, 39, EVO_LEVEL },
+  { 562, 563, 34, EVO_LEVEL },
+  { 564, 565, 37, EVO_LEVEL },
+  { 566, 567, 37, EVO_LEVEL },
+  { 568, 569, 36, EVO_LEVEL },
+  { 570, 571, 30, EVO_LEVEL },
+  { 572, 573, 30, EVO_LEVEL },
+  { 574, 575, 32, EVO_LEVEL },
+  { 575, 576, 41, EVO_LEVEL },
+  { 577, 578, 32, EVO_LEVEL },
+  { 578, 579, 41, EVO_LEVEL },
+  { 580, 581, 35, EVO_LEVEL },
+  { 582, 583, 35, EVO_LEVEL },
+  { 583, 584, 47, EVO_LEVEL },
+  { 585, 586, 34, EVO_LEVEL },
+  { 588, 589, 40, EVO_LEVEL },
+  { 590, 591, 39, EVO_LEVEL },
+  { 592, 593, 40, EVO_LEVEL },
+  { 595, 596, 36, EVO_LEVEL },
+  { 597, 598, 40, EVO_LEVEL },
+  { 599, 600, 38, EVO_LEVEL },
+  { 600, 601, 49, EVO_LEVEL },
+  { 602, 603, 39, EVO_LEVEL },
+  { 603, 604, 30, EVO_LEVEL },
+  { 605, 606, 42, EVO_LEVEL },
+  { 607, 608, 41, EVO_LEVEL },
+  { 608, 609, 30, EVO_LEVEL },
+  { 610, 611, 38, EVO_LEVEL },
+  { 611, 612, 48, EVO_LEVEL },
+  { 613, 614, 37, EVO_LEVEL },
+  { 616, 617, 40, EVO_LEVEL },
+  { 619, 620, 50, EVO_LEVEL },
+  { 622, 623, 43, EVO_LEVEL },
+  { 624, 625, 52, EVO_LEVEL },
+  { 627, 628, 54, EVO_LEVEL },
+  { 629, 630, 54, EVO_LEVEL },
+  { 633, 634, 50, EVO_LEVEL },
+  { 634, 635, 64, EVO_LEVEL },
+  { 636, 637, 59, EVO_LEVEL },
+  { 42, 169, 30, EVO_BOND },
+  { 44, 182, 36, EVO_LEVEL },
+  { 61, 186, 36, EVO_LEVEL },
+  { 79, 199, 37, EVO_LEVEL },
+  { 95, 208, 30, EVO_LEVEL },
+  { 113, 242, 30, EVO_BOND },
+  { 117, 230, 42, EVO_LEVEL },
+  { 123, 212, 30, EVO_LEVEL },
+  { 133, 135, 30, EVO_LEVEL },
+  { 133, 136, 30, EVO_LEVEL },
+  { 133, 196, 30, EVO_DAY_BOND },
+  { 133, 197, 30, EVO_NIGHT_BOND },
+  { 133, 470, 30, EVO_LEVEL },
+  { 133, 471, 30, EVO_LEVEL },
+  { 281, 475, 30, EVO_LEVEL },
+  { 361, 478, 30, EVO_LEVEL },
+  { 406, 315, 20, EVO_DAY_BOND },
+  { 412, 414, 20, EVO_LEVEL },
+  { 427, 428, 20, EVO_BOND },
+  { 433, 358, 20, EVO_NIGHT_BOND },
+  { 446, 143, 20, EVO_BOND },
+  { 447, 448, 20, EVO_DAY_BOND },
+  { 527, 528, 20, EVO_BOND },
+  { 541, 542, 20, EVO_BOND },
+  { 137, 233, 30, EVO_LEVEL },
+  { 265, 268, 7, EVO_LEVEL },
+  { 271, 272, 30, EVO_LEVEL },
+  { 274, 275, 30, EVO_LEVEL },
+  { 290, 292, 20, EVO_LEVEL },
+  { 300, 301, 30, EVO_LEVEL },
+  { 349, 350, 30, EVO_LEVEL },
+  { 366, 367, 40, EVO_LEVEL },
+  { 366, 368, 40, EVO_LEVEL },
+  { 650, 651, 16, EVO_LEVEL },
+  { 651, 652, 36, EVO_LEVEL },
+  { 653, 654, 16, EVO_LEVEL },
+  { 654, 655, 36, EVO_LEVEL },
+  { 656, 657, 16, EVO_LEVEL },
+  { 657, 658, 36, EVO_LEVEL },
+  { 659, 660, 20, EVO_LEVEL },
+  { 661, 662, 17, EVO_LEVEL },
+  { 662, 663, 35, EVO_LEVEL },
+  { 664, 665, 9, EVO_LEVEL },
+  { 665, 666, 12, EVO_LEVEL },
+  { 667, 668, 35, EVO_LEVEL },
+  { 669, 670, 19, EVO_LEVEL },
+  { 670, 671, 30, EVO_LEVEL },
+  { 672, 673, 32, EVO_LEVEL },
+  { 674, 675, 32, EVO_LEVEL },
+  { 677, 678, 25, EVO_LEVEL },
+  { 679, 680, 35, EVO_LEVEL },
+  { 680, 681, 30, EVO_LEVEL },
+  { 682, 683, 32, EVO_LEVEL },
+  { 684, 685, 32, EVO_LEVEL },
+  { 686, 687, 30, EVO_LEVEL },
+  { 688, 689, 39, EVO_LEVEL },
+  { 690, 691, 48, EVO_LEVEL },
+  { 692, 693, 37, EVO_LEVEL },
+  { 694, 695, 30, EVO_LEVEL },
+  { 696, 697, 39, EVO_LEVEL },
+  { 698, 699, 39, EVO_LEVEL },
+  { 133, 134, 30, EVO_LEVEL },
+  { 133, 135, 30, EVO_LEVEL },
+  { 133, 136, 30, EVO_LEVEL },
+  { 133, 196, 40, EVO_LEVEL },
+  { 133, 197, 40, EVO_LEVEL },
+  { 133, 470, 32, EVO_LEVEL },
+  { 133, 471, 32, EVO_LEVEL },
+  { 133, 700, 32, EVO_LEVEL },
+  { 704, 705, 40, EVO_LEVEL },
+  { 705, 706, 50, EVO_LEVEL },
+  { 708, 709, 32, EVO_LEVEL },
+  { 710, 711, 32, EVO_LEVEL },
+  { 712, 713, 37, EVO_LEVEL },
+  { 714, 715, 48, EVO_LEVEL },
+  { 722, 723, 17, EVO_LEVEL },
+  { 723, 724, 34, EVO_LEVEL },
+  { 725, 726, 17, EVO_LEVEL },
+  { 726, 727, 34, EVO_LEVEL },
+  { 728, 729, 17, EVO_LEVEL },
+  { 729, 730, 34, EVO_LEVEL },
+  { 731, 732, 14, EVO_LEVEL },
+  { 732, 733, 28, EVO_LEVEL },
+  { 734, 735, 20, EVO_LEVEL },
+  { 736, 737, 20, EVO_LEVEL },
+  { 737, 738, 32, EVO_LEVEL },
+  { 739, 740, 32, EVO_LEVEL },
+  { 742, 743, 25, EVO_LEVEL },
+  { 744, 745, 25, EVO_LEVEL },
+  { 747, 748, 38, EVO_LEVEL },
+  { 749, 750, 30, EVO_LEVEL },
+  { 751, 752, 22, EVO_LEVEL },
+  { 753, 754, 34, EVO_LEVEL },
+  { 755, 756, 24, EVO_LEVEL },
+  { 757, 758, 33, EVO_LEVEL },
+  { 759, 760, 27, EVO_LEVEL },
+  { 761, 762, 18, EVO_LEVEL },
+  { 762, 763, 40, EVO_LEVEL },
+  { 767, 768, 30, EVO_LEVEL },
+  { 769, 770, 42, EVO_LEVEL },
+  { 772, 773, 40, EVO_LEVEL },
+  { 782, 783, 35, EVO_LEVEL },
+  { 783, 784, 45, EVO_LEVEL },
+  { 789, 790, 43, EVO_LEVEL },
+  { 790, 791, 53, EVO_LEVEL },
+  { 790, 792, 53, EVO_LEVEL },
+  { 803, 804, 40, EVO_LEVEL },
+  { 810, 811, 16, EVO_LEVEL },
+  { 811, 812, 35, EVO_LEVEL },
+  { 813, 814, 16, EVO_LEVEL },
+  { 814, 815, 35, EVO_LEVEL },
+  { 816, 817, 16, EVO_LEVEL },
+  { 817, 818, 35, EVO_LEVEL },
+  { 819, 820, 24, EVO_LEVEL },
+  { 821, 822, 18, EVO_LEVEL },
+  { 822, 823, 38, EVO_LEVEL },
+  { 824, 825, 10, EVO_LEVEL },
+  { 825, 826, 30, EVO_LEVEL },
+  { 827, 828, 18, EVO_LEVEL },
+  { 829, 830, 20, EVO_LEVEL },
+  { 831, 832, 24, EVO_LEVEL },
+  { 833, 834, 22, EVO_LEVEL },
+  { 835, 836, 25, EVO_LEVEL },
+  { 837, 838, 18, EVO_LEVEL },
+  { 838, 839, 34, EVO_LEVEL },
+  { 840, 841, 30, EVO_LEVEL },
+  { 840, 842, 30, EVO_LEVEL },
+  { 840, 1011, 30, EVO_LEVEL },
+  { 1011, 1019, 40, EVO_LEVEL },
+  { 843, 844, 36, EVO_LEVEL },
+  { 846, 847, 26, EVO_LEVEL },
+  { 848, 849, 30, EVO_LEVEL },
+  { 850, 851, 28, EVO_LEVEL },
+  { 852, 853, 40, EVO_LEVEL },
+  { 854, 855, 30, EVO_LEVEL },
+  { 856, 857, 32, EVO_LEVEL },
+  { 857, 858, 42, EVO_LEVEL },
+  { 859, 860, 32, EVO_LEVEL },
+  { 860, 861, 42, EVO_LEVEL },
+  { 263, 264, 20, EVO_LEVEL },
+  { 264, 862, 35, EVO_LEVEL },
+  { 52, 53, 28, EVO_LEVEL },
+  { 52, 863, 28, EVO_LEVEL },
+  { 222, 864, 38, EVO_LEVEL },
+  { 83, 865, 32, EVO_LEVEL },
+  { 439, 122, 40, EVO_LEVEL },
+  { 122, 866, 42, EVO_LEVEL },
+  { 562, 563, 34, EVO_LEVEL },
+  { 562, 867, 32, EVO_LEVEL },
+  { 868, 869, 32, EVO_LEVEL },
+  { 872, 873, 40, EVO_LEVEL },
+  { 878, 879, 34, EVO_LEVEL },
+  { 884, 1018, 30, EVO_LEVEL },
+  { 885, 886, 50, EVO_LEVEL },
+  { 886, 887, 60, EVO_LEVEL },
+  { 891, 892, 32, EVO_LEVEL },
+  { 234, 899, 32, EVO_LEVEL },
+  { 123, 212, 32, EVO_LEVEL },
+  { 123, 900, 30, EVO_LEVEL },
+  { 216, 217, 30, EVO_LEVEL },
+  { 217, 901, 30, EVO_LEVEL },
+  { 550, 902, 32, EVO_LEVEL },
+  { 215, 461, 32, EVO_LEVEL },
+  { 215, 903, 32, EVO_LEVEL },
+  { 211, 904, 32, EVO_LEVEL },
+  { 906, 907, 16, EVO_LEVEL },
+  { 907, 908, 36, EVO_LEVEL },
+  { 909, 910, 16, EVO_LEVEL },
+  { 910, 911, 36, EVO_LEVEL },
+  { 912, 913, 16, EVO_LEVEL },
+  { 913, 914, 36, EVO_LEVEL },
+  { 915, 916, 18, EVO_LEVEL },
+  { 917, 918, 15, EVO_LEVEL },
+  { 919, 920, 24, EVO_LEVEL },
+  { 921, 922, 18, EVO_LEVEL },
+  { 922, 923, 32, EVO_LEVEL },
+  { 924, 925, 25, EVO_LEVEL },
+  { 926, 927, 26, EVO_LEVEL },
+  { 928, 929, 25, EVO_LEVEL },
+  { 929, 930, 35, EVO_LEVEL },
+  { 932, 933, 24, EVO_LEVEL },
+  { 933, 934, 38, EVO_LEVEL },
+  { 935, 936, 30, EVO_LEVEL },
+  { 935, 937, 30, EVO_LEVEL },
+  { 938, 939, 30, EVO_LEVEL },
+  { 940, 941, 25, EVO_LEVEL },
+  { 942, 943, 30, EVO_LEVEL },
+  { 944, 945, 28, EVO_LEVEL },
+  { 946, 947, 32, EVO_LEVEL },
+  { 948, 949, 30, EVO_LEVEL },
+  { 951, 952, 30, EVO_LEVEL },
+  { 953, 954, 32, EVO_LEVEL },
+  { 955, 956, 35, EVO_LEVEL },
+  { 957, 958, 24, EVO_LEVEL },
+  { 958, 959, 38, EVO_LEVEL },
+  { 960, 961, 26, EVO_LEVEL },
+  { 963, 964, 38, EVO_LEVEL },
+  { 965, 966, 40, EVO_LEVEL },
+  { 969, 970, 35, EVO_LEVEL },
+  { 971, 972, 30, EVO_LEVEL },
+  { 974, 975, 30, EVO_LEVEL },
+  { 56, 57, 28, EVO_LEVEL },
+  { 57, 979, 32, EVO_LEVEL },
+  { 194, 195, 20, EVO_LEVEL },
+  { 194, 980, 20, EVO_LEVEL },
+  { 203, 981, 40, EVO_LEVEL },
+  { 206, 982, 40, EVO_LEVEL },
+  { 624, 625, 52, EVO_LEVEL },
+  { 625, 983, 32, EVO_LEVEL },
+  { 996, 997, 35, EVO_LEVEL },
+  { 997, 998, 54, EVO_LEVEL },
+  { 999, 1000, 32, EVO_LEVEL },
+  { 1012, 1013, 30, EVO_LEVEL },
 };
+#define EVOLUTION_RULE_COUNT 500
 
-static const char *const DEX_NAME_DE[DEX_COUNT + 1] = {
-  nullptr, "BISASAM", "BISAKNOSP", "BISAFLOR",
-  "GLUMANDA", "GLUTEXO", "GLURAK", "SCHIGGY",
-  "SCHILLOK", "TURTOK", "RAUPY", "SAFCON",
-  "SMETTBO", "HORNLIU", "KOKUNA", "BIBOR",
-  "TAUBSI", "TAUBOGA", "TAUBOSS", "RATTFRATZ",
-  "RATTIKARL", "HABITAK", "IBITAK", "RETTAN",
-  nullptr, nullptr, nullptr, "SANDAN",
-  "SANDAMER", nullptr, nullptr, nullptr,
-  nullptr, nullptr, nullptr, "PIEPI",
-  "PIXI", nullptr, "VULNONA", "PUMMELUFF",
-  "KNUDDELUFF", nullptr, nullptr, "MYRAPLA",
-  "DUFLOR", "GIFLOR", nullptr, "PARASEK",
-  "BLUZUK", "OMOT", "DIGDA", "DIGDRI",
-  "MAUZI", "SNOBILIKAT", "ENTON", "ENTORON",
-  "MENKI", "RASAFF", "FUKANO", "ARKANI",
-  "QUAPSEL", "QUAPUTZI", "QUAPPO", nullptr,
-  nullptr, "SIMSALA", "MACHOLLO", "MASCHOCK",
-  "MACHOMEI", "KNOFENSA", "ULTRIGARIA", "SARZENIA",
-  "TENTACHA", "TENTOXA", "KLEINSTEIN", "GEOROK",
-  "GEOWAZ", "PONITA", "GALLOPA", "FLEGMON",
-  "LAHMUS", "MAGNETILO", nullptr, "PORENTA",
-  "DODU", "DODRI", "JUROB", "JUGONG",
-  "SLEIMA", "SLEIMOK", "MUSCHAS", "AUSTOS",
-  "NEBULAK", "ALPOLLO", nullptr, nullptr,
-  "TRAUMATO", nullptr, nullptr, nullptr,
-  "VOLTOBAL", "LEKTROBAL", "OWEI", "KOKOWEI",
-  "TRAGOSSO", "KNOGGA", "KICKLEE", "NOCKCHAN",
-  "SCHLURP", "SMOGON", "SMOGMOG", "RIHORN",
-  "RIZEROS", "CHANEIRA", nullptr, "KANGAMA",
-  "SEEPER", "SEEMON", "GOLDINI", "GOLKING",
-  "STERNDU", nullptr, "PANTIMOS", "SICHLOR",
-  "ROSSANA", "ELEKTEK", nullptr, nullptr,
-  nullptr, "KARPADOR", "GARADOS", nullptr,
-  nullptr, "EVOLI", "AQUANA", "BLITZA",
-  "FLAMARA", nullptr, "AMONITAS", "AMOROSO",
-  nullptr, nullptr, nullptr, "RELAXO",
-  "ARKTOS", nullptr, "LAVADOS", nullptr,
-  "DRAGONIR", "DRAGORAN", "MEWTU", nullptr,
+// nombres localizados en el orden de Lang: ES, EN, FR, DE, IT, PT
+static const char *const DEX_NAMES[DEX_LANG_COUNT][DEX_COUNT + 1] = {
+  // ES
+  { "?", "BULBASAUR", "IVYSAUR", "VENUSAUR", "CHARMANDER", "CHARMELEON", "CHARIZARD", "SQUIRTLE", "WARTORTLE", "BLASTOISE", "CATERPIE", "METAPOD", "BUTTERFREE", "WEEDLE", "KAKUNA", "BEEDRILL", "PIDGEY", "PIDGEOTTO", "PIDGEOT", "RATTATA", "RATICATE", "SPEAROW", "FEAROW", "EKANS", "ARBOK", "PIKACHU", "RAICHU", "SANDSHREW", "SANDSLASH", "NIDORAN F", "NIDORINA", "NIDOQUEEN", "NIDORAN M", "NIDORINO", "NIDOKING", "CLEFAIRY", "CLEFABLE", "VULPIX", "NINETALES", "JIGGLYPUFF", "WIGGLYTUFF", "ZUBAT", "GOLBAT", "ODDISH", "GLOOM", "VILEPLUME", "PARAS", "PARASECT", "VENONAT", "VENOMOTH", "DIGLETT", "DUGTRIO", "MEOWTH", "PERSIAN", "PSYDUCK", "GOLDUCK", "MANKEY", "PRIMEAPE", "GROWLITHE", "ARCANINE", "POLIWAG", "POLIWHIRL", "POLIWRATH", "ABRA", "KADABRA", "ALAKAZAM", "MACHOP", "MACHOKE", "MACHAMP", "BELLSPROUT", "WEEPINBELL", "VICTREEBEL", "TENTACOOL", "TENTACRUEL", "GEODUDE", "GRAVELER", "GOLEM", "PONYTA", "RAPIDASH", "SLOWPOKE", "SLOWBRO", "MAGNEMITE", "MAGNETON", "FARFETCHD", "DODUO", "DODRIO", "SEEL", "DEWGONG", "GRIMER", "MUK", "SHELLDER", "CLOYSTER", "GASTLY", "HAUNTER", "GENGAR", "ONIX", "DROWZEE", "HYPNO", "KRABBY", "KINGLER", "VOLTORB", "ELECTRODE", "EXEGGCUTE", "EXEGGUTOR", "CUBONE", "MAROWAK", "HITMONLEE", "HITMONCHAN", "LICKITUNG", "KOFFING", "WEEZING", "RHYHORN", "RHYDON", "CHANSEY", "TANGELA", "KANGASKHAN", "HORSEA", "SEADRA", "GOLDEEN", "SEAKING", "STARYU", "STARMIE", "MR. MIME", "SCYTHER", "JYNX", "ELECTABUZZ", "MAGMAR", "PINSIR", "TAUROS", "MAGIKARP", "GYARADOS", "LAPRAS", "DITTO", "EEVEE", "VAPOREON", "JOLTEON", "FLAREON", "PORYGON", "OMANYTE", "OMASTAR", "KABUTO", "KABUTOPS", "AERODACTYL", "SNORLAX", "ARTICUNO", "ZAPDOS", "MOLTRES", "DRATINI", "DRAGONAIR", "DRAGONITE", "MEWTWO", "MEW", "CHIKORITA", "BAYLEEF", "MEGANIUM", "CYNDAQUIL", "QUILAVA", "TYPHLOSION", "TOTODILE", "CROCONAW", "FERALIGATR", "SENTRET", "FURRET", "HOOTHOOT", "NOCTOWL", "LEDYBA", "LEDIAN", "SPINARAK", "ARIADOS", "CROBAT", "CHINCHOU", "LANTURN", "PICHU", "CLEFFA", "IGGLYBUFF", "TOGEPI", "TOGETIC", "NATU", "XATU", "MAREEP", "FLAAFFY", "AMPHAROS", "BELLOSSOM", "MARILL", "AZUMARILL", "SUDOWOODO", "POLITOED", "HOPPIP", "SKIPLOOM", "JUMPLUFF", "AIPOM", "SUNKERN", "SUNFLORA", "YANMA", "WOOPER", "QUAGSIRE", "ESPEON", "UMBREON", "MURKROW", "SLOWKING", "MISDREAVUS", "UNOWN", "WOBBUFFET", "GIRAFARIG", "PINECO", "FORRETRESS", "DUNSPARCE", "GLIGAR", "STEELIX", "SNUBBULL", "GRANBULL", "QWILFISH", "SCIZOR", "SHUCKLE", "HERACROSS", "SNEASEL", "TEDDIURSA", "URSARING", "SLUGMA", "MAGCARGO", "SWINUB", "PILOSWINE", "CORSOLA", "REMORAID", "OCTILLERY", "DELIBIRD", "MANTINE", "SKARMORY", "HOUNDOUR", "HOUNDOOM", "KINGDRA", "PHANPY", "DONPHAN", "PORYGON2", "STANTLER", "SMEARGLE", "TYROGUE", "HITMONTOP", "SMOOCHUM", "ELEKID", "MAGBY", "MILTANK", "BLISSEY", "RAIKOU", "ENTEI", "SUICUNE", "LARVITAR", "PUPITAR", "TYRANITAR", "LUGIA", "HO_OH", "CELEBI", "TREECKO", "GROVYLE", "SCEPTILE", "TORCHIC", "COMBUSKEN", "BLAZIKEN", "MUDKIP", "MARSHTOMP", "SWAMPERT", "POOCHYENA", "MIGHTYENA", "ZIGZAGOON", "LINOONE", "WURMPLE", "SILCOON", "BEAUTIFLY", "CASCOON", "DUSTOX", "LOTAD", "LOMBRE", "LUDICOLO", "SEEDOT", "NUZLEAF", "SHIFTRY", "TAILLOW", "SWELLOW", "WINGULL", "PELIPPER", "RALTS", "KIRLIA", "GARDEVOIR", "SURSKIT", "MASQUERAIN", "SHROOMISH", "BRELOOM", "SLAKOTH", "VIGOROTH", "SLAKING", "NINCADA", "NINJASK", "SHEDINJA", "WHISMUR", "LOUDRED", "EXPLOUD", "MAKUHITA", "HARIYAMA", "AZURILL", "NOSEPASS", "SKITTY", "DELCATTY", "SABLEYE", "MAWILE", "ARON", "LAIRON", "AGGRON", "MEDITITE", "MEDICHAM", "ELECTRIKE", "MANECTRIC", "PLUSLE", "MINUN", "VOLBEAT", "ILLUMISE", "ROSELIA", "GULPIN", "SWALOT", "CARVANHA", "SHARPEDO", "WAILMER", "WAILORD", "NUMEL", "CAMERUPT", "TORKOAL", "SPOINK", "GRUMPIG", "SPINDA", "TRAPINCH", "VIBRAVA", "FLYGON", "CACNEA", "CACTURNE", "SWABLU", "ALTARIA", "ZANGOOSE", "SEVIPER", "LUNATONE", "SOLROCK", "BARBOACH", "WHISCASH", "CORPHISH", "CRAWDAUNT", "BALTOY", "CLAYDOL", "LILEEP", "CRADILY", "ANORITH", "ARMALDO", "FEEBAS", "MILOTIC", "CASTFORM", "KECLEON", "SHUPPET", "BANETTE", "DUSKULL", "DUSCLOPS", "TROPIUS", "CHIMECHO", "ABSOL", "WYNAUT", "SNORUNT", "GLALIE", "SPHEAL", "SEALEO", "WALREIN", "CLAMPERL", "HUNTAIL", "GOREBYSS", "RELICANTH", "LUVDISC", "BAGON", "SHELGON", "SALAMENCE", "BELDUM", "METANG", "METAGROSS", "REGIROCK", "REGICE", "REGISTEEL", "LATIAS", "LATIOS", "KYOGRE", "GROUDON", "RAYQUAZA", "JIRACHI", "DEOXYS", "TURTWIG", "GROTLE", "TORTERRA", "CHIMCHAR", "MONFERNO", "INFERNAPE", "PIPLUP", "PRINPLUP", "EMPOLEON", "STARLY", "STARAVIA", "STARAPTOR", "BIDOOF", "BIBAREL", "KRICKETOT", "KRICKETUNE", "SHINX", "LUXIO", "LUXRAY", "BUDEW", "ROSERADE", "CRANIDOS", "RAMPARDOS", "SHIELDON", "BASTIODON", "BURMY", "WORMADAM", "MOTHIM", "COMBEE", "VESPIQUEN", "PACHIRISU", "BUIZEL", "FLOATZEL", "CHERUBI", "CHERRIM", "SHELLOS", "GASTRODON", "AMBIPOM", "DRIFLOON", "DRIFBLIM", "BUNEARY", "LOPUNNY", "MISMAGIUS", "HONCHKROW", "GLAMEOW", "PURUGLY", "CHINGLING", "STUNKY", "SKUNTANK", "BRONZOR", "BRONZONG", "BONSLY", "MIME JR.", "HAPPINY", "CHATOT", "SPIRITOMB", "GIBLE", "GABITE", "GARCHOMP", "MUNCHLAX", "RIOLU", "LUCARIO", "HIPPOPOTAS", "HIPPOWDON", "SKORUPI", "DRAPION", "CROAGUNK", "TOXICROAK", "CARNIVINE", "FINNEON", "LUMINEON", "MANTYKE", "SNOVER", "ABOMASNOW", "WEAVILE", "MAGNEZONE", "LICKILICKY", "RHYPERIOR", "TANGROWTH", "ELECTIVIRE", "MAGMORTAR", "TOGEKISS", "YANMEGA", "LEAFEON", "GLACEON", "GLISCOR", "MAMOSWINE", "PORYGON-Z", "GALLADE", "PROBOPASS", "DUSKNOIR", "FROSLASS", "ROTOM", "UXIE", "MESPRIT", "AZELF", "DIALGA", "PALKIA", "HEATRAN", "REGIGIGAS", "GIRATINA", "CRESSELIA", "PHIONE", "MANAPHY", "DARKRAI", "SHAYMIN", "ARCEUS", "VICTINI", "SNIVY", "SERVINE", "SERPERIOR", "TEPIG", "PIGNITE", "EMBOAR", "OSHAWOTT", "DEWOTT", "SAMUROTT", "PATRAT", "WATCHOG", "LILLIPUP", "HERDIER", "STOUTLAND", "PURRLOIN", "LIEPARD", "PANSAGE", "SIMISAGE", "PANSEAR", "SIMISEAR", "PANPOUR", "SIMIPOUR", "MUNNA", "MUSHARNA", "PIDOVE", "TRANQUILL", "UNFEZANT", "BLITZLE", "ZEBSTRIKA", "ROGGENROLA", "BOLDORE", "GIGALITH", "WOOBAT", "SWOOBAT", "DRILBUR", "EXCADRILL", "AUDINO", "TIMBURR", "GURDURR", "CONKELDURR", "TYMPOLE", "PALPITOAD", "SEISMITOAD", "THROH", "SAWK", "SEWADDLE", "SWADLOON", "LEAVANNY", "VENIPEDE", "WHIRLIPEDE", "SCOLIPEDE", "COTTONEE", "WHIMSICOTT", "PETILIL", "LILLIGANT", "BASCULIN", "SANDILE", "KROKOROK", "KROOKODILE", "DARUMAKA", "DARMANITAN", "MARACTUS", "DWEBBLE", "CRUSTLE", "SCRAGGY", "SCRAFTY", "SIGILYPH", "YAMASK", "COFAGRIGUS", "TIRTOUGA", "CARRACOSTA", "ARCHEN", "ARCHEOPS", "TRUBBISH", "GARBODOR", "ZORUA", "ZOROARK", "MINCCINO", "CINCCINO", "GOTHITA", "GOTHORITA", "GOTHITELLE", "SOLOSIS", "DUOSION", "REUNICLUS", "DUCKLETT", "SWANNA", "VANILLITE", "VANILLISH", "VANILLUXE", "DEERLING", "SAWSBUCK", "EMOLGA", "KARRABLAST", "ESCAVALIER", "FOONGUS", "AMOONGUSS", "FRILLISH", "JELLICENT", "ALOMOMOLA", "JOLTIK", "GALVANTULA", "FERROSEED", "FERROTHORN", "KLINK", "KLANG", "KLINKLANG", "TYNAMO", "EELEKTRIK", "EELEKTROSS", "ELGYEM", "BEHEEYEM", "LITWICK", "LAMPENT", "CHANDELURE", "AXEW", "FRAXURE", "HAXORUS", "CUBCHOO", "BEARTIC", "CRYOGONAL", "SHELMET", "ACCELGOR", "STUNFISK", "MIENFOO", "MIENSHAO", "DRUDDIGON", "GOLETT", "GOLURK", "PAWNIARD", "BISHARP", "BOUFFALANT", "RUFFLET", "BRAVIARY", "VULLABY", "MANDIBUZZ", "HEATMOR", "DURANT", "DEINO", "ZWEILOUS", "HYDREIGON", "LARVESTA", "VOLCARONA", "COBALION", "TERRAKION", "VIRIZION", "TORNADUS", "THUNDURUS", "RESHIRAM", "ZEKROM", "LANDORUS", "KYUREM", "KELDEO", "MELOETTA", "GENESECT" , "CHESPIN", "QUILLADIN", "CHESNAUGHT", "FENNEKIN", "BRAIXEN", "DELPHOX", "FROAKIE", "FROGADIER", "GRENINJA", "BUNNELBY", "DIGGERSBY", "FLETCHLING", "FLETCHINDER", "TALONFLAME", "SCATTERBUG", "SPEWPA", "VIVILLON", "LITLEO", "PYROAR", "FLABB", "FLOETTE", "FLORGES", "SKIDDO", "GOGOAT", "PANCHAM", "PANGORO", "FURFROU", "ESPURR", "MEOWSTIC", "HONEDGE", "DOUBLADE", "AEGISLASH", "SPRITZEE", "AROMATISSE", "SWIRLIX", "SLURPUFF", "INKAY", "MALAMAR", "BINACLE", "BARBARACLE", "SKRELP", "DRAGALGE", "CLAUNCHER", "CLAWITZER", "HELIOPTILE", "HELIOLISK", "TYRUNT", "TYRANTRUM", "AMAURA", "AURORUS", "SYLVEON", "HAWLUCHA", "DEDENNE", "CARBINK", "GOOMY", "SLIGGOO", "GOODRA", "KLEFKI", "PHANTUMP", "TREVENANT", "PUMPKABOO", "GOURGEIST", "BERGMITE", "AVALUGG", "NOIBAT", "NOIVERN", "XERNEAS", "YVELTAL", "ZYGARDE", "DIANCIE", "HOOPA", "VOLCANION", "ROWLET", "DARTRIX", "DECIDUEYE", "LITTEN", "TORRACAT", "INCINEROAR", "POPPLIO", "BRIONNE", "PRIMARINA", "PIKIPEK", "TRUMBEAK", "TOUCANNON", "YUNGOOS", "GUMSHOOS", "GRUBBIN", "CHARJABUG", "VIKAVOLT", "CRABRAWLER", "CRABOMINABLE", "ORICORIO", "CUTIEFLY", "RIBOMBEE", "ROCKRUFF", "LYCANROC", "WISHIWASHI", "MAREANIE", "TOXAPEX", "MUDBRAY", "MUDSDALE", "DEWPIDER", "ARAQUANID", "FOMANTIS", "LURANTIS", "MORELULL", "SHIINOTIC", "SALANDIT", "SALAZZLE", "STUFFUL", "BEWEAR", "BOUNSWEET", "STEENEE", "TSAREENA", "COMFEY", "ORANGURU", "PASSIMIAN", "WIMPOD", "GOLISOPOD", "SANDYGAST", "PALOSSAND", "PYUKUMUKU", "CDIGO CERO", "SILVALLY", "MINIOR", "KOMALA", "TURTONATOR", "TOGEDEMARU", "MIMIKYU", "BRUXISH", "DRAMPA", "DHELMISE", "JANGMO-O", "HAKAMO-O", "KOMMO-O", "TAPU KOKO", "TAPU LELE", "TAPU BULU", "TAPU FINI", "COSMOG", "COSMOEM", "SOLGALEO", "LUNALA", "NIHILEGO", "BUZZWOLE", "PHEROMOSA", "XURKITREE", "CELESTEELA", "KARTANA", "GUZZLORD", "NECROZMA", "MAGEARNA", "MARSHADOW", "POIPOLE", "NAGANADEL", "STAKATAKA", "BLACEPHALON", "ZERAORA", "MELTAN", "MELMETAL", "GROOKEY", "THWACKEY", "RILLABOOM", "SCORBUNNY", "RABOOT", "CINDERACE", "SOBBLE", "DRIZZILE", "INTELEON", "SKWOVET", "GREEDENT", "ROOKIDEE", "CORVISQUIRE", "CORVIKNIGHT", "BLIPBUG", "DOTTLER", "ORBEETLE", "NICKIT", "THIEVUL", "GOSSIFLEUR", "ELDEGOSS", "WOOLOO", "DUBWOOL", "CHEWTLE", "DREDNAW", "YAMPER", "BOLTUND", "ROLYCOLY", "CARKOL", "COALOSSAL", "APPLIN", "FLAPPLE", "APPLETUN", "SILICOBRA", "SANDACONDA", "CRAMORANT", "ARROKUDA", "BARRASKEWDA", "TOXEL", "TOXTRICITY", "SIZZLIPEDE", "CENTISKORCH", "CLOBBOPUS", "GRAPPLOCT", "SINISTEA", "POLTEAGEIST", "HATENNA", "HATTREM", "HATTERENE", "IMPIDIMP", "MORGREM", "GRIMMSNARL", "OBSTAGOON", "PERRSERKER", "CURSOLA", "SIRFETCHD", "MR. RIME", "RUNERIGUS", "MILCERY", "ALCREMIE", "FALINKS", "PINCURCHIN", "SNOM", "FROSMOTH", "STONJOURNER", "EISCUE", "INDEEDEE", "MORPEKO", "CUFANT", "COPPERAJAH", "DRACOZOLT", "ARCTOZOLT", "DRACOVISH", "ARCTOVISH", "DURALUDON", "DREEPY", "DRAKLOAK", "DRAGAPULT", "ZACIAN", "ZAMAZENTA", "ETERNATUS", "KUBFU", "URSHIFU", "ZARUDE", "REGIELEKI", "REGIDRAGO", "GLASTRIER", "SPECTRIER", "CALYREX", "WYRDEER", "KLEAVOR", "URSALUNA", "BASCULEGION", "SNEASLER", "OVERQWIL", "ENAMORUS", "SPRIGATITO", "FLORAGATO", "MEOWSCARADA", "FUECOCO", "CROCALOR", "SKELEDIRGE", "QUAXLY", "QUAXWELL", "QUAQUAVAL", "LECHONK", "OINKOLOGNE", "TAROUNTULA", "SPIDOPS", "NYMBLE", "LOKIX", "PAWMI", "PAWMO", "PAWMOT", "TANDEMAUS", "MAUSHOLD", "FIDOUGH", "DACHSBUN", "SMOLIV", "DOLLIV", "ARBOLIVA", "SQUAWKABILLY", "NACLI", "NACLSTACK", "GARGANACL", "CHARCADET", "ARMAROUGE", "CERULEDGE", "TADBULB", "BELLIBOLT", "WATTREL", "KILOWATTREL", "MASCHIFF", "MABOSSTIFF", "SHROODLE", "GRAFAIAI", "BRAMBLIN", "BRAMBLEGHAST", "TOEDSCOOL", "TOEDSCRUEL", "KLAWF", "CAPSAKID", "SCOVILLAIN", "RELLOR", "RABSCA", "FLITTLE", "ESPATHRA", "TINKATINK", "TINKATUFF", "TINKATON", "WIGLETT", "WUGTRIO", "BOMBIRDIER", "FINIZEN", "PALAFIN", "VAROOM", "REVAVROOM", "CYCLIZAR", "ORTHWORM", "GLIMMET", "GLIMMORA", "GREAVARD", "HOUNDSTONE", "FLAMIGO", "CETODDLE", "CETITAN", "VELUZA", "DONDOZO", "TATSUGIRI", "ANNIHILAPE", "CLODSIRE", "FARIGIRAF", "DUDUNSPARCE", "KINGAMBIT", "COLMILARGO", "COLAGRITO", "FURIOSETA", "MELENALETEO", "REPTALADA", "PELARENA", "FERRODADA", "FERROSACO", "FERROPALMAS", "FERROCUELLO", "FERROPOLILLA", "FERROPAS", "FRIGIBAX", "ARCTIBAX", "BAXCALIBUR", "GIMMIGHOUL", "GHOLDENGO", "WO-CHIEN", "CHIEN-PAO", "TING-LU", "CHI-YU", "BRAMALUNA", "FERROPALADN", "KORAIDON", "MIRAIDON", "ONDULAGUA", "FERROVERDOR", "DIPPLIN", "POLTCHAGEIST", "SINISTCHA", "OKIDOGI", "MUNKIDORI", "FEZANDIPITI", "OGERPON", "ARCHALUDON", "HYDRAPPLE", "FLAMARIETE", "ELECTROFURIA", "FERROMOLE", "FERROTESTA", "TERAPAGOS", "PECHARUNT"},
+  // EN
+  { "?", "BULBASAUR", "IVYSAUR", "VENUSAUR", "CHARMANDER", "CHARMELEON", "CHARIZARD", "SQUIRTLE", "WARTORTLE", "BLASTOISE", "CATERPIE", "METAPOD", "BUTTERFREE", "WEEDLE", "KAKUNA", "BEEDRILL", "PIDGEY", "PIDGEOTTO", "PIDGEOT", "RATTATA", "RATICATE", "SPEAROW", "FEAROW", "EKANS", "ARBOK", "PIKACHU", "RAICHU", "SANDSHREW", "SANDSLASH", "NIDORAN F", "NIDORINA", "NIDOQUEEN", "NIDORAN M", "NIDORINO", "NIDOKING", "CLEFAIRY", "CLEFABLE", "VULPIX", "NINETALES", "JIGGLYPUFF", "WIGGLYTUFF", "ZUBAT", "GOLBAT", "ODDISH", "GLOOM", "VILEPLUME", "PARAS", "PARASECT", "VENONAT", "VENOMOTH", "DIGLETT", "DUGTRIO", "MEOWTH", "PERSIAN", "PSYDUCK", "GOLDUCK", "MANKEY", "PRIMEAPE", "GROWLITHE", "ARCANINE", "POLIWAG", "POLIWHIRL", "POLIWRATH", "ABRA", "KADABRA", "ALAKAZAM", "MACHOP", "MACHOKE", "MACHAMP", "BELLSPROUT", "WEEPINBELL", "VICTREEBEL", "TENTACOOL", "TENTACRUEL", "GEODUDE", "GRAVELER", "GOLEM", "PONYTA", "RAPIDASH", "SLOWPOKE", "SLOWBRO", "MAGNEMITE", "MAGNETON", "FARFETCHD", "DODUO", "DODRIO", "SEEL", "DEWGONG", "GRIMER", "MUK", "SHELLDER", "CLOYSTER", "GASTLY", "HAUNTER", "GENGAR", "ONIX", "DROWZEE", "HYPNO", "KRABBY", "KINGLER", "VOLTORB", "ELECTRODE", "EXEGGCUTE", "EXEGGUTOR", "CUBONE", "MAROWAK", "HITMONLEE", "HITMONCHAN", "LICKITUNG", "KOFFING", "WEEZING", "RHYHORN", "RHYDON", "CHANSEY", "TANGELA", "KANGASKHAN", "HORSEA", "SEADRA", "GOLDEEN", "SEAKING", "STARYU", "STARMIE", "MR. MIME", "SCYTHER", "JYNX", "ELECTABUZZ", "MAGMAR", "PINSIR", "TAUROS", "MAGIKARP", "GYARADOS", "LAPRAS", "DITTO", "EEVEE", "VAPOREON", "JOLTEON", "FLAREON", "PORYGON", "OMANYTE", "OMASTAR", "KABUTO", "KABUTOPS", "AERODACTYL", "SNORLAX", "ARTICUNO", "ZAPDOS", "MOLTRES", "DRATINI", "DRAGONAIR", "DRAGONITE", "MEWTWO", "MEW", "CHIKORITA", "BAYLEEF", "MEGANIUM", "CYNDAQUIL", "QUILAVA", "TYPHLOSION", "TOTODILE", "CROCONAW", "FERALIGATR", "SENTRET", "FURRET", "HOOTHOOT", "NOCTOWL", "LEDYBA", "LEDIAN", "SPINARAK", "ARIADOS", "CROBAT", "CHINCHOU", "LANTURN", "PICHU", "CLEFFA", "IGGLYBUFF", "TOGEPI", "TOGETIC", "NATU", "XATU", "MAREEP", "FLAAFFY", "AMPHAROS", "BELLOSSOM", "MARILL", "AZUMARILL", "SUDOWOODO", "POLITOED", "HOPPIP", "SKIPLOOM", "JUMPLUFF", "AIPOM", "SUNKERN", "SUNFLORA", "YANMA", "WOOPER", "QUAGSIRE", "ESPEON", "UMBREON", "MURKROW", "SLOWKING", "MISDREAVUS", "UNOWN", "WOBBUFFET", "GIRAFARIG", "PINECO", "FORRETRESS", "DUNSPARCE", "GLIGAR", "STEELIX", "SNUBBULL", "GRANBULL", "QWILFISH", "SCIZOR", "SHUCKLE", "HERACROSS", "SNEASEL", "TEDDIURSA", "URSARING", "SLUGMA", "MAGCARGO", "SWINUB", "PILOSWINE", "CORSOLA", "REMORAID", "OCTILLERY", "DELIBIRD", "MANTINE", "SKARMORY", "HOUNDOUR", "HOUNDOOM", "KINGDRA", "PHANPY", "DONPHAN", "PORYGON2", "STANTLER", "SMEARGLE", "TYROGUE", "HITMONTOP", "SMOOCHUM", "ELEKID", "MAGBY", "MILTANK", "BLISSEY", "RAIKOU", "ENTEI", "SUICUNE", "LARVITAR", "PUPITAR", "TYRANITAR", "LUGIA", "HO_OH", "CELEBI", "TREECKO", "GROVYLE", "SCEPTILE", "TORCHIC", "COMBUSKEN", "BLAZIKEN", "MUDKIP", "MARSHTOMP", "SWAMPERT", "POOCHYENA", "MIGHTYENA", "ZIGZAGOON", "LINOONE", "WURMPLE", "SILCOON", "BEAUTIFLY", "CASCOON", "DUSTOX", "LOTAD", "LOMBRE", "LUDICOLO", "SEEDOT", "NUZLEAF", "SHIFTRY", "TAILLOW", "SWELLOW", "WINGULL", "PELIPPER", "RALTS", "KIRLIA", "GARDEVOIR", "SURSKIT", "MASQUERAIN", "SHROOMISH", "BRELOOM", "SLAKOTH", "VIGOROTH", "SLAKING", "NINCADA", "NINJASK", "SHEDINJA", "WHISMUR", "LOUDRED", "EXPLOUD", "MAKUHITA", "HARIYAMA", "AZURILL", "NOSEPASS", "SKITTY", "DELCATTY", "SABLEYE", "MAWILE", "ARON", "LAIRON", "AGGRON", "MEDITITE", "MEDICHAM", "ELECTRIKE", "MANECTRIC", "PLUSLE", "MINUN", "VOLBEAT", "ILLUMISE", "ROSELIA", "GULPIN", "SWALOT", "CARVANHA", "SHARPEDO", "WAILMER", "WAILORD", "NUMEL", "CAMERUPT", "TORKOAL", "SPOINK", "GRUMPIG", "SPINDA", "TRAPINCH", "VIBRAVA", "FLYGON", "CACNEA", "CACTURNE", "SWABLU", "ALTARIA", "ZANGOOSE", "SEVIPER", "LUNATONE", "SOLROCK", "BARBOACH", "WHISCASH", "CORPHISH", "CRAWDAUNT", "BALTOY", "CLAYDOL", "LILEEP", "CRADILY", "ANORITH", "ARMALDO", "FEEBAS", "MILOTIC", "CASTFORM", "KECLEON", "SHUPPET", "BANETTE", "DUSKULL", "DUSCLOPS", "TROPIUS", "CHIMECHO", "ABSOL", "WYNAUT", "SNORUNT", "GLALIE", "SPHEAL", "SEALEO", "WALREIN", "CLAMPERL", "HUNTAIL", "GOREBYSS", "RELICANTH", "LUVDISC", "BAGON", "SHELGON", "SALAMENCE", "BELDUM", "METANG", "METAGROSS", "REGIROCK", "REGICE", "REGISTEEL", "LATIAS", "LATIOS", "KYOGRE", "GROUDON", "RAYQUAZA", "JIRACHI", "DEOXYS", "TURTWIG", "GROTLE", "TORTERRA", "CHIMCHAR", "MONFERNO", "INFERNAPE", "PIPLUP", "PRINPLUP", "EMPOLEON", "STARLY", "STARAVIA", "STARAPTOR", "BIDOOF", "BIBAREL", "KRICKETOT", "KRICKETUNE", "SHINX", "LUXIO", "LUXRAY", "BUDEW", "ROSERADE", "CRANIDOS", "RAMPARDOS", "SHIELDON", "BASTIODON", "BURMY", "WORMADAM", "MOTHIM", "COMBEE", "VESPIQUEN", "PACHIRISU", "BUIZEL", "FLOATZEL", "CHERUBI", "CHERRIM", "SHELLOS", "GASTRODON", "AMBIPOM", "DRIFLOON", "DRIFBLIM", "BUNEARY", "LOPUNNY", "MISMAGIUS", "HONCHKROW", "GLAMEOW", "PURUGLY", "CHINGLING", "STUNKY", "SKUNTANK", "BRONZOR", "BRONZONG", "BONSLY", "MIME JR.", "HAPPINY", "CHATOT", "SPIRITOMB", "GIBLE", "GABITE", "GARCHOMP", "MUNCHLAX", "RIOLU", "LUCARIO", "HIPPOPOTAS", "HIPPOWDON", "SKORUPI", "DRAPION", "CROAGUNK", "TOXICROAK", "CARNIVINE", "FINNEON", "LUMINEON", "MANTYKE", "SNOVER", "ABOMASNOW", "WEAVILE", "MAGNEZONE", "LICKILICKY", "RHYPERIOR", "TANGROWTH", "ELECTIVIRE", "MAGMORTAR", "TOGEKISS", "YANMEGA", "LEAFEON", "GLACEON", "GLISCOR", "MAMOSWINE", "PORYGON-Z", "GALLADE", "PROBOPASS", "DUSKNOIR", "FROSLASS", "ROTOM", "UXIE", "MESPRIT", "AZELF", "DIALGA", "PALKIA", "HEATRAN", "REGIGIGAS", "GIRATINA", "CRESSELIA", "PHIONE", "MANAPHY", "DARKRAI", "SHAYMIN", "ARCEUS", "VICTINI", "SNIVY", "SERVINE", "SERPERIOR", "TEPIG", "PIGNITE", "EMBOAR", "OSHAWOTT", "DEWOTT", "SAMUROTT", "PATRAT", "WATCHOG", "LILLIPUP", "HERDIER", "STOUTLAND", "PURRLOIN", "LIEPARD", "PANSAGE", "SIMISAGE", "PANSEAR", "SIMISEAR", "PANPOUR", "SIMIPOUR", "MUNNA", "MUSHARNA", "PIDOVE", "TRANQUILL", "UNFEZANT", "BLITZLE", "ZEBSTRIKA", "ROGGENROLA", "BOLDORE", "GIGALITH", "WOOBAT", "SWOOBAT", "DRILBUR", "EXCADRILL", "AUDINO", "TIMBURR", "GURDURR", "CONKELDURR", "TYMPOLE", "PALPITOAD", "SEISMITOAD", "THROH", "SAWK", "SEWADDLE", "SWADLOON", "LEAVANNY", "VENIPEDE", "WHIRLIPEDE", "SCOLIPEDE", "COTTONEE", "WHIMSICOTT", "PETILIL", "LILLIGANT", "BASCULIN", "SANDILE", "KROKOROK", "KROOKODILE", "DARUMAKA", "DARMANITAN", "MARACTUS", "DWEBBLE", "CRUSTLE", "SCRAGGY", "SCRAFTY", "SIGILYPH", "YAMASK", "COFAGRIGUS", "TIRTOUGA", "CARRACOSTA", "ARCHEN", "ARCHEOPS", "TRUBBISH", "GARBODOR", "ZORUA", "ZOROARK", "MINCCINO", "CINCCINO", "GOTHITA", "GOTHORITA", "GOTHITELLE", "SOLOSIS", "DUOSION", "REUNICLUS", "DUCKLETT", "SWANNA", "VANILLITE", "VANILLISH", "VANILLUXE", "DEERLING", "SAWSBUCK", "EMOLGA", "KARRABLAST", "ESCAVALIER", "FOONGUS", "AMOONGUSS", "FRILLISH", "JELLICENT", "ALOMOMOLA", "JOLTIK", "GALVANTULA", "FERROSEED", "FERROTHORN", "KLINK", "KLANG", "KLINKLANG", "TYNAMO", "EELEKTRIK", "EELEKTROSS", "ELGYEM", "BEHEEYEM", "LITWICK", "LAMPENT", "CHANDELURE", "AXEW", "FRAXURE", "HAXORUS", "CUBCHOO", "BEARTIC", "CRYOGONAL", "SHELMET", "ACCELGOR", "STUNFISK", "MIENFOO", "MIENSHAO", "DRUDDIGON", "GOLETT", "GOLURK", "PAWNIARD", "BISHARP", "BOUFFALANT", "RUFFLET", "BRAVIARY", "VULLABY", "MANDIBUZZ", "HEATMOR", "DURANT", "DEINO", "ZWEILOUS", "HYDREIGON", "LARVESTA", "VOLCARONA", "COBALION", "TERRAKION", "VIRIZION", "TORNADUS", "THUNDURUS", "RESHIRAM", "ZEKROM", "LANDORUS", "KYUREM", "KELDEO", "MELOETTA", "GENESECT" , "CHESPIN", "QUILLADIN", "CHESNAUGHT", "FENNEKIN", "BRAIXEN", "DELPHOX", "FROAKIE", "FROGADIER", "GRENINJA", "BUNNELBY", "DIGGERSBY", "FLETCHLING", "FLETCHINDER", "TALONFLAME", "SCATTERBUG", "SPEWPA", "VIVILLON", "LITLEO", "PYROAR", "FLABB", "FLOETTE", "FLORGES", "SKIDDO", "GOGOAT", "PANCHAM", "PANGORO", "FURFROU", "ESPURR", "MEOWSTIC", "HONEDGE", "DOUBLADE", "AEGISLASH", "SPRITZEE", "AROMATISSE", "SWIRLIX", "SLURPUFF", "INKAY", "MALAMAR", "BINACLE", "BARBARACLE", "SKRELP", "DRAGALGE", "CLAUNCHER", "CLAWITZER", "HELIOPTILE", "HELIOLISK", "TYRUNT", "TYRANTRUM", "AMAURA", "AURORUS", "SYLVEON", "HAWLUCHA", "DEDENNE", "CARBINK", "GOOMY", "SLIGGOO", "GOODRA", "KLEFKI", "PHANTUMP", "TREVENANT", "PUMPKABOO", "GOURGEIST", "BERGMITE", "AVALUGG", "NOIBAT", "NOIVERN", "XERNEAS", "YVELTAL", "ZYGARDE", "DIANCIE", "HOOPA", "VOLCANION", "ROWLET", "DARTRIX", "DECIDUEYE", "LITTEN", "TORRACAT", "INCINEROAR", "POPPLIO", "BRIONNE", "PRIMARINA", "PIKIPEK", "TRUMBEAK", "TOUCANNON", "YUNGOOS", "GUMSHOOS", "GRUBBIN", "CHARJABUG", "VIKAVOLT", "CRABRAWLER", "CRABOMINABLE", "ORICORIO", "CUTIEFLY", "RIBOMBEE", "ROCKRUFF", "LYCANROC", "WISHIWASHI", "MAREANIE", "TOXAPEX", "MUDBRAY", "MUDSDALE", "DEWPIDER", "ARAQUANID", "FOMANTIS", "LURANTIS", "MORELULL", "SHIINOTIC", "SALANDIT", "SALAZZLE", "STUFFUL", "BEWEAR", "BOUNSWEET", "STEENEE", "TSAREENA", "COMFEY", "ORANGURU", "PASSIMIAN", "WIMPOD", "GOLISOPOD", "SANDYGAST", "PALOSSAND", "PYUKUMUKU", "TYPE NULL", "SILVALLY", "MINIOR", "KOMALA", "TURTONATOR", "TOGEDEMARU", "MIMIKYU", "BRUXISH", "DRAMPA", "DHELMISE", "JANGMO-O", "HAKAMO-O", "KOMMO-O", "TAPU KOKO", "TAPU LELE", "TAPU BULU", "TAPU FINI", "COSMOG", "COSMOEM", "SOLGALEO", "LUNALA", "NIHILEGO", "BUZZWOLE", "PHEROMOSA", "XURKITREE", "CELESTEELA", "KARTANA", "GUZZLORD", "NECROZMA", "MAGEARNA", "MARSHADOW", "POIPOLE", "NAGANADEL", "STAKATAKA", "BLACEPHALON", "ZERAORA", "MELTAN", "MELMETAL", "GROOKEY", "THWACKEY", "RILLABOOM", "SCORBUNNY", "RABOOT", "CINDERACE", "SOBBLE", "DRIZZILE", "INTELEON", "SKWOVET", "GREEDENT", "ROOKIDEE", "CORVISQUIRE", "CORVIKNIGHT", "BLIPBUG", "DOTTLER", "ORBEETLE", "NICKIT", "THIEVUL", "GOSSIFLEUR", "ELDEGOSS", "WOOLOO", "DUBWOOL", "CHEWTLE", "DREDNAW", "YAMPER", "BOLTUND", "ROLYCOLY", "CARKOL", "COALOSSAL", "APPLIN", "FLAPPLE", "APPLETUN", "SILICOBRA", "SANDACONDA", "CRAMORANT", "ARROKUDA", "BARRASKEWDA", "TOXEL", "TOXTRICITY", "SIZZLIPEDE", "CENTISKORCH", "CLOBBOPUS", "GRAPPLOCT", "SINISTEA", "POLTEAGEIST", "HATENNA", "HATTREM", "HATTERENE", "IMPIDIMP", "MORGREM", "GRIMMSNARL", "OBSTAGOON", "PERRSERKER", "CURSOLA", "SIRFETCHD", "MR. RIME", "RUNERIGUS", "MILCERY", "ALCREMIE", "FALINKS", "PINCURCHIN", "SNOM", "FROSMOTH", "STONJOURNER", "EISCUE", "INDEEDEE", "MORPEKO", "CUFANT", "COPPERAJAH", "DRACOZOLT", "ARCTOZOLT", "DRACOVISH", "ARCTOVISH", "DURALUDON", "DREEPY", "DRAKLOAK", "DRAGAPULT", "ZACIAN", "ZAMAZENTA", "ETERNATUS", "KUBFU", "URSHIFU", "ZARUDE", "REGIELEKI", "REGIDRAGO", "GLASTRIER", "SPECTRIER", "CALYREX", "WYRDEER", "KLEAVOR", "URSALUNA", "BASCULEGION", "SNEASLER", "OVERQWIL", "ENAMORUS", "SPRIGATITO", "FLORAGATO", "MEOWSCARADA", "FUECOCO", "CROCALOR", "SKELEDIRGE", "QUAXLY", "QUAXWELL", "QUAQUAVAL", "LECHONK", "OINKOLOGNE", "TAROUNTULA", "SPIDOPS", "NYMBLE", "LOKIX", "PAWMI", "PAWMO", "PAWMOT", "TANDEMAUS", "MAUSHOLD", "FIDOUGH", "DACHSBUN", "SMOLIV", "DOLLIV", "ARBOLIVA", "SQUAWKABILLY", "NACLI", "NACLSTACK", "GARGANACL", "CHARCADET", "ARMAROUGE", "CERULEDGE", "TADBULB", "BELLIBOLT", "WATTREL", "KILOWATTREL", "MASCHIFF", "MABOSSTIFF", "SHROODLE", "GRAFAIAI", "BRAMBLIN", "BRAMBLEGHAST", "TOEDSCOOL", "TOEDSCRUEL", "KLAWF", "CAPSAKID", "SCOVILLAIN", "RELLOR", "RABSCA", "FLITTLE", "ESPATHRA", "TINKATINK", "TINKATUFF", "TINKATON", "WIGLETT", "WUGTRIO", "BOMBIRDIER", "FINIZEN", "PALAFIN", "VAROOM", "REVAVROOM", "CYCLIZAR", "ORTHWORM", "GLIMMET", "GLIMMORA", "GREAVARD", "HOUNDSTONE", "FLAMIGO", "CETODDLE", "CETITAN", "VELUZA", "DONDOZO", "TATSUGIRI", "ANNIHILAPE", "CLODSIRE", "FARIGIRAF", "DUDUNSPARCE", "KINGAMBIT", "GREAT TUSK", "SCREAM TAIL", "BRUTE BONNET", "FLUTTER MANE", "SLITHER WING", "SANDY SHOCKS", "IRON TREADS", "IRON BUNDLE", "IRON HANDS", "IRON JUGULIS", "IRON MOTH", "IRON THORNS", "FRIGIBAX", "ARCTIBAX", "BAXCALIBUR", "GIMMIGHOUL", "GHOLDENGO", "WO-CHIEN", "CHIEN-PAO", "TING-LU", "CHI-YU", "ROARING MOON", "IRON VALIANT", "KORAIDON", "MIRAIDON", "WALKING WAKE", "IRON LEAVES", "DIPPLIN", "POLTCHAGEIST", "SINISTCHA", "OKIDOGI", "MUNKIDORI", "FEZANDIPITI", "OGERPON", "ARCHALUDON", "HYDRAPPLE", "GOUGING FIRE", "RAGING BOLT", "IRON BOULDER", "IRON CROWN", "TERAPAGOS", "PECHARUNT"},
+  // FR
+  { "?", "BULBIZARRE", "HERBIZARRE", "FLORIZARRE", "SALAMECHE", "REPTINCEL", "DRACAUFEU", "CARAPUCE", "CARABAFFE", "TORTANK", "CHENIPAN", "CHRYSACIER", "PAPILUSION", "ASPICOT", "COCONFORT", "DARDARGNAN", "ROUCOOL", "ROUCOUPS", "ROUCARNAGE", "RATTATA", "RATTATAC", "PIAFABEC", "RAPASDEPIC", "ABO", "ARBOK", "PIKACHU", "RAICHU", "SABELETTE", "SABLAIREAU", "NIDORAN F", "NIDORINA", "NIDOQUEEN", "NIDORAN M", "NIDORINO", "NIDOKING", "MELOFEE", "MELODELFE", "GOUPIX", "FEUNARD", "RONDOUDOU", "GRODOUDOU", "NOSFERAPTI", "NOSFERALTO", "MYSTHERBE", "ORTIDE", "RAFFLESIA", "PARAS", "PARASECT", "MIMITOSS", "AEROMITE", "TAUPIQUEUR", "TRIOPIKEUR", "MIAOUSS", "PERSIAN", "PSYKOKWAK", "AKWAKWAK", "FEROSINGE", "COLOSSINGE", "CANINOS", "ARCANIN", "PTITARD", "TETARTE", "TARTARD", "ABRA", "KADABRA", "ALAKAZAM", "MACHOC", "MACHOPEUR", "MACKOGNEUR", "CHETIFLOR", "BOUSTIFLOR", "EMPIFLOR", "TENTACOOL", "TENTACRUEL", "RACAILLOU", "GRAVALANCH", "GROLEM", "PONYTA", "GALOPA", "RAMOLOSS", "FLAGADOSS", "MAGNETI", "MAGNETON", "CANARTICHO", "DODUO", "DODRIO", "OTARIA", "LAMANTINE", "TADMORV", "GROTADMORV", "KOKIYAS", "CRUSTABRI", "FANTOMINUS", "SPECTRUM", "ECTOPLASMA", "ONIX", "SOPORIFIK", "HYPNOMADE", "KRABBY", "KRABBOSS", "VOLTORBE", "ELECTRODE", "NOEUNOEUF", "NOADKOKO", "OSSELAIT", "OSSATUEUR", "KICKLEE", "TYGNON", "EXCELANGUE", "SMOGO", "SMOGOGO", "RHINOCORNE", "RHINOFEROS", "LEVEINARD", "SAQUEDENEU", "KANGOUREX", "HYPOTREMPE", "HYPOCEAN", "POISSIRENE", "POISSOROY", "STARI", "STAROSS", "M. MIME", "INSECATEUR", "LIPPOUTOU", "ELEKTEK", "MAGMAR", "SCARABRUTE", "TAUROS", "MAGICARPE", "LEVIATOR", "LOKHLASS", "METAMORPH", "EVOLI", "AQUALI", "VOLTALI", "PYROLI", "PORYGON", "AMONITA", "AMONISTAR", "KABUTO", "KABUTOPS", "PTERA", "RONFLEX", "ARTIKODIN", "ELECTHOR", "SULFURA", "MINIDRACO", "DRACO", "DRACOLOSSE", "MEWTWO", "MEW", "GERMIGNON", "MACRONIUM", "MEGANIUM", "HERICENDRE", "FEURISSON", "TYPHLOSION", "KAIMINUS", "CROCRODIL", "ALIGATUEUR", "FOUINET", "FOUINAR", "HOOTHOOT", "NOARFANG", "COXY", "COXICLAQUE", "MIMIGAL", "MIGALOS", "NOSTENFER", "LOUPIO", "LANTURN", "PICHU", "MELOFEE", "TOUDOUDOU", "TOGEPI", "TOGETIC", "NATU", "XATU", "WATTWAP", "LAINERGIE", "PHARAMP", "JOLIFLOR", "MARILL", "AZUMARILL", "SIMULARBRE", "TARPAUD", "GRANIVOL", "FLORAVOL", "COTOVOL", "CAPUMAIN", "TOURNEGRIN", "HELIATRONC", "YANMA", "AXOLOTO", "MARAISTE", "MENTALI", "NOCTALI", "CORNEBRE", "ROIGADA", "FEUFOREVE", "ZARBI", "QULBUTOKE", "GIRAFARIG", "POMDEPIK", "FORETRESS", "INSOLOURDO", "SCORPLANE", "STEELIX", "SNUBBULL", "GRANBULL", "QWILFISH", "CIZAYOX", "CARATROC", "SCARHINO", "FARFURET", "TEDDIURSA", "URSARING", "LIMAGMA", "VOLCAROPOD", "MARCACRIN", "COCHIGNON", "CORAYON", "REMORAID", "OCTILLERY", "CADOIZO", "DEMANTA", "AIRMURE", "MALOSSE", "DEMOLOSSE", "HYPOROI", "PHANPY", "DONPHAN", "PORYGON2", "CERFROUSSE", "QUEULORIOR", "DEBUGANT", "KAPOERA", "LIPPOUTI", "ELEKID", "MAGBY", "ECREMEUH", "LEUPHORIE", "RAIKOU", "ENTEI", "SUICUNE", "EMBRYLEX", "YMPHECT", "TYRANOCIF", "LUGIA", "HO_OH", "CELEBI", "ARCKO", "MASSKO", "JUNGKO", "POUSSIFEU", "GALIFEU", "BRASGALI", "GOBOU", "FLOBIO", "LAGGRON", "MEDHYNA", "GRAHYNA", "ZIGZATON", "LINON", "CHENIPOTTE", "ARMULYS", "CHARMILLON", "BLINDALYS", "PAPINOX", "NNUPIOT", "LOMBRE", "LUDICOLO", "GRAINIPIOT", "PIFEUIL", "TENGALICE", "NIRONDELLE", "HLDELLE", "GOLISE", "BEKIPAN", "TARSAL", "KIRLIA", "GARDEVOIR", "ARAKDO", "MASKADRA", "BALIGNON", "CHAPIGNON", "PARECOOL", "VIGOROTH", "MONAFLMIT", "NINGALE", "NINJASK", "MUNJA", "CHUCHMUR", "RAMBOUM", "BROUHABAM", "MAKUHITA", "HARIYAMA", "AZURILL", "TARINOR", "SKITTY", "DELCATTY", "TNFIX", "MYSDIBULE", "GALEKID", "GALEGON", "GALEKING", "MDITIKKA", "CHARMINA", "DYNAVOLT", "LECSPRINT", "POSIPI", "NGAPI", "MUCIOLE", "LUMIVOLE", "ROSLIA", "GLOUPTI", "AVALTOUT", "CARVANHA", "SHARPEDO", "WAILMER", "WAILORD", "CHAMALLOT", "CAMRUPT", "CHARTOR", "SPOINK", "GRORET", "SPINDA", "KRAKNOIX", "VIBRANINF", "LIBGON", "CACNEA", "CACTURNE", "TYLTON", "ALTARIA", "MANGRIFF", "SVIPER", "SLROC", "SOLAROC", "BARLOCHE", "BARBICHA", "CRAPINCE", "COLHOMARD", "BALBUTO", "KAORINE", "LILIA", "VACILYS", "ANORITH", "ARMALDO", "BARPAU", "MILOBELLUS", "MORPHO", "KECLEON", "POLICHOMBR", "BRANETTE", "SKELNOX", "TRACLOPE", "TROPIUS", "OKO", "ABSOL", "OKOK", "STALGAMIN", "ONIGLALI", "OBALIE", "PHOGLEUR", "KAIMORSE", "COQUIPERL", "SERPANG", "ROSABYSS", "RELICANTH", "LOVDISC", "DRABY", "DRACKHAUS", "DRATTAK", "TERHAL", "MTANG", "MTALOSSE", "REGIROCK", "REGICE", "REGISTEEL", "LATIAS", "LATIOS", "KYOGRE", "GROUDON", "RAYQUAZA", "JIRACHI", "DEOXYS", "TORTIPOUSS", "BOSKARA", "TORTERRA", "OUISTICRAM", "CHIMPENFEU", "SIMIABRAZ", "TIPLOUF", "PRINPLOUF", "PINGOLON", "TOURMI", "TOURVOL", "TOURAPTOR", "KEUNOTOR", "CASTORNO", "CRIKZIK", "MLOKRIK", "LIXY", "LUXIO", "LUXRAY", "ROZBOUTON", "ROSERADE", "KRANIDOS", "CHARKOS", "DINOCLIER", "BASTIODON", "CHENITI", "CHENISELLE", "PAPILORD", "APITRINI", "APIREINE", "PACHIRISU", "MUSTBOUE", "MUSTFLOTT", "CERIBOU", "CERIFLOR", "SANCOKI", "TRITOSOR", "CAPIDEXTRE", "BAUDRIVE", "GRODRIVE", "LAPOREILLE", "LOCKPIN", "MAGIRVE", "CORBOSS", "CHAGLAM", "CHAFFREUX", "KORILLON", "MOUFOUETTE", "MOUFFLAIR", "ARCHOMIRE", "ARCHODONG", "MANZA", "MIME JR.", "PTIRAVI", "PIJAKO", "SPIRITOMB", "GRIKNOT", "CARMACHE", "CARCHACROK", "GOINFREX", "RIOLU", "LUCARIO", "HIPPOPOTAS", "HIPPODOCUS", "RAPION", "DRASCORE", "CRADOPAUD", "COATOX", "VORTENTE", "CAYON", "LUMINON", "BABIMANTA", "BLIZZI", "BLIZZAROI", "DIMORET", "MAGNZONE", "COUDLANGUE", "RHINASTOC", "BOULDENEU", "LEKABLE", "MAGANON", "TOGEKISS", "YANMEGA", "PHYLLALI", "GIVRALI", "SCORVOL", "MAMMOCHON", "PORYGON-Z", "GALLAME", "TARINORME", "NOCTUNOIR", "MOMARTIK", "MOTISMA", "CRHELF", "CRFOLLET", "CRFADET", "DIALGA", "PALKIA", "HEATRAN", "REGIGIGAS", "GIRATINA", "CRESSELIA", "PHIONE", "MANAPHY", "DARKRAI", "SHAYMIN", "ARCEUS", "VICTINI", "VIPLIERRE", "LIANAJA", "MAJASPIC", "GRUIKUI", "GROTICHON", "ROITIFLAM", "MOUSTILLON", "MATELOUTRE", "CLAMIRAL", "RATENTIF", "MIRADAR", "PONCHIOT", "PONCHIEN", "MASTOUFFE", "CHACRIPAN", "LOPARDUS", "FEUILLAJOU", "FEUILOUTAN", "FLAMAJOU", "FLAMOUTAN", "FLOTAJOU", "FLOTOUTAN", "MUNNA", "MUSHANA", "POICHIGEON", "COLOMBEAU", "DFLAISAN", "ZBIBRON", "ZBLITZ", "NODULITHE", "GOLITHE", "GIGALITHE", "CHOVSOURIR", "RHINOLOVE", "ROTOTAUPE", "MINOTAUPE", "NANMOUE", "CHARPENTI", "OUVRIFIER", "BTOCHEF", "TRITONDE", "BATRACN", "CRAPUSTULE", "JUDOKRAK", "KARACLE", "LARVEYETTE", "COUVERDURE", "MANTERNEL", "VENIPATTE", "SCOBOLIDE", "BRUTAPODE", "DOUDOUVET", "FARFADUVET", "CHLOROBULE", "FRAGILADY", "BARGANTUA", "MASCAMAN", "ESCROCO", "CROCORIBLE", "DARUMAROND", "DARUMACHO", "MARACACHI", "CRABICOQUE", "CRABARAQUE", "BAGGIGUANE", "BAGGAD", "CRYPTRO", "TUTAFEH", "TUTANKAFER", "CARAPAGOS", "MGAPAGOS", "ARKAPTI", "AROPTRYX", "MIAMIASME", "MIASMAX", "ZORUA", "ZOROARK", "CHINCHIDOU", "PASHMILLA", "SCRUTELLA", "MESMRELLA", "SIDRELLA", "NUCLOS", "MIOS", "SYMBIOS", "COUANETON", "LAKMCYGNE", "SORBB", "SORBOUL", "SORBOUBOUL", "VIVALDAIM", "HAYDAIM", "EMOLGA", "CARABING", "LANARGOT", "TROMPIGNON", "GAULET", "VISKUSE", "MOYADE", "MAMANBO", "STATITIK", "MYGAVOLT", "GRINDUR", "NOACIER", "TIC", "CLIC", "CLITICLIC", "ANCHWATT", "LAMPROIE", "OHMASSACRE", "LEWSOR", "NEITRAM", "FUNCIRE", "MLANCOLUX", "LUGULABRE", "COUPENOTTE", "INCISACHE", "TRANCHODON", "POLARHUME", "POLAGRIFFE", "HEXAGEL", "ESCARGAUME", "LIMASPEED", "LIMONDE", "KUNGFOUINE", "SHAOFOUINE", "DRAKKARMIN", "GRINGOLEM", "GOLEMASTOC", "SCALPION", "SCALPROIE", "FRISON", "FURAIGLON", "GUERIAIGLE", "VOSTOURNO", "VAUTUTRICE", "AFLAMANOIR", "FERMITE", "SOLOCHI", "DIAMAT", "TRIOXHYDRE", "PYRONILLE", "PYRAX", "COBALTIUM", "TERRAKIUM", "VIRIDIUM", "BORAS", "FULGURIS", "RESHIRAM", "ZEKROM", "DMTROS", "KYUREM", "KELDEO", "MELOETTA", "GENESECT" , "MARISSON", "BOGURISSE", "BLINDPIQUE", "FEUNNEC", "ROUSSIL", "GOUPELIN", "GRENOUSSE", "CROPORAL", "AMPHINOBI", "SAPEREAU", "EXCAVARENNE", "PASSEROUGE", "BRAISILLON", "FLAMBUSARD", "LPIDONILLE", "PRGRAIN", "PRISMILLON", "HLIONCEAU", "NMLIOS", "FLABB", "FLOETTE", "FLORGES", "CABRIOLAINE", "CHEVROUM", "PANDESPIGLE", "PANDARBARE", "COUAFAREL", "PSYSTIGRI", "MISTIGRIX", "MONORPALE", "DIMOCLS", "EXAGIDE", "FLUVETIN", "COCOTINE", "SUCROQUIN", "CUPCANAILLE", "SEPIATOP", "SEPIATROCE", "OPERMINE", "GOLGOPATHE", "VENALGUE", "KRAVARECH", "FLINGOUSTE", "GAMBLAST", "GALVARAN", "IGUOLTA", "PTYRANIDUR", "REXILLIUS", "AMAGARA", "DRAGMARA", "NYMPHALI", "BRUTALIBR", "DEDENNE", "STRASSIE", "MUCUSCULE", "COLIMUCUS", "MUPLODOCUS", "TROUSSELIN", "BROCLME", "DESSLIANDE", "PITROUILLE", "BANSHITROUYE", "GRELAON", "SRACRAWL", "SONISTRELLE", "BRUYVERNE", "XERNEAS", "YVELTAL", "ZYGARDE", "DIANCIE", "HOOPA", "VOLCANION", "BRINDIBOU", "EFFLCHE", "ARCHDUC", "FLAMIAOU", "MATOUFEU", "FLINFERNO", "OTAQUIN", "OTARLETTE", "ORATORIA", "PICASSAUT", "PICLAIRON", "BAZOUCAN", "MANGLOUTON", "ARGOUSTE", "LARVIBULE", "CHRYSAPILE", "LUCANON", "CRABAGARRE", "CRABOMINABLE", "PLUMELINE", "BOMBYDOU", "RUBOMBELLE", "ROCABOT", "LOUGAROC", "FROUSSARDINE", "VORASTRIE", "PRDASTRIE", "TIBOUDET", "BOURRINOS", "ARAQUA", "TARENBULLE", "MIMANTIS", "FLORAMANTIS", "SPODODO", "LAMPIGNON", "TRITOX", "MALAMANDRE", "NOUNOURSON", "CHELOURS", "CROQUINE", "CANDINE", "SUCREINE", "GURILANDE", "GOUROUTAN", "QUARTERMAC", "SOVKIPOU", "SARMURA", "BACABOUH", "TRPASSABLE", "CONCOMBAFFE", "TYPE0", "SILVALLI", "MTNO", "DODOALA", "BOUMATA", "TOGEDEMARU", "MIMIQUI", "DENTICRISSE", "DRAEUL", "SINISTRAIL", "BBCAILLE", "CAD", "KASER", "TOKORICO", "TOKOPIYON", "TOKOTORO", "TOKOPISCO", "COSMOG", "COSMOVUM", "SOLGALEO", "LUNALA", "ZROD", "MOUSCOTO", "CANCRELOVE", "CBLIFRE", "BAMBOISELLE", "KATAGAMI", "ENGLOUTYRAN", "NECROZMA", "MAGEARNA", "MARSHADOW", "VMINI", "MANDRILLON", "AMA-AMA", "PIERROTEKNIK", "ZERAORA", "MELTAN", "MELMETAL", "OUISTEMPO", "BADABOUIN", "GORYTHMIC", "FLAMBINO", "LAPYRO", "PYROBUT", "LARMLON", "ARROZARD", "LZARGUS", "RONGOURMAND", "RONGRIGOU", "MINISANGE", "BLEUSEILLE", "CORVAILLUS", "LARVADAR", "COLODME", "ASTRONELLE", "GOUPILOU", "ROUBLENARD", "TOURNICOTON", "BLANCOTON", "MOUMOUTON", "MOUMOUFLON", "KHLOCROK", "TORGAMORD", "VOLTOUTOU", "FULGUDOG", "CHARBI", "WAGOMINE", "MONTHRACITE", "VERPOM", "POMDRAPI", "DRATATIN", "DUNAJA", "DUNACONDA", "NIGOSIER", "EMBROCHET", "HASTACUDA", "TOXIZAP", "SALARSEN", "GRILLEPATTES", "SCOLOCENDRE", "POULPAF", "KRAKOS", "THFFROI", "POLTHGEIST", "BIBICHUT", "CHAPOTUS", "SORCILENCE", "GRIMALIN", "FOURBELIN", "ANGOLIATH", "IXON", "BERSERKATT", "CORAYME", "PALARTICHO", "M. GLAQUETTE", "TUTTKRI", "CRMY", "CHARMILLY", "HEXADRON", "WATTAPIK", "FRISSONILLE", "BELDENEIGE", "DOLMAN", "BEKAGLAON", "WIMESSIR", "MORPEKO", "CHARIBARI", "PACHYRADJAH", "GALVAGON", "GALVAGLA", "HYDRAGON", "HYDRAGLA", "DURALUGON", "FANTYRM", "DISPAREPTIL", "LANSSORIEN", "ZACIAN", "ZAMAZENTA", "THERNATOS", "WUSHOURS", "SHIFOURS", "ZARUDE", "REGIELEKI", "REGIDRAGO", "BLIZZEVAL", "SPECTREVAL", "SYLVEROY", "CERBYLLIN", "HACHCATEUR", "URSAKING", "PARAGRUEL", "FARFUREX", "QWILPIK", "AMOVNUS", "POUSSACHA", "MATOURGEON", "MIASCARADE", "CHOCHODILE", "CROCOGRIL", "FLMIGATOR", "COIFFETON", "CANARBELLO", "PALMAVAL", "GOURMELET", "FRAGROIN", "TISSENBOULE", "FILENTRAPPE", "LILLITERELLE", "GAMBEX", "POHM", "POHMOTTE", "POHMARMOTTE", "COMPAGNOL", "FAMIGNOL", "PTACHIOT", "BRIOCHIEN", "OLIVINI", "OLIVADO", "ARBOLIVA", "TAPATOS", "SELUTIN", "AMASSEL", "GIGANSEL", "CHARBAMBIN", "CARMADURA", "MALVALAME", "TTAMPOULE", "AMPIBIDOU", "ZAPTREL", "FULGULAIRO", "GRONDOGUE", "DOGRINO", "GRIBOURAIGNE", "TAG-TAG", "VIROVENT", "VIREVORREUR", "TERRACOOL", "TERRACRUEL", "CRAPAROI", "PIMITO", "SCOVILAIN", "LBOULROU", "BRASCA", "FLOTILLON", "CLOPSYTRA", "FORGERETTE", "FORGELLA", "FORGELINA", "TAUPIKEAU", "TRIOPIKEAU", "LESTOMBAILE", "DOFIN", "SUPERDOFIN", "VROMBI", "VROMBOTOR", "MOTORIZARD", "FERDETER", "GERMCLAT", "FLORCLAT", "TOUTOMBE", "TOMBERRO", "FLAMENROULE", "PITAC", "BALBALZE", "DLESTIN", "OYACATA", "NIGIRIGON", "COURROUSINGE", "TERRAISTE", "FARIGIRAF", "DEUSOLOURDO", "SCALPEREUR", "FORT-IVOIRE", "HURLE-QUEUE", "FONGUS-FURIE", "FLOTTE-MCHE", "RAMPE-AILES", "PELAGE-SABL", "ROUE-DE-FER", "HOTTE-DE-FER", "PAUME-DE-FER", "TTES-DE-FER", "MITE-DE-FER", "PINE-DE-FER", "FRIGODO", "CRYODO", "GLAIVODO", "MORDUDOR", "GROMAGO", "CHONGJIAN", "BAOJIAN", "DINGLU", "YUYU", "RUGIT-LUNE", "GARDE-DE-FER", "KORAIDON", "MIRAIDON", "SERPENTE-EAU", "VERT-DE-FER", "POMDRAMOUR", "POLTCHAGEIST", "THFFROYABLE", "FLICANIS", "FORTUSIMIA", "FAVIANOS", "OGERPON", "PONDRALUGON", "POMDOROCHI", "FEU-PERANT", "IRE-FOUDRE", "ROC-DE-FER", "CHEF-DE-FER", "TERAPAGOS", "PCHAMINUS"},
+  // DE
+  { "?", "BISASAM", "BISAKNOSP", "BISAFLOR", "GLUMANDA", "GLUTEXO", "GLURAK", "SCHIGGY", "SCHILLOK", "TURTOK", "RAUPY", "SAFCON", "SMETTBO", "HORNLIU", "KOKUNA", "BIBOR", "TAUBSI", "TAUBOGA", "TAUBOSS", "RATTFRATZ", "RATTIKARL", "HABITAK", "IBITAK", "RETTAN", "ARBOK", "PIKACHU", "RAICHU", "SANDAN", "SANDAMER", "NIDORAN F", "NIDORINA", "NIDOQUEEN", "NIDORAN M", "NIDORINO", "NIDOKING", "PIEPI", "PIXI", "VULPIX", "VULNONA", "PUMMELUFF", "KNUDDELUFF", "ZUBAT", "GOLBAT", "MYRAPLA", "DUFLOR", "GIFLOR", "PARAS", "PARASEK", "BLUZUK", "OMOT", "DIGDA", "DIGDRI", "MAUZI", "SNOBILIKAT", "ENTON", "ENTORON", "MENKI", "RASAFF", "FUKANO", "ARKANI", "QUAPSEL", "QUAPUTZI", "QUAPPO", "ABRA", "KADABRA", "SIMSALA", "MACHOLLO", "MASCHOCK", "MACHOMEI", "KNOFENSA", "ULTRIGARIA", "SARZENIA", "TENTACHA", "TENTOXA", "KLEINSTEIN", "GEOROK", "GEOWAZ", "PONITA", "GALLOPA", "FLEGMON", "LAHMUS", "MAGNETILO", "MAGNETON", "PORENTA", "DODU", "DODRI", "JUROB", "JUGONG", "SLEIMA", "SLEIMOK", "MUSCHAS", "AUSTOS", "NEBULAK", "ALPOLLO", "GENGAR", "ONIX", "TRAUMATO", "HYPNO", "KRABBY", "KINGLER", "VOLTOBAL", "LEKTROBAL", "OWEI", "KOKOWEI", "TRAGOSSO", "KNOGGA", "KICKLEE", "NOCKCHAN", "SCHLURP", "SMOGON", "SMOGMOG", "RIHORN", "RIZEROS", "CHANEIRA", "TANGELA", "KANGAMA", "SEEPER", "SEEMON", "GOLDINI", "GOLKING", "STERNDU", "STARMIE", "PANTIMOS", "SICHLOR", "ROSSANA", "ELEKTEK", "MAGMAR", "PINSIR", "TAUROS", "KARPADOR", "GARADOS", "LAPRAS", "DITTO", "EVOLI", "AQUANA", "BLITZA", "FLAMARA", "PORYGON", "AMONITAS", "AMOROSO", "KABUTO", "KABUTOPS", "AERODACTYL", "RELAXO", "ARKTOS", "ZAPDOS", "LAVADOS", "DRATINI", "DRAGONIR", "DRAGORAN", "MEWTU", "MEW", "ENDIVIE", "LORBLATT", "MEGANIE", "FEURIGEL", "IGELAVAR", "TORNUPTO", "KARNIMANI", "TYRACROC", "IMPERGATOR", "WIESOR", "WIESENIOR", "HOOTHOOT", "NOCTUH", "LEDYBA", "LEDIAN", "WEBARAK", "ARIADOS", "KROBAT", "LAMPI", "LANTURN", "PICHU", "PII", "PUMMELUFF", "TOGEPI", "TOGETIC", "NATU", "XATU", "WATTZAPF", "WAATY", "AMPHAROS", "BLUBELLA", "MARILL", "AZUMARILL", "MOGELBAUM", "QUAXO", "HOPPSPROSS", "HUBELUPF", "PAPUNGHA", "GRIFFEL", "SONNKERN", "SONNFLORA", "YANMA", "QUAPSEL", "MORLORD", "PSIANA", "NACHTARA", "KRAMURX", "LASCHOKING", "TRAUNFUGIL", "ICOGNITO", "WOINGENAU", "GIRAFARIG", "TANNZA", "FORSTELLA", "DUMMISEL", "SKORGLA", "STAHLIX", "SNUBBULL", "GRANBULL", "QWILFISH", "SCHEROX", "POTTROTT", "SKARABORN", "SNIEBEL", "TEDDIURSA", "URSARING", "SCHNECKMAG", "MAGCARGO", "QUIEKEL", "KEIFEL", "CORASONN", "REMORAID", "OCTILLERY", "BOTOGEL", "MANTAX", "PANZAERON", "HUNDUSTER", "HUNDEMON", "SEEDRAKING", "PHANPY", "DONPHAN", "PORYGON2", "DAMHIRPLEX", "FARBEAGLE", "RABAUZ", "KAPOERA", "KUSSILLA", "ELEKID", "MAGBY", "MILTANK", "HEITEIRA", "RAIKOU", "ENTEI", "SUICUNE", "LARVITAR", "PUPITAR", "DESPOTAR", "LUGIA", "HO_OH", "CELEBI", "GECKARBOR", "REPTAIN", "GEWALDRO", "FLEMMLI", "JUNGGLUT", "LOHGOCK", "HYDROPI", "MOORABBEL", "SUMPEX", "FIFFYEN", "MAGNAYEN", "ZIGZACHS", "GERADAKS", "WAUMPEL", "SCHALOKO", "PAPINELLA", "PANEKON", "PUDOX", "LOTURZEL", "LOMBRERO", "KAPPALORES", "SAMURZEL", "BLANAS", "TENGULIST", "SCHWALBINI", "SCHWALBOSS", "WINGULL", "PELIPPER", "TRASLA", "KIRLIA", "GUARDEVOIR", "GEHWEIHER", "MASKEREGEN", "KNILZ", "KAPILZ", "BUMMELZ", "MUNTIER", "LETARKING", "NINCADA", "NINJASK", "NINJATOM", "FLURMEL", "KRAKEELO", "KRAWUMMS", "MAKUHITA", "HARIYAMA", "AZURILL", "NASGNET", "ENECO", "ENEKORO", "ZOBIRIS", "FLUNKIFER", "STOLLUNIOR", "STOLLRAK", "STOLLOSS", "MEDITIE", "MEDITALIS", "FRIZELBLIZ", "VOLTENSO", "PLUSLE", "MINUN", "VOLBEAT", "ILLUMISE", "ROSELIA", "SCHLUPPUCK", "SCHLUKWECH", "KANIVANHA", "TOHAIDO", "WAILMER", "WAILORD", "CAMAUB", "CAMERUPT", "QURTEL", "SPOINK", "GROINK", "PANDIR", "KNACKLION", "VIBRAVA", "LIBELLDRA", "TUSKA", "NOKTUSKA", "WABLU", "ALTARIA", "SENGO", "VIPITIS", "LUNASTEIN", "SONNFEL", "SCHMERBE", "WELSAR", "KREBSCORPS", "KREBUTACK", "PUPPANCE", "LEPUMENTAS", "LILIEP", "WIELIE", "ANORITH", "ARMALDO", "BARSCHWA", "MILOTIC", "FORMEO", "KECLEON", "SHUPPET", "BANETTE", "ZWIRRLICHT", "ZWIRRKLOP", "TROPIUS", "PALIMPALIM", "ABSOL", "ISSO", "SCHNEPPKE", "FIRNONTOR", "SEEMOPS", "SEEJONG", "WALRAISA", "PERLU", "AALABYSS", "SAGANABYSS", "RELICANTH", "LIEBISKUS", "KINDWURM", "DRASCHEL", "BRUTALANDA", "TANHEL", "METANG", "METAGROSS", "REGIROCK", "REGICE", "REGISTEEL", "LATIAS", "LATIOS", "KYOGRE", "GROUDON", "RAYQUAZA", "JIRACHI", "DEOXYS", "CHELAST", "CHELCARAIN", "CHELTERRAR", "PANFLAM", "PANPYRO", "PANFERNO", "PLINFA", "PLIPRIN", "IMPOLEON", "STARALILI", "STARAVIA", "STARAPTOR", "BIDIZA", "BIDIFAS", "ZIRPURZE", "ZIRPEISE", "SHEINUX", "LUXIO", "LUXTRA", "KNOSPI", "ROSERADE", "KOKNODON", "RAMEIDON", "SCHILTERUS", "BOLLTERUS", "BURMY", "BURMADAME", "MOTERPEL", "WADRIBIE", "HONWEISEL", "PACHIRISU", "BAMELIN", "BOJELIN", "KIKUGI", "KINOSO", "SCHALELLOS", "GASTRODON", "AMBIDIFFEL", "DRIFTLON", "DRIFZEPELI", "HASPIROR", "SCHLAPOR", "TRAUNMAGIL", "KRAMSHEF", "CHARMIAN", "SHNURGARST", "KLINGPLIM", "SKUNKAPUH", "SKUNTANK", "BRONZEL", "BRONZONG", "MOBAI", "PANTIMIMI", "WONNEIRA", "PLAUDAGEI", "KRYPPUK", "KAUMALAT", "KNARKSEL", "KNAKRACK", "MAMPFAXO", "RIOLU", "LUCARIO", "HIPPOPOTAS", "HIPPOTERUS", "PIONSKORA", "PIONDRAGI", "GLIBUNKEL", "TOXIQUAK", "VENUFLIBIS", "FINNEON", "LUMINEON", "MANTIRPS", "SHNEBEDECK", "REXBLISAR", "SNIBUNNA", "MAGNEZONE", "SCHLURPLEK", "RIHORNIOR", "TANGOLOSS", "ELEVOLTEK", "MAGBRANT", "TOGEKISS", "YANMEGA", "FOLIPURBA", "GLAZIOLA", "SKORGRO", "MAMUTEL", "PORYGON-Z", "GALAGLADI", "VOLUMINAS", "ZWIRRFINST", "FROSDEDJE", "ROTOM", "SELFE", "VESPRIT", "TOBUTZ", "DIALGA", "PALKIA", "HEATRAN", "REGIGIGAS", "GIRATINA", "CRESSELIA", "PHIONE", "MANAPHY", "DARKRAI", "SHAYMIN", "ARCEUS", "VICTINI", "SERPIFEU", "EFOSERP", "SERPIROYAL", "FLOINK", "FERKOKEL", "FLAMBIREX", "OTTARO", "ZWOTTRONIN", "ADMURAI", "NAGELOTZ", "KUKMARDA", "YORKLEFF", "TERRIBARK", "BISSBARK", "FELILOU", "KLEOPARDA", "VEGIMAK", "VEGICHITA", "GRILLMAK", "GRILLCHITA", "SODAMAK", "SODACHITA", "SOMNIAM", "SOMNIVORA", "DUSSELGURR", "NAVITAUB", "FASASNOB", "ELEZEBA", "ZEBRITZ", "KIESLING", "SEDIMANTUR", "BROCKOLOSS", "FLEKNOIL", "FLETIAMO", "ROTOMURF", "STALOBOR", "OHRDOCH", "PRAKTIBALK", "STREPOLI", "MEISTAGRIF", "SCHALLQUAP", "MEBRANA", "BRANAWARZ", "JIUTESTO", "KARADONIS", "STRAWICKL", "FOLIKON", "MATRIFOL", "TOXIPED", "ROLLUM", "CERAPENDRA", "WAUMBOLL", "ELFUN", "LILMINIP", "DRESSELLA", "BARSCHUFT", "GANOVIL", "ROKKAIMAN", "RABIGATOR", "FLAMPION", "FLAMPIVIAN", "MARACAMBA", "LITHOMITH", "CASTELLITH", "ZURROKEX", "IROKEX", "SYMVOLARA", "MAKABAJA", "ECHNATOLL", "GALAPAFLOS", "KARIPPAS", "FLAPTERYX", "AEROPTERYX", "UNRATUETOX", "DEPONITOX", "ZORUA", "ZOROARK", "PICOCHILLA", "CHILLABELL", "MOLLIMORBA", "HYPNOMORBA", "MORBITESSE", "MONOZYTO", "MITODOS", "ZYTOMEGA", "PICCOLENTE", "SWARONESS", "GELATINI", "GELATROPPO", "GELATWINO", "SESOKITZ", "KRONJUWILD", "EMOLGA", "LAUKAPS", "CAVALANZAS", "TARNPIGNON", "HUTSASSA", "QUABBEL", "APOQUALLYP", "MAMOLIDA", "WATTZAPF", "VOLTULA", "KASTADUR", "TENTANTEL", "KLIKK", "KLIKLAK", "KLIKDIKLAK", "ZAPPLARDIN", "ZAPPLALEK", "ZAPPLARANG", "PYGRAULON", "MEGALON", "LICHTEL", "LATERNECTO", "SKELABRA", "MILZA", "SHARFAX", "MAXAX", "PETZNIEF", "SIBERIO", "FRIGOMETRI", "SCHNUTHELM", "HYDRAGIL", "FLUNSCHLIK", "LIN-FU", "WIE-SHU", "SHARDRAGO", "GOLBIT", "GOLGANTES", "GLADIANTRI", "CAESURIO", "BISOFANK", "GERONIMATZ", "WASHAKWIL", "SKALLYK", "GRYPHELDIS", "FURNIFRASS", "FERMICULA", "KAPUNO", "DUODINO", "TRIKEPHALO", "IGNIVOR", "RAMOTH", "KOBALIUM", "TERRAKIUM", "VIRIDIUM", "BOREOS", "VOLTOLOS", "RESHIRAM", "ZEKROM", "DEMETEROS", "KYUREM", "KELDEO", "MELOETTA", "GENESECT" , "IGAMARO", "IGASTARNISH", "BRIGARON", "FYNX", "RUTENA", "FENNEXIS", "FROXY", "AMPHIZEL", "QUAJUTSU", "SCOPPEL", "GREBBIT", "DARTIRI", "DARTIGNIS", "FIARO", "PURMEL", "PUPONCHO", "VIVILLON", "LEUFEO", "PYROLEO", "FLABB", "FLOETTE", "FLORGES", "MAEHIKEL", "CHEVRUMM", "PAM-PAM", "PANDAGRO", "COIFFWAFF", "PSIAU", "PSIAUGON", "GRAMOKLES", "DUOKLES", "DURENGARD", "PARFI", "PARFINESSE", "FLAUSCHLING", "SABBAIONE", "ISCALAR", "CALAMANERO", "BITHORA", "THANATHORA", "ALGITT", "TANDRAK", "SCAMPISTO", "WUMMER", "EGUANA", "ELEZARD", "BALGORAS", "MONARGORAS", "AMARINO", "AMAGARGA", "FEELINARA", "RESLADERO", "DEDENNE", "ROCARA", "VISCORA", "VISCARGOT", "VISCOGON", "CLAVION", "PARAGONI", "TROMBORK", "IRRBIS", "PUMPDJINN", "ARKTIP", "ARKTILAS", "EF-EM", "UHAFNIR", "XERNEAS", "YVELTAL", "ZYGARDE", "DIANCIE", "HOOPA", "VOLCANION", "BAUZ", "ARBORETOSS", "SILVARRO", "FLAMIAU", "MIEZUNDER", "FUEGRO", "ROBBALL", "MARIKECK", "PRIMARENE", "PEPPECK", "TROMPECK", "TUKANON", "MANGUNIOR", "MANGUSPEKTOR", "MABULA", "AKKUP", "DONARION", "KRABBOX", "KRAWELL", "CHOREOGEL", "WOMMEL", "BANDELBY", "WUFFELS", "WOLWEROCK", "LUSARDIN", "GARSTELLA", "AGGROSTELLA", "PAMPULI", "PAMPROSS", "ARAQUA", "ARANESTRO", "IMANTIS", "MANTIDEA", "BUBUNGUS", "LAMELLUX", "MOLUNK", "AMFIRA", "VELURSI", "KOSTURSO", "FRUBBERL", "FRUBAILA", "FRUYAL", "CURELEI", "KOMMANDUTAN", "QUARTERMAK", "REISSLAUS", "TECTASS", "SANKABUH", "COLOSSAND", "GUFA", "TYPNULL", "AMIGENTO", "METENO", "KOALELU", "TORTUNATOR", "TOGEDEMARU", "MIMIGMA", "KNIRFISH", "SEN-LONG", "MORUDA", "MINIRAS", "MEDIRAS", "GRANDIRAS", "KAPU-RIKI", "KAPU-FALA", "KAPU-TORO", "KAPU-KIME", "COSMOG", "COSMOVUM", "SOLGALEO", "LUNALA", "ANEGO", "MASSKITO", "SCHABELLE", "VOLTRIANT", "KAGURON", "KATAGAMI", "SCHLINGKING", "NECROZMA", "MAGEARNA", "MARSHADOW", "VENICRO", "AGOYON", "MURAMURA", "KOPPLOSIO", "ZERAORA", "MELTAN", "MELMETAL", "CHIMPEP", "CHIMSTIX", "GORTROM", "HOPPLO", "KICKERLO", "LIBERLO", "MEMMEON", "PHLEGLEON", "INTELLEON", "RAFFEL", "SCHLARAFFEL", "MEIKRO", "KRANOVIZ", "KRARMOR", "SENSECT", "KERADAR", "MARITELLIT", "KLEPTIFUX", "GAUNUX", "COTTINI", "COTTOMI", "WOLLY", "ZWOLLOCK", "KAMEHAPS", "KAMALM", "VOLDI", "BELLEKTRO", "KLONKETT", "WAGONG", "MONTECARBO", "KNAPFEL", "DRAPFEL", "SCHLAPFEL", "SALANGA", "SANACONDA", "URGL", "PIKUDA", "BARRAKIEFA", "TOXEL", "RIFFEX", "THERMOPOD", "INFERNOPOD", "KLOPPTOPUS", "KAOCTO", "FATALITEE", "MORTIPOT", "BRIMOVA", "BRIMANO", "SILEMBRIM", "BAEHMON", "PELZEBUB", "OLANGAAR", "BARRIKADAX", "MAUZINGER", "GORGASONN", "LAUCHZELOT", "PANTIFROST", "OGHNATOLL", "HOKUMIL", "POKUSAN", "LEGIOS", "BRITZIGEL", "SNOMNOM", "MOTTINEVA", "HUMANOLITH", "KUBUIN", "SERVOL", "MORPEKO", "KUPFANTI", "PATINARAJA", "LECTRAGON", "LECRYODON", "PESCRAGON", "PESCRYODON", "DURALUDON", "GROLLDRA", "PHANDRA", "KATAPULDRA", "ZACIAN", "ZAMAZENTA", "ENDYNALOS", "DAKUMA", "WULAOSU", "ZARUDE", "REGIELEKI", "REGIDRAGO", "POLAROSS", "PHANTOROSS", "CORONOSPA", "DAMYTHIR", "AXANTOR", "URSALUNA", "SALMAGNIS", "SNIEBOSS", "MYRIADOR", "CUPIDOS", "FELORI", "FELIOSPA", "MASKAGATO", "KROKEL", "LOKROKO", "SKELOKROK", "KWAKS", "FUENTENTE", "BAILONDA", "FERKULI", "FRAGRUNZ", "TARUNDEL", "SPINSIDIAS", "MICRICK", "LEXTREMO", "PAMO", "PAMAMO", "PAMOMAMO", "ZWIEPS", "FAMIEPS", "HEFEL", "BACKEL", "OLINI", "OLIVINIO", "OLITHENA", "KRAWALLORO", "GEOSALI", "SEDISAL", "SALTIGANT", "KNARBON", "CRIMANZO", "AZUGLADIS", "BLIPP", "WAMPITZ", "VOLTREL", "VOLTREAN", "MOBTIFF", "MASTIFIOSO", "SPROXI", "AFFITI", "WEHERBA", "HORRERBA", "TENTAGRA", "TENTERRA", "KLIBBE", "CHILINGEL", "HALUPENJO", "RELLUK", "SKARABAKS", "FLATTUTU", "PSIOPATRA", "FORGITA", "TAFFORGITA", "GRANFORGITA", "SCHLIGDA", "SCHLIGDRI", "ADEBOM", "NORMIFIN", "DELFINATOR", "KNATTOX", "KNATTATOX", "MOPEX", "SCHLURM", "LUMISPROSS", "LUMIFLORA", "GRUFF", "FRIEDWUFF", "FLAMINKNO", "FLANIWAL", "KOLOWAL", "AGILUZA", "HEERASHAI", "NIGIRAGI", "EPITAFF", "SUELORD", "FARIGIRAF", "DUMMIMISEL", "GLADIMPERIO", "RIESENZAHN", "BRUELLSCHWEIF", "WUTPILZ", "FLATTERHAAR", "KRIECHFLUEGEL", "SANDFELL", "EISENRAD", "EISENBUENDEL", "EISENHAND", "EISENHALS", "EISENFALTER", "EISENDORN", "FROSPINO", "CRYOSPINO", "ESPINODON", "GIERSPENST", "MONETIGO", "CHONGJIAN", "BAOJIAN", "DINGLU", "YUYU", "DONNERSICHEL", "EISENKRIEGER", "KORAIDON", "MIRAIDON", "WINDEWOGE", "EISENBLATT", "SIRAPFEL", "MORTCHA", "FATALITCHA", "BONINU", "BENESARU", "BEATORI", "OGERPON", "BRIDURADON", "HYDRAPFEL", "KEILFLAMME", "FURIENBLITZ", "EISENFELS", "EISENHAUPT", "TERAPAGOS", "INFAMOMO"},
+  // IT
+  { "?", "BULBASAUR", "IVYSAUR", "VENUSAUR", "CHARMANDER", "CHARMELEON", "CHARIZARD", "SQUIRTLE", "WARTORTLE", "BLASTOISE", "CATERPIE", "METAPOD", "BUTTERFREE", "WEEDLE", "KAKUNA", "BEEDRILL", "PIDGEY", "PIDGEOTTO", "PIDGEOT", "RATTATA", "RATICATE", "SPEAROW", "FEAROW", "EKANS", "ARBOK", "PIKACHU", "RAICHU", "SANDSHREW", "SANDSLASH", "NIDORAN F", "NIDORINA", "NIDOQUEEN", "NIDORAN M", "NIDORINO", "NIDOKING", "CLEFAIRY", "CLEFABLE", "VULPIX", "NINETALES", "JIGGLYPUFF", "WIGGLYTUFF", "ZUBAT", "GOLBAT", "ODDISH", "GLOOM", "VILEPLUME", "PARAS", "PARASECT", "VENONAT", "VENOMOTH", "DIGLETT", "DUGTRIO", "MEOWTH", "PERSIAN", "PSYDUCK", "GOLDUCK", "MANKEY", "PRIMEAPE", "GROWLITHE", "ARCANINE", "POLIWAG", "POLIWHIRL", "POLIWRATH", "ABRA", "KADABRA", "ALAKAZAM", "MACHOP", "MACHOKE", "MACHAMP", "BELLSPROUT", "WEEPINBELL", "VICTREEBEL", "TENTACOOL", "TENTACRUEL", "GEODUDE", "GRAVELER", "GOLEM", "PONYTA", "RAPIDASH", "SLOWPOKE", "SLOWBRO", "MAGNEMITE", "MAGNETON", "FARFETCHD", "DODUO", "DODRIO", "SEEL", "DEWGONG", "GRIMER", "MUK", "SHELLDER", "CLOYSTER", "GASTLY", "HAUNTER", "GENGAR", "ONIX", "DROWZEE", "HYPNO", "KRABBY", "KINGLER", "VOLTORB", "ELECTRODE", "EXEGGCUTE", "EXEGGUTOR", "CUBONE", "MAROWAK", "HITMONLEE", "HITMONCHAN", "LICKITUNG", "KOFFING", "WEEZING", "RHYHORN", "RHYDON", "CHANSEY", "TANGELA", "KANGASKHAN", "HORSEA", "SEADRA", "GOLDEEN", "SEAKING", "STARYU", "STARMIE", "MR. MIME", "SCYTHER", "JYNX", "ELECTABUZZ", "MAGMAR", "PINSIR", "TAUROS", "MAGIKARP", "GYARADOS", "LAPRAS", "DITTO", "EEVEE", "VAPOREON", "JOLTEON", "FLAREON", "PORYGON", "OMANYTE", "OMASTAR", "KABUTO", "KABUTOPS", "AERODACTYL", "SNORLAX", "ARTICUNO", "ZAPDOS", "MOLTRES", "DRATINI", "DRAGONAIR", "DRAGONITE", "MEWTWO", "MEW", "CHIKORITA", "BAYLEEF", "MEGANIUM", "CYNDAQUIL", "QUILAVA", "TYPHLOSION", "TOTODILE", "CROCONAW", "FERALIGATR", "SENTRET", "FURRET", "HOOTHOOT", "NOCTOWL", "LEDYBA", "LEDIAN", "SPINARAK", "ARIADOS", "CROBAT", "CHINCHOU", "LANTURN", "PICHU", "CLEFFA", "IGGLYBUFF", "TOGEPI", "TOGETIC", "NATU", "XATU", "MAREEP", "FLAAFFY", "AMPHAROS", "BELLOSSOM", "MARILL", "AZUMARILL", "SUDOWOODO", "POLITOED", "HOPPIP", "SKIPLOOM", "JUMPLUFF", "AIPOM", "SUNKERN", "SUNFLORA", "YANMA", "WOOPER", "QUAGSIRE", "ESPEON", "UMBREON", "MURKROW", "SLOWKING", "MISDREAVUS", "UNOWN", "WOBBUFFET", "GIRAFARIG", "PINECO", "FORRETRESS", "DUNSPARCE", "GLIGAR", "STEELIX", "SNUBBULL", "GRANBULL", "QWILFISH", "SCIZOR", "SHUCKLE", "HERACROSS", "SNEASEL", "TEDDIURSA", "URSARING", "SLUGMA", "MAGCARGO", "SWINUB", "PILOSWINE", "CORSOLA", "REMORAID", "OCTILLERY", "DELIBIRD", "MANTINE", "SKARMORY", "HOUNDOUR", "HOUNDOOM", "KINGDRA", "PHANPY", "DONPHAN", "PORYGON2", "STANTLER", "SMEARGLE", "TYROGUE", "HITMONTOP", "SMOOCHUM", "ELEKID", "MAGBY", "MILTANK", "BLISSEY", "RAIKOU", "ENTEI", "SUICUNE", "LARVITAR", "PUPITAR", "TYRANITAR", "LUGIA", "HO_OH", "CELEBI", "TREECKO", "GROVYLE", "SCEPTILE", "TORCHIC", "COMBUSKEN", "BLAZIKEN", "MUDKIP", "MARSHTOMP", "SWAMPERT", "POOCHYENA", "MIGHTYENA", "ZIGZAGOON", "LINOONE", "WURMPLE", "SILCOON", "BEAUTIFLY", "CASCOON", "DUSTOX", "LOTAD", "LOMBRE", "LUDICOLO", "SEEDOT", "NUZLEAF", "SHIFTRY", "TAILLOW", "SWELLOW", "WINGULL", "PELIPPER", "RALTS", "KIRLIA", "GARDEVOIR", "SURSKIT", "MASQUERAIN", "SHROOMISH", "BRELOOM", "SLAKOTH", "VIGOROTH", "SLAKING", "NINCADA", "NINJASK", "SHEDINJA", "WHISMUR", "LOUDRED", "EXPLOUD", "MAKUHITA", "HARIYAMA", "AZURILL", "NOSEPASS", "SKITTY", "DELCATTY", "SABLEYE", "MAWILE", "ARON", "LAIRON", "AGGRON", "MEDITITE", "MEDICHAM", "ELECTRIKE", "MANECTRIC", "PLUSLE", "MINUN", "VOLBEAT", "ILLUMISE", "ROSELIA", "GULPIN", "SWALOT", "CARVANHA", "SHARPEDO", "WAILMER", "WAILORD", "NUMEL", "CAMERUPT", "TORKOAL", "SPOINK", "GRUMPIG", "SPINDA", "TRAPINCH", "VIBRAVA", "FLYGON", "CACNEA", "CACTURNE", "SWABLU", "ALTARIA", "ZANGOOSE", "SEVIPER", "LUNATONE", "SOLROCK", "BARBOACH", "WHISCASH", "CORPHISH", "CRAWDAUNT", "BALTOY", "CLAYDOL", "LILEEP", "CRADILY", "ANORITH", "ARMALDO", "FEEBAS", "MILOTIC", "CASTFORM", "KECLEON", "SHUPPET", "BANETTE", "DUSKULL", "DUSCLOPS", "TROPIUS", "CHIMECHO", "ABSOL", "WYNAUT", "SNORUNT", "GLALIE", "SPHEAL", "SEALEO", "WALREIN", "CLAMPERL", "HUNTAIL", "GOREBYSS", "RELICANTH", "LUVDISC", "BAGON", "SHELGON", "SALAMENCE", "BELDUM", "METANG", "METAGROSS", "REGIROCK", "REGICE", "REGISTEEL", "LATIAS", "LATIOS", "KYOGRE", "GROUDON", "RAYQUAZA", "JIRACHI", "DEOXYS", "TURTWIG", "GROTLE", "TORTERRA", "CHIMCHAR", "MONFERNO", "INFERNAPE", "PIPLUP", "PRINPLUP", "EMPOLEON", "STARLY", "STARAVIA", "STARAPTOR", "BIDOOF", "BIBAREL", "KRICKETOT", "KRICKETUNE", "SHINX", "LUXIO", "LUXRAY", "BUDEW", "ROSERADE", "CRANIDOS", "RAMPARDOS", "SHIELDON", "BASTIODON", "BURMY", "WORMADAM", "MOTHIM", "COMBEE", "VESPIQUEN", "PACHIRISU", "BUIZEL", "FLOATZEL", "CHERUBI", "CHERRIM", "SHELLOS", "GASTRODON", "AMBIPOM", "DRIFLOON", "DRIFBLIM", "BUNEARY", "LOPUNNY", "MISMAGIUS", "HONCHKROW", "GLAMEOW", "PURUGLY", "CHINGLING", "STUNKY", "SKUNTANK", "BRONZOR", "BRONZONG", "BONSLY", "MIME JR.", "HAPPINY", "CHATOT", "SPIRITOMB", "GIBLE", "GABITE", "GARCHOMP", "MUNCHLAX", "RIOLU", "LUCARIO", "HIPPOPOTAS", "HIPPOWDON", "SKORUPI", "DRAPION", "CROAGUNK", "TOXICROAK", "CARNIVINE", "FINNEON", "LUMINEON", "MANTYKE", "SNOVER", "ABOMASNOW", "WEAVILE", "MAGNEZONE", "LICKILICKY", "RHYPERIOR", "TANGROWTH", "ELECTIVIRE", "MAGMORTAR", "TOGEKISS", "YANMEGA", "LEAFEON", "GLACEON", "GLISCOR", "MAMOSWINE", "PORYGON-Z", "GALLADE", "PROBOPASS", "DUSKNOIR", "FROSLASS", "ROTOM", "UXIE", "MESPRIT", "AZELF", "DIALGA", "PALKIA", "HEATRAN", "REGIGIGAS", "GIRATINA", "CRESSELIA", "PHIONE", "MANAPHY", "DARKRAI", "SHAYMIN", "ARCEUS", "VICTINI", "SNIVY", "SERVINE", "SERPERIOR", "TEPIG", "PIGNITE", "EMBOAR", "OSHAWOTT", "DEWOTT", "SAMUROTT", "PATRAT", "WATCHOG", "LILLIPUP", "HERDIER", "STOUTLAND", "PURRLOIN", "LIEPARD", "PANSAGE", "SIMISAGE", "PANSEAR", "SIMISEAR", "PANPOUR", "SIMIPOUR", "MUNNA", "MUSHARNA", "PIDOVE", "TRANQUILL", "UNFEZANT", "BLITZLE", "ZEBSTRIKA", "ROGGENROLA", "BOLDORE", "GIGALITH", "WOOBAT", "SWOOBAT", "DRILBUR", "EXCADRILL", "AUDINO", "TIMBURR", "GURDURR", "CONKELDURR", "TYMPOLE", "PALPITOAD", "SEISMITOAD", "THROH", "SAWK", "SEWADDLE", "SWADLOON", "LEAVANNY", "VENIPEDE", "WHIRLIPEDE", "SCOLIPEDE", "COTTONEE", "WHIMSICOTT", "PETILIL", "LILLIGANT", "BASCULIN", "SANDILE", "KROKOROK", "KROOKODILE", "DARUMAKA", "DARMANITAN", "MARACTUS", "DWEBBLE", "CRUSTLE", "SCRAGGY", "SCRAFTY", "SIGILYPH", "YAMASK", "COFAGRIGUS", "TIRTOUGA", "CARRACOSTA", "ARCHEN", "ARCHEOPS", "TRUBBISH", "GARBODOR", "ZORUA", "ZOROARK", "MINCCINO", "CINCCINO", "GOTHITA", "GOTHORITA", "GOTHITELLE", "SOLOSIS", "DUOSION", "REUNICLUS", "DUCKLETT", "SWANNA", "VANILLITE", "VANILLISH", "VANILLUXE", "DEERLING", "SAWSBUCK", "EMOLGA", "KARRABLAST", "ESCAVALIER", "FOONGUS", "AMOONGUSS", "FRILLISH", "JELLICENT", "ALOMOMOLA", "JOLTIK", "GALVANTULA", "FERROSEED", "FERROTHORN", "KLINK", "KLANG", "KLINKLANG", "TYNAMO", "EELEKTRIK", "EELEKTROSS", "ELGYEM", "BEHEEYEM", "LITWICK", "LAMPENT", "CHANDELURE", "AXEW", "FRAXURE", "HAXORUS", "CUBCHOO", "BEARTIC", "CRYOGONAL", "SHELMET", "ACCELGOR", "STUNFISK", "MIENFOO", "MIENSHAO", "DRUDDIGON", "GOLETT", "GOLURK", "PAWNIARD", "BISHARP", "BOUFFALANT", "RUFFLET", "BRAVIARY", "VULLABY", "MANDIBUZZ", "HEATMOR", "DURANT", "DEINO", "ZWEILOUS", "HYDREIGON", "LARVESTA", "VOLCARONA", "COBALION", "TERRAKION", "VIRIZION", "TORNADUS", "THUNDURUS", "RESHIRAM", "ZEKROM", "LANDORUS", "KYUREM", "KELDEO", "MELOETTA", "GENESECT" , "CHESPIN", "QUILLADIN", "CHESNAUGHT", "FENNEKIN", "BRAIXEN", "DELPHOX", "FROAKIE", "FROGADIER", "GRENINJA", "BUNNELBY", "DIGGERSBY", "FLETCHLING", "FLETCHINDER", "TALONFLAME", "SCATTERBUG", "SPEWPA", "VIVILLON", "LITLEO", "PYROAR", "FLABB", "FLOETTE", "FLORGES", "SKIDDO", "GOGOAT", "PANCHAM", "PANGORO", "FURFROU", "ESPURR", "MEOWSTIC", "HONEDGE", "DOUBLADE", "AEGISLASH", "SPRITZEE", "AROMATISSE", "SWIRLIX", "SLURPUFF", "INKAY", "MALAMAR", "BINACLE", "BARBARACLE", "SKRELP", "DRAGALGE", "CLAUNCHER", "CLAWITZER", "HELIOPTILE", "HELIOLISK", "TYRUNT", "TYRANTRUM", "AMAURA", "AURORUS", "SYLVEON", "HAWLUCHA", "DEDENNE", "CARBINK", "GOOMY", "SLIGGOO", "GOODRA", "KLEFKI", "PHANTUMP", "TREVENANT", "PUMPKABOO", "GOURGEIST", "BERGMITE", "AVALUGG", "NOIBAT", "NOIVERN", "XERNEAS", "YVELTAL", "ZYGARDE", "DIANCIE", "HOOPA", "VOLCANION", "ROWLET", "DARTRIX", "DECIDUEYE", "LITTEN", "TORRACAT", "INCINEROAR", "POPPLIO", "BRIONNE", "PRIMARINA", "PIKIPEK", "TRUMBEAK", "TOUCANNON", "YUNGOOS", "GUMSHOOS", "GRUBBIN", "CHARJABUG", "VIKAVOLT", "CRABRAWLER", "CRABOMINABLE", "ORICORIO", "CUTIEFLY", "RIBOMBEE", "ROCKRUFF", "LYCANROC", "WISHIWASHI", "MAREANIE", "TOXAPEX", "MUDBRAY", "MUDSDALE", "DEWPIDER", "ARAQUANID", "FOMANTIS", "LURANTIS", "MORELULL", "SHIINOTIC", "SALANDIT", "SALAZZLE", "STUFFUL", "BEWEAR", "BOUNSWEET", "STEENEE", "TSAREENA", "COMFEY", "ORANGURU", "PASSIMIAN", "WIMPOD", "GOLISOPOD", "SANDYGAST", "PALOSSAND", "PYUKUMUKU", "TIPO ZERO", "SILVALLY", "MINIOR", "KOMALA", "TURTONATOR", "TOGEDEMARU", "MIMIKYU", "BRUXISH", "DRAMPA", "DHELMISE", "JANGMO-O", "HAKAMO-O", "KOMMO-O", "TAPU KOKO", "TAPU LELE", "TAPU BULU", "TAPU FINI", "COSMOG", "COSMOEM", "SOLGALEO", "LUNALA", "NIHILEGO", "BUZZWOLE", "PHEROMOSA", "XURKITREE", "CELESTEELA", "KARTANA", "GUZZLORD", "NECROZMA", "MAGEARNA", "MARSHADOW", "POIPOLE", "NAGANADEL", "STAKATAKA", "BLACEPHALON", "ZERAORA", "MELTAN", "MELMETAL", "GROOKEY", "THWACKEY", "RILLABOOM", "SCORBUNNY", "RABOOT", "CINDERACE", "SOBBLE", "DRIZZILE", "INTELEON", "SKWOVET", "GREEDENT", "ROOKIDEE", "CORVISQUIRE", "CORVIKNIGHT", "BLIPBUG", "DOTTLER", "ORBEETLE", "NICKIT", "THIEVUL", "GOSSIFLEUR", "ELDEGOSS", "WOOLOO", "DUBWOOL", "CHEWTLE", "DREDNAW", "YAMPER", "BOLTUND", "ROLYCOLY", "CARKOL", "COALOSSAL", "APPLIN", "FLAPPLE", "APPLETUN", "SILICOBRA", "SANDACONDA", "CRAMORANT", "ARROKUDA", "BARRASKEWDA", "TOXEL", "TOXTRICITY", "SIZZLIPEDE", "CENTISKORCH", "CLOBBOPUS", "GRAPPLOCT", "SINISTEA", "POLTEAGEIST", "HATENNA", "HATTREM", "HATTERENE", "IMPIDIMP", "MORGREM", "GRIMMSNARL", "OBSTAGOON", "PERRSERKER", "CURSOLA", "SIRFETCHD", "MR. RIME", "RUNERIGUS", "MILCERY", "ALCREMIE", "FALINKS", "PINCURCHIN", "SNOM", "FROSMOTH", "STONJOURNER", "EISCUE", "INDEEDEE", "MORPEKO", "CUFANT", "COPPERAJAH", "DRACOZOLT", "ARCTOZOLT", "DRACOVISH", "ARCTOVISH", "DURALUDON", "DREEPY", "DRAKLOAK", "DRAGAPULT", "ZACIAN", "ZAMAZENTA", "ETERNATUS", "KUBFU", "URSHIFU", "ZARUDE", "REGIELEKI", "REGIDRAGO", "GLASTRIER", "SPECTRIER", "CALYREX", "WYRDEER", "KLEAVOR", "URSALUNA", "BASCULEGION", "SNEASLER", "OVERQWIL", "ENAMORUS", "SPRIGATITO", "FLORAGATO", "MEOWSCARADA", "FUECOCO", "CROCALOR", "SKELEDIRGE", "QUAXLY", "QUAXWELL", "QUAQUAVAL", "LECHONK", "OINKOLOGNE", "TAROUNTULA", "SPIDOPS", "NYMBLE", "LOKIX", "PAWMI", "PAWMO", "PAWMOT", "TANDEMAUS", "MAUSHOLD", "FIDOUGH", "DACHSBUN", "SMOLIV", "DOLLIV", "ARBOLIVA", "SQUAWKABILLY", "NACLI", "NACLSTACK", "GARGANACL", "CHARCADET", "ARMAROUGE", "CERULEDGE", "TADBULB", "BELLIBOLT", "WATTREL", "KILOWATTREL", "MASCHIFF", "MABOSSTIFF", "SHROODLE", "GRAFAIAI", "BRAMBLIN", "BRAMBLEGHAST", "TOEDSCOOL", "TOEDSCRUEL", "KLAWF", "CAPSAKID", "SCOVILLAIN", "RELLOR", "RABSCA", "FLITTLE", "ESPATHRA", "TINKATINK", "TINKATUFF", "TINKATON", "WIGLETT", "WUGTRIO", "BOMBIRDIER", "FINIZEN", "PALAFIN", "VAROOM", "REVAVROOM", "CYCLIZAR", "ORTHWORM", "GLIMMET", "GLIMMORA", "GREAVARD", "HOUNDSTONE", "FLAMIGO", "CETODDLE", "CETITAN", "VELUZA", "DONDOZO", "TATSUGIRI", "ANNIHILAPE", "CLODSIRE", "FARIGIRAF", "DUDUNSPARCE", "KINGAMBIT", "GRANDIZANNE", "CODAURLANTE", "FUNGOFURIOSO", "CRINEALATO", "ALIRASENTI", "PELDISABBIA", "SOLCOFERREO", "SACCOFERREO", "MANOFERREA", "COLLOFERREO", "FALENAFERREA", "SPINEFERREE", "FRIGIBAX", "ARCTIBAX", "BAXCALIBUR", "GIMMIGHOUL", "GHOLDENGO", "WO-CHIEN", "CHIEN-PAO", "TING-LU", "CHI-YU", "LUNARUGGENTE", "EROEFERREO", "KORAIDON", "MIRAIDON", "ACQUECRESPE", "FOGLIAFERREA", "DIPPLIN", "POLTCHAGEIST", "SINISTCHA", "OKIDOGI", "MUNKIDORI", "FEZANDIPITI", "OGERPON", "ARCHALUDON", "HYDRAPPLE", "VAMPEAGUZZE", "FURIATONANTE", "MASSOFERREO", "CAPOFERREO", "TERAPAGOS", "PECHARUNT"},
+  // PT
+  { "?", "BULBASAUR", "IVYSAUR", "VENUSAUR", "CHARMANDER", "CHARMELEON", "CHARIZARD", "SQUIRTLE", "WARTORTLE", "BLASTOISE", "CATERPIE", "METAPOD", "BUTTERFREE", "WEEDLE", "KAKUNA", "BEEDRILL", "PIDGEY", "PIDGEOTTO", "PIDGEOT", "RATTATA", "RATICATE", "SPEAROW", "FEAROW", "EKANS", "ARBOK", "PIKACHU", "RAICHU", "SANDSHREW", "SANDSLASH", "NIDORAN F", "NIDORINA", "NIDOQUEEN", "NIDORAN M", "NIDORINO", "NIDOKING", "CLEFAIRY", "CLEFABLE", "VULPIX", "NINETALES", "JIGGLYPUFF", "WIGGLYTUFF", "ZUBAT", "GOLBAT", "ODDISH", "GLOOM", "VILEPLUME", "PARAS", "PARASECT", "VENONAT", "VENOMOTH", "DIGLETT", "DUGTRIO", "MEOWTH", "PERSIAN", "PSYDUCK", "GOLDUCK", "MANKEY", "PRIMEAPE", "GROWLITHE", "ARCANINE", "POLIWAG", "POLIWHIRL", "POLIWRATH", "ABRA", "KADABRA", "ALAKAZAM", "MACHOP", "MACHOKE", "MACHAMP", "BELLSPROUT", "WEEPINBELL", "VICTREEBEL", "TENTACOOL", "TENTACRUEL", "GEODUDE", "GRAVELER", "GOLEM", "PONYTA", "RAPIDASH", "SLOWPOKE", "SLOWBRO", "MAGNEMITE", "MAGNETON", "FARFETCHD", "DODUO", "DODRIO", "SEEL", "DEWGONG", "GRIMER", "MUK", "SHELLDER", "CLOYSTER", "GASTLY", "HAUNTER", "GENGAR", "ONIX", "DROWZEE", "HYPNO", "KRABBY", "KINGLER", "VOLTORB", "ELECTRODE", "EXEGGCUTE", "EXEGGUTOR", "CUBONE", "MAROWAK", "HITMONLEE", "HITMONCHAN", "LICKITUNG", "KOFFING", "WEEZING", "RHYHORN", "RHYDON", "CHANSEY", "TANGELA", "KANGASKHAN", "HORSEA", "SEADRA", "GOLDEEN", "SEAKING", "STARYU", "STARMIE", "MR. MIME", "SCYTHER", "JYNX", "ELECTABUZZ", "MAGMAR", "PINSIR", "TAUROS", "MAGIKARP", "GYARADOS", "LAPRAS", "DITTO", "EEVEE", "VAPOREON", "JOLTEON", "FLAREON", "PORYGON", "OMANYTE", "OMASTAR", "KABUTO", "KABUTOPS", "AERODACTYL", "SNORLAX", "ARTICUNO", "ZAPDOS", "MOLTRES", "DRATINI", "DRAGONAIR", "DRAGONITE", "MEWTWO", "MEW", "CHIKORITA", "BAYLEEF", "MEGANIUM", "CYNDAQUIL", "QUILAVA", "TYPHLOSION", "TOTODILE", "CROCONAW", "FERALIGATR", "SENTRET", "FURRET", "HOOTHOOT", "NOCTOWL", "LEDYBA", "LEDIAN", "SPINARAK", "ARIADOS", "CROBAT", "CHINCHOU", "LANTURN", "PICHU", "CLEFFA", "IGGLYBUFF", "TOGEPI", "TOGETIC", "NATU", "XATU", "MAREEP", "FLAAFFY", "AMPHAROS", "BELLOSSOM", "MARILL", "AZUMARILL", "SUDOWOODO", "POLITOED", "HOPPIP", "SKIPLOOM", "JUMPLUFF", "AIPOM", "SUNKERN", "SUNFLORA", "YANMA", "WOOPER", "QUAGSIRE", "ESPEON", "UMBREON", "MURKROW", "SLOWKING", "MISDREAVUS", "UNOWN", "WOBBUFFET", "GIRAFARIG", "PINECO", "FORRETRESS", "DUNSPARCE", "GLIGAR", "STEELIX", "SNUBBULL", "GRANBULL", "QWILFISH", "SCIZOR", "SHUCKLE", "HERACROSS", "SNEASEL", "TEDDIURSA", "URSARING", "SLUGMA", "MAGCARGO", "SWINUB", "PILOSWINE", "CORSOLA", "REMORAID", "OCTILLERY", "DELIBIRD", "MANTINE", "SKARMORY", "HOUNDOUR", "HOUNDOOM", "KINGDRA", "PHANPY", "DONPHAN", "PORYGON2", "STANTLER", "SMEARGLE", "TYROGUE", "HITMONTOP", "SMOOCHUM", "ELEKID", "MAGBY", "MILTANK", "BLISSEY", "RAIKOU", "ENTEI", "SUICUNE", "LARVITAR", "PUPITAR", "TYRANITAR", "LUGIA", "HO_OH", "CELEBI", "TREECKO", "GROVYLE", "SCEPTILE", "TORCHIC", "COMBUSKEN", "BLAZIKEN", "MUDKIP", "MARSHTOMP", "SWAMPERT", "POOCHYENA", "MIGHTYENA", "ZIGZAGOON", "LINOONE", "WURMPLE", "SILCOON", "BEAUTIFLY", "CASCOON", "DUSTOX", "LOTAD", "LOMBRE", "LUDICOLO", "SEEDOT", "NUZLEAF", "SHIFTRY", "TAILLOW", "SWELLOW", "WINGULL", "PELIPPER", "RALTS", "KIRLIA", "GARDEVOIR", "SURSKIT", "MASQUERAIN", "SHROOMISH", "BRELOOM", "SLAKOTH", "VIGOROTH", "SLAKING", "NINCADA", "NINJASK", "SHEDINJA", "WHISMUR", "LOUDRED", "EXPLOUD", "MAKUHITA", "HARIYAMA", "AZURILL", "NOSEPASS", "SKITTY", "DELCATTY", "SABLEYE", "MAWILE", "ARON", "LAIRON", "AGGRON", "MEDITITE", "MEDICHAM", "ELECTRIKE", "MANECTRIC", "PLUSLE", "MINUN", "VOLBEAT", "ILLUMISE", "ROSELIA", "GULPIN", "SWALOT", "CARVANHA", "SHARPEDO", "WAILMER", "WAILORD", "NUMEL", "CAMERUPT", "TORKOAL", "SPOINK", "GRUMPIG", "SPINDA", "TRAPINCH", "VIBRAVA", "FLYGON", "CACNEA", "CACTURNE", "SWABLU", "ALTARIA", "ZANGOOSE", "SEVIPER", "LUNATONE", "SOLROCK", "BARBOACH", "WHISCASH", "CORPHISH", "CRAWDAUNT", "BALTOY", "CLAYDOL", "LILEEP", "CRADILY", "ANORITH", "ARMALDO", "FEEBAS", "MILOTIC", "CASTFORM", "KECLEON", "SHUPPET", "BANETTE", "DUSKULL", "DUSCLOPS", "TROPIUS", "CHIMECHO", "ABSOL", "WYNAUT", "SNORUNT", "GLALIE", "SPHEAL", "SEALEO", "WALREIN", "CLAMPERL", "HUNTAIL", "GOREBYSS", "RELICANTH", "LUVDISC", "BAGON", "SHELGON", "SALAMENCE", "BELDUM", "METANG", "METAGROSS", "REGIROCK", "REGICE", "REGISTEEL", "LATIAS", "LATIOS", "KYOGRE", "GROUDON", "RAYQUAZA", "JIRACHI", "DEOXYS", "TURTWIG", "GROTLE", "TORTERRA", "CHIMCHAR", "MONFERNO", "INFERNAPE", "PIPLUP", "PRINPLUP", "EMPOLEON", "STARLY", "STARAVIA", "STARAPTOR", "BIDOOF", "BIBAREL", "KRICKETOT", "KRICKETUNE", "SHINX", "LUXIO", "LUXRAY", "BUDEW", "ROSERADE", "CRANIDOS", "RAMPARDOS", "SHIELDON", "BASTIODON", "BURMY", "WORMADAM", "MOTHIM", "COMBEE", "VESPIQUEN", "PACHIRISU", "BUIZEL", "FLOATZEL", "CHERUBI", "CHERRIM", "SHELLOS", "GASTRODON", "AMBIPOM", "DRIFLOON", "DRIFBLIM", "BUNEARY", "LOPUNNY", "MISMAGIUS", "HONCHKROW", "GLAMEOW", "PURUGLY", "CHINGLING", "STUNKY", "SKUNTANK", "BRONZOR", "BRONZONG", "BONSLY", "MIME JR.", "HAPPINY", "CHATOT", "SPIRITOMB", "GIBLE", "GABITE", "GARCHOMP", "MUNCHLAX", "RIOLU", "LUCARIO", "HIPPOPOTAS", "HIPPOWDON", "SKORUPI", "DRAPION", "CROAGUNK", "TOXICROAK", "CARNIVINE", "FINNEON", "LUMINEON", "MANTYKE", "SNOVER", "ABOMASNOW", "WEAVILE", "MAGNEZONE", "LICKILICKY", "RHYPERIOR", "TANGROWTH", "ELECTIVIRE", "MAGMORTAR", "TOGEKISS", "YANMEGA", "LEAFEON", "GLACEON", "GLISCOR", "MAMOSWINE", "PORYGON-Z", "GALLADE", "PROBOPASS", "DUSKNOIR", "FROSLASS", "ROTOM", "UXIE", "MESPRIT", "AZELF", "DIALGA", "PALKIA", "HEATRAN", "REGIGIGAS", "GIRATINA", "CRESSELIA", "PHIONE", "MANAPHY", "DARKRAI", "SHAYMIN", "ARCEUS", "VICTINI", "SNIVY", "SERVINE", "SERPERIOR", "TEPIG", "PIGNITE", "EMBOAR", "OSHAWOTT", "DEWOTT", "SAMUROTT", "PATRAT", "WATCHOG", "LILLIPUP", "HERDIER", "STOUTLAND", "PURRLOIN", "LIEPARD", "PANSAGE", "SIMISAGE", "PANSEAR", "SIMISEAR", "PANPOUR", "SIMIPOUR", "MUNNA", "MUSHARNA", "PIDOVE", "TRANQUILL", "UNFEZANT", "BLITZLE", "ZEBSTRIKA", "ROGGENROLA", "BOLDORE", "GIGALITH", "WOOBAT", "SWOOBAT", "DRILBUR", "EXCADRILL", "AUDINO", "TIMBURR", "GURDURR", "CONKELDURR", "TYMPOLE", "PALPITOAD", "SEISMITOAD", "THROH", "SAWK", "SEWADDLE", "SWADLOON", "LEAVANNY", "VENIPEDE", "WHIRLIPEDE", "SCOLIPEDE", "COTTONEE", "WHIMSICOTT", "PETILIL", "LILLIGANT", "BASCULIN", "SANDILE", "KROKOROK", "KROOKODILE", "DARUMAKA", "DARMANITAN", "MARACTUS", "DWEBBLE", "CRUSTLE", "SCRAGGY", "SCRAFTY", "SIGILYPH", "YAMASK", "COFAGRIGUS", "TIRTOUGA", "CARRACOSTA", "ARCHEN", "ARCHEOPS", "TRUBBISH", "GARBODOR", "ZORUA", "ZOROARK", "MINCCINO", "CINCCINO", "GOTHITA", "GOTHORITA", "GOTHITELLE", "SOLOSIS", "DUOSION", "REUNICLUS", "DUCKLETT", "SWANNA", "VANILLITE", "VANILLISH", "VANILLUXE", "DEERLING", "SAWSBUCK", "EMOLGA", "KARRABLAST", "ESCAVALIER", "FOONGUS", "AMOONGUSS", "FRILLISH", "JELLICENT", "ALOMOMOLA", "JOLTIK", "GALVANTULA", "FERROSEED", "FERROTHORN", "KLINK", "KLANG", "KLINKLANG", "TYNAMO", "EELEKTRIK", "EELEKTROSS", "ELGYEM", "BEHEEYEM", "LITWICK", "LAMPENT", "CHANDELURE", "AXEW", "FRAXURE", "HAXORUS", "CUBCHOO", "BEARTIC", "CRYOGONAL", "SHELMET", "ACCELGOR", "STUNFISK", "MIENFOO", "MIENSHAO", "DRUDDIGON", "GOLETT", "GOLURK", "PAWNIARD", "BISHARP", "BOUFFALANT", "RUFFLET", "BRAVIARY", "VULLABY", "MANDIBUZZ", "HEATMOR", "DURANT", "DEINO", "ZWEILOUS", "HYDREIGON", "LARVESTA", "VOLCARONA", "COBALION", "TERRAKION", "VIRIZION", "TORNADUS", "THUNDURUS", "RESHIRAM", "ZEKROM", "LANDORUS", "KYUREM", "KELDEO", "MELOETTA", "GENESECT" , "CHESPIN", "QUILLADIN", "CHESNAUGHT", "FENNEKIN", "BRAIXEN", "DELPHOX", "FROAKIE", "FROGADIER", "GRENINJA", "BUNNELBY", "DIGGERSBY", "FLETCHLING", "FLETCHINDER", "TALONFLAME", "SCATTERBUG", "SPEWPA", "VIVILLON", "LITLEO", "PYROAR", "FLABB", "FLOETTE", "FLORGES", "SKIDDO", "GOGOAT", "PANCHAM", "PANGORO", "FURFROU", "ESPURR", "MEOWSTIC", "HONEDGE", "DOUBLADE", "AEGISLASH", "SPRITZEE", "AROMATISSE", "SWIRLIX", "SLURPUFF", "INKAY", "MALAMAR", "BINACLE", "BARBARACLE", "SKRELP", "DRAGALGE", "CLAUNCHER", "CLAWITZER", "HELIOPTILE", "HELIOLISK", "TYRUNT", "TYRANTRUM", "AMAURA", "AURORUS", "SYLVEON", "HAWLUCHA", "DEDENNE", "CARBINK", "GOOMY", "SLIGGOO", "GOODRA", "KLEFKI", "PHANTUMP", "TREVENANT", "PUMPKABOO", "GOURGEIST", "BERGMITE", "AVALUGG", "NOIBAT", "NOIVERN", "XERNEAS", "YVELTAL", "ZYGARDE", "DIANCIE", "HOOPA", "VOLCANION", "ROWLET", "DARTRIX", "DECIDUEYE", "LITTEN", "TORRACAT", "INCINEROAR", "POPPLIO", "BRIONNE", "PRIMARINA", "PIKIPEK", "TRUMBEAK", "TOUCANNON", "YUNGOOS", "GUMSHOOS", "GRUBBIN", "CHARJABUG", "VIKAVOLT", "CRABRAWLER", "CRABOMINABLE", "ORICORIO", "CUTIEFLY", "RIBOMBEE", "ROCKRUFF", "LYCANROC", "WISHIWASHI", "MAREANIE", "TOXAPEX", "MUDBRAY", "MUDSDALE", "DEWPIDER", "ARAQUANID", "FOMANTIS", "LURANTIS", "MORELULL", "SHIINOTIC", "SALANDIT", "SALAZZLE", "STUFFUL", "BEWEAR", "BOUNSWEET", "STEENEE", "TSAREENA", "COMFEY", "ORANGURU", "PASSIMIAN", "WIMPOD", "GOLISOPOD", "SANDYGAST", "PALOSSAND", "PYUKUMUKU", "TYPE NULL", "SILVALLY", "MINIOR", "KOMALA", "TURTONATOR", "TOGEDEMARU", "MIMIKYU", "BRUXISH", "DRAMPA", "DHELMISE", "JANGMO-O", "HAKAMO-O", "KOMMO-O", "TAPU KOKO", "TAPU LELE", "TAPU BULU", "TAPU FINI", "COSMOG", "COSMOEM", "SOLGALEO", "LUNALA", "NIHILEGO", "BUZZWOLE", "PHEROMOSA", "XURKITREE", "CELESTEELA", "KARTANA", "GUZZLORD", "NECROZMA", "MAGEARNA", "MARSHADOW", "POIPOLE", "NAGANADEL", "STAKATAKA", "BLACEPHALON", "ZERAORA", "MELTAN", "MELMETAL", "GROOKEY", "THWACKEY", "RILLABOOM", "SCORBUNNY", "RABOOT", "CINDERACE", "SOBBLE", "DRIZZILE", "INTELEON", "SKWOVET", "GREEDENT", "ROOKIDEE", "CORVISQUIRE", "CORVIKNIGHT", "BLIPBUG", "DOTTLER", "ORBEETLE", "NICKIT", "THIEVUL", "GOSSIFLEUR", "ELDEGOSS", "WOOLOO", "DUBWOOL", "CHEWTLE", "DREDNAW", "YAMPER", "BOLTUND", "ROLYCOLY", "CARKOL", "COALOSSAL", "APPLIN", "FLAPPLE", "APPLETUN", "SILICOBRA", "SANDACONDA", "CRAMORANT", "ARROKUDA", "BARRASKEWDA", "TOXEL", "TOXTRICITY", "SIZZLIPEDE", "CENTISKORCH", "CLOBBOPUS", "GRAPPLOCT", "SINISTEA", "POLTEAGEIST", "HATENNA", "HATTREM", "HATTERENE", "IMPIDIMP", "MORGREM", "GRIMMSNARL", "OBSTAGOON", "PERRSERKER", "CURSOLA", "SIRFETCHD", "MR. RIME", "RUNERIGUS", "MILCERY", "ALCREMIE", "FALINKS", "PINCURCHIN", "SNOM", "FROSMOTH", "STONJOURNER", "EISCUE", "INDEEDEE", "MORPEKO", "CUFANT", "COPPERAJAH", "DRACOZOLT", "ARCTOZOLT", "DRACOVISH", "ARCTOVISH", "DURALUDON", "DREEPY", "DRAKLOAK", "DRAGAPULT", "ZACIAN", "ZAMAZENTA", "ETERNATUS", "KUBFU", "URSHIFU", "ZARUDE", "REGIELEKI", "REGIDRAGO", "GLASTRIER", "SPECTRIER", "CALYREX", "WYRDEER", "KLEAVOR", "URSALUNA", "BASCULEGION", "SNEASLER", "OVERQWIL", "ENAMORUS", "SPRIGATITO", "FLORAGATO", "MEOWSCARADA", "FUECOCO", "CROCALOR", "SKELEDIRGE", "QUAXLY", "QUAXWELL", "QUAQUAVAL", "LECHONK", "OINKOLOGNE", "TAROUNTULA", "SPIDOPS", "NYMBLE", "LOKIX", "PAWMI", "PAWMO", "PAWMOT", "TANDEMAUS", "MAUSHOLD", "FIDOUGH", "DACHSBUN", "SMOLIV", "DOLLIV", "ARBOLIVA", "SQUAWKABILLY", "NACLI", "NACLSTACK", "GARGANACL", "CHARCADET", "ARMAROUGE", "CERULEDGE", "TADBULB", "BELLIBOLT", "WATTREL", "KILOWATTREL", "MASCHIFF", "MABOSSTIFF", "SHROODLE", "GRAFAIAI", "BRAMBLIN", "BRAMBLEGHAST", "TOEDSCOOL", "TOEDSCRUEL", "KLAWF", "CAPSAKID", "SCOVILLAIN", "RELLOR", "RABSCA", "FLITTLE", "ESPATHRA", "TINKATINK", "TINKATUFF", "TINKATON", "WIGLETT", "WUGTRIO", "BOMBIRDIER", "FINIZEN", "PALAFIN", "VAROOM", "REVAVROOM", "CYCLIZAR", "ORTHWORM", "GLIMMET", "GLIMMORA", "GREAVARD", "HOUNDSTONE", "FLAMIGO", "CETODDLE", "CETITAN", "VELUZA", "DONDOZO", "TATSUGIRI", "ANNIHILAPE", "CLODSIRE", "FARIGIRAF", "DUDUNSPARCE", "KINGAMBIT", "GREAT TUSK", "SCREAM TAIL", "BRUTE BONNET", "FLUTTER MANE", "SLITHER WING", "SANDY SHOCKS", "IRON TREADS", "IRON BUNDLE", "IRON HANDS", "IRON JUGULIS", "IRON MOTH", "IRON THORNS", "FRIGIBAX", "ARCTIBAX", "BAXCALIBUR", "GIMMIGHOUL", "GHOLDENGO", "WO-CHIEN", "CHIEN-PAO", "TING-LU", "CHI-YU", "ROARING MOON", "IRON VALIANT", "KORAIDON", "MIRAIDON", "WALKING WAKE", "IRON LEAVES", "DIPPLIN", "POLTCHAGEIST", "SINISTCHA", "OKIDOGI", "MUNKIDORI", "FEZANDIPITI", "OGERPON", "ARCHALUDON", "HYDRAPPLE", "GOUGING FIRE", "RAGING BOLT", "IRON BOULDER", "IRON CROWN", "TERAPAGOS", "PECHARUNT"},
 };
-
-// Nombre de la especie en el idioma activo (cae al de DEX_TBL si ese
-// idioma no tiene nombre propio para ella).
-static inline const char *dexName(int16_t dex) {
-  if (dex < 1 || dex > DEX_COUNT) return DEX_TBL[0].name;
-  const char *n = (gLang == LANG_FR)   ? DEX_NAME_FR[dex]
-                  : (gLang == LANG_DE) ? DEX_NAME_DE[dex]
-                                       : nullptr;
-  return n ? n : DEX_TBL[dex].name;
-}
 
 // el primer huevo de la partida: iniciales clasicos
 static const int16_t CLASSIC_DEX[] = { 1, 4, 7, 25, 133 };

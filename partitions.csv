@@ -1,0 +1,22 @@
+# Eigene Partitionstabelle, abgeleitet vom Standard-Schema "app3M_fat9M_16MB".
+#
+# WICHTIG: nvs/otadata/app0 muessen exakt auf den Stock-Offsets (0x9000/0xe000/
+# 0x10000) bleiben. Das Arduino-ESP32-Upload-Rezept (platform.txt,
+# tools.esptool_py.upload.pattern_args) schreibt boot_app0.bin und die App fest
+# auf die literalen Adressen 0xe000 bzw. 0x10000 - unabhaengig davon, was in
+# dieser CSV steht. Verschiebt man otadata/app0 hierher, landet die App beim
+# Flashen an der falschen Stelle und das Geraet bootet nicht mehr ("No bootable
+# app partitions") - das war genau der Bug, der zum schwarzen Bildschirm fuehrte.
+#
+# Fuer die grossen Pokedex-Wertedaten (dexMonsCaught/dexMonsBred, ~18 KB) gibt es
+# stattdessen eine EIGENE nvs-Partition "dexnvs" (64 KB, per
+# Preferences::begin(..., "dexnvs") angesprochen), statt die Standard-"nvs"-
+# Partition zu vergroessern.
+#
+# Name,     Type, SubType, Offset,   Size,     Flags
+nvs,        data, nvs,     0x9000,   0x5000,
+otadata,    data, ota,     0xe000,   0x2000,
+app0,       app,  ota_0,   0x10000,  0x300000,
+app1,       app,  ota_1,   0x310000, 0x300000,
+dexnvs,     data, nvs,     0x610000, 0x10000,
+ffat,       data, fat,     0x620000, 0x9E0000,

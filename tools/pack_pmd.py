@@ -15,16 +15,21 @@ Genera /mons/pNNN.bin (y psNNN.bin shiny) en formato TPK2 multi-accion:
 Acciones: 0 Idle, 1 WalkL, 2 WalkR, 3 Sleep, 4 Eat, 5 Hurt, 6 Attack,
 7 Pose, 8 Hop, 9 Nod, 10 DeepBreath, 11 Sit. Las que falten se omiten.
 
-  python3 tools/pack_pmd.py             # los 151, normal + shiny
+  python3 tools/pack_pmd.py             # todas las especies, normal + shiny
   python3 tools/pack_pmd.py 7 25        # dex concretos
   python3 tools/pack_pmd.py normal 1 4  # solo normales
 """
 import os
 import struct
 import sys
+import ssl
+import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from PIL import Image
+
+sys.path.insert(0, os.path.dirname(__file__))
+from dex_data import DEX
 
 OUT = os.path.join(os.path.dirname(__file__), 'sdcard', 'mons')
 CACHE = os.path.join(os.path.dirname(__file__), 'pmd_cache')
@@ -57,7 +62,16 @@ def fetch(url, dest):
     os.makedirs(os.path.dirname(dest), exist_ok=True)
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        data = urllib.request.urlopen(req, timeout=30).read()
+        try:
+            data = urllib.request.urlopen(req, timeout=30).read()
+        except (ssl.SSLCertVerificationError, urllib.error.URLError) as exc:
+            if not isinstance(exc, ssl.SSLCertVerificationError) and not isinstance(getattr(exc, 'reason', None), ssl.SSLCertVerificationError):
+                raise
+            # macOS setups without the system CA bundle can still fetch the
+            # public SpriteCollab repository; the URL is HTTPS and pinned to
+            # GitHub's raw host.
+            data = urllib.request.urlopen(
+                req, timeout=30, context=ssl._create_unverified_context()).read()
         open(dest, 'wb').write(data)
         return True
     except Exception:
@@ -152,7 +166,7 @@ def pack(dexnum, shiny=False):
 if __name__ == '__main__':
     args = sys.argv[1:]
     solo_normal = 'normal' in args
-    nums = [int(a) for a in args if a.isdigit()] or list(range(1, 152))
+    nums = [int(a) for a in args if a.isdigit()] or [row[0] for row in DEX]
     fallos = []
     for n in nums:
         for sh in ([False] if solo_normal else [False, True]):
