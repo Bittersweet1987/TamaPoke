@@ -35,9 +35,9 @@
 // Version del firmware. Subir este numero en cada release (y manifest.json para
 // el instalador web). Se muestra en la pantalla de ajustes y por serie al arrancar.
 #ifdef TAMAPOKE_LOCAL_TEST
-#define FW_VERSION "1.35.3-soft-step-local"
+#define FW_VERSION "1.36.0-moves-switch-local"
 #else
-#define FW_VERSION "1.35.3-soft-step"
+#define FW_VERSION "1.36.0-moves-switch"
 #endif
 #define HELP_PAGE_COUNT 8
 #define HELP_LINE_COUNT 6
@@ -91,6 +91,7 @@ static const GenRange GEN_RANGES[] = {
 };
 #define GEN_TABLE_COUNT 9
 #define GEN_PAGE_ROWS 5
+#define DEX_MOVES_ROWS 3  // Zeilen pro Seite der Pokedex-Moves-Ansicht (siehe drawDexMovesPage())
 
 int genCount() {  // Anzahl (noch) enthaltener Generationen
   int n = 0;
@@ -115,8 +116,10 @@ bool galleryStrengthMode = false;
 int16_t galleryStrengthList[DEX_COUNT + 1];
 uint16_t galleryStrengthCount = 0;
 
+// Identisch zu calcStat() in pet.cpp/party.cpp: multiplikative Level-Skalierung.
 static uint16_t galleryCalcStat(uint8_t base, uint8_t gene, uint16_t lvl, uint8_t tr) {
-  return (uint16_t)base * gene / 100 + lvl + tr;
+  uint32_t adjBase = (uint32_t)base * gene / 100;
+  return (uint16_t)(adjBase * 2 * lvl / 100 + lvl + tr);
 }
 uint32_t dexMonTotalPower(int16_t dex, const DexMon &m) {
   const DexEntry &d = DEX_TBL[dex];
@@ -273,6 +276,14 @@ uint8_t gymRegion = 0;       // Index in GYM_REGION_SETS/GYM_REGION_NAMES (train
 bool gymHardMode = false;    // siehe HARD_IV-Kommentar im Original: bei uns ein Level-Aufschlag
 const GymLeader &curGymLeader(uint8_t i) { return GYM_REGION_SETS[gymRegion][i]; }
 
+// Attacken-Tausch auf der Pokedex-Moves-Seite: nur fuer die aktuell aufgezogene
+// Art moeglich (nur das aktive Haustier hat ein eigenes, gespeichertes
+// Moveset -- Fang-/Zucht-Exemplare leiten ihre Attacken weiterhin live vom
+// Level ab, siehe deriveLevelMoves()). moveSwapPendingMove ist die Attacke,
+// die per Tap auf einen der 4 Slots eingewechselt werden soll.
+bool moveSwapOpen = false;
+uint16_t moveSwapPendingMove = 0;
+
 // Vergleichsdialog bei Fang-/Zucht-Duplikaten (siehe pet.h DexMon)
 bool dexCompareOpen = false;
 int16_t dexCompareDex = 0;
@@ -317,7 +328,6 @@ void offerDexMon(int16_t dex, bool isCaught, const DexMon &fresh) {
   dexCompareOld = slot;
   dexCompareNew = fresh;
 }
-bool battleRespectCatch = false;
 uint8_t battleCatchChance = 0;
 bool battleLowHpWarned = false;
 
@@ -434,6 +444,17 @@ bool swallowGesture = false; // el toque que despierta no acciona nada
 uint32_t ignoreTouchUntil = 0;
 uint32_t holdStart = 0;     // pulsacion larga sobre el bicho
 uint32_t confirmUntil = 0;  // dialogo "soltar?" activo hasta este millis
+// Dialog "zurueckwechseln?", wenn gerade ein per Pokedex hergeholtes
+// ("Gast"-)Exemplar aktiv ist -- ersetzt den "soltar?"-Dialog fuer diesen
+// Fall, siehe Pet::homeSpeciesId()/canBeSentAway().
+uint32_t switchBackUntil = 0;
+int16_t switchBackTarget = -1;  // Ziel-Art fuer den Zurueckwechsel-Dialog
+// Bestaetigungsdialog fuer den "ALS HAUPTPOKEMON"-Knopf im Pokedex.
+uint32_t mainSwitchConfirmUntil = 0;
+int16_t mainSwitchConfirmDex = -1;
+// Neue-Attacke-Dialog (siehe Pet::hasPendingLearnMove()): false = "erlernen?"
+// Ja/Nein, true = welchen der 4 Slots ersetzen (nur nach "Ja").
+bool learnMoveReplaceStage = false;
 uint8_t choiceKind = 0;     // 0 ninguno, 1 evolucion, 2 despedida, 3 objetivo de evolucion
 uint32_t choiceUntil = 0;   // se cierra solo a este millis
 int16_t tX0, tY0, tXl, tYl; // gesto en curso (inicio y ultima posicion)
@@ -946,6 +967,24 @@ void handleSerial() {
       if (pet.isCaught(i)) Serial.printf(" %d", i);
     Serial.println();
     Serial.println("DONE");
+  } else if (line == "DEXAUDIT") {
+    // Prueft fuer JEDE als gefangen/gezuechtet markierte Art, ob der
+    // zugehoerige DexMon-Eintrag wirklich befuellt ist (level>0) oder leer
+    // (level==0) -- leer bei gesetztem Bitmap-Flag heisst: Vergleichsdialog/
+    // INS TEAM wuerden fuer diese Art faelschlich als "neu" behandelt.
+    uint16_t nCaught = 0, nCaughtEmpty = 0, nBred = 0, nBredEmpty = 0;
+    for (int16_t d = 1; d <= DEX_COUNT; d++) {
+      if (pet.isCaught(d)) {
+        nCaught++;
+        if (pet.dexMonsCaught[d].empty()) { nCaughtEmpty++; Serial.printf("LEER gefangen #%d %s\n", d, DEX_TBL[d].name); }
+      }
+      if (pet.isRegistered(d)) {
+        nBred++;
+        if (pet.dexMonsBred[d].empty()) { nBredEmpty++; Serial.printf("LEER gezuechtet #%d %s\n", d, DEX_TBL[d].name); }
+      }
+    }
+    Serial.printf("AUDIT gefangen: %u/%u leer, gezuechtet: %u/%u leer\n", nCaughtEmpty, nCaught, nBredEmpty, nBred);
+    Serial.println("DONE");
   } else if (line.startsWith("CAUGHT ")) {
     int n = line.substring(7).toInt();
     if (n < 1 || n > DEX_COUNT) n = pet.speciesId;
@@ -1119,11 +1158,18 @@ void handleTouch() {
   } else if (pressed) {  // sigue apoyado
     tXl = x;
     tYl = y;
-    // pulsacion larga sin moverse sobre el bicho -> dialogo de soltar
+    // pulsacion larga sin moverse sobre el bicho -> dialogo de soltar (oder,
+    // bei einem per Pokedex hergeholten "Gast"-Exemplar, Zurueckwechseln)
     if (!holdFired && !swallowGesture && !galleryOpen && !cardOpen && !kbOpen && !clockOpen && !helpOpen && millis() - tStart > 3000 &&
         abs(tXl - tX0) < 30 && abs(tYl - tY0) < 30 && inPetZone(tX0, tY0) &&
-        !pet.isEgg() && !confirmUntil && !pet.ceremony) {
-      confirmUntil = millis() + 10000;
+        !pet.isEgg() && !confirmUntil && !switchBackUntil && !pet.ceremony) {
+      int16_t home = pet.homeSpeciesId();
+      if (home != -1 && home != pet.speciesId) {
+        switchBackTarget = home;
+        switchBackUntil = millis() + 10000;
+      } else {
+        confirmUntil = millis() + 10000;
+      }
       holdFired = true;
     }
   } else if (wasPressed) {  // levanta el dedo: resolver gesto
@@ -1159,6 +1205,8 @@ bool expeditionHudVisible();
 bool inExpeditionHudHit(int16_t x, int16_t y);
 void openExpeditionCard();
 void drawExpeditionHud();
+void drawDexOriginPage(int16_t dex, const DexMon &m, const char *label, uint16_t accent, bool isBred = false);
+bool dexShowMainSwitchButton(int16_t dex, bool isBred);
 
 void onSwipeV(int dir) {
   if (helpOpen) { helpOpen = false; clockOpen = true; clockDirty = true; lockTouchBrief(); sfxPlay(SFX_TAP); return; }
@@ -1215,6 +1263,13 @@ void onSwipe(int dir) {
       lockTouchBrief();
       sfxPlay(SFX_MENU);
     }
+    return;
+  }
+  if (moveSwapOpen) {  // Wischen waehrend des Attacken-Tausch-Dialogs bricht ihn ab
+    moveSwapOpen = false;
+    galleryDirty = true;
+    lockTouchBrief();
+    sfxPlay(SFX_TAP);
     return;
   }
   if (galleryDetail) {  // en detalle: deslizar cambia entre paginas (sprite/descripcion/fang/zucht)
@@ -1575,6 +1630,35 @@ void onTap(int16_t x, int16_t y) {
     confirmUntil = 0;
     return;
   }
+  if (switchBackUntil) {     // dialogo "zurueckwechseln?": SI / NO
+    if (deadlineActive(millis(), switchBackUntil) && x >= 118 && x <= 218 && y >= 252 && y <= 304) {
+      if (pet.switchActiveTo(switchBackTarget)) sfxPlay(SFX_TAP);
+    }
+    switchBackUntil = 0;
+    switchBackTarget = -1;
+    return;
+  }
+  if (pet.hasPendingLearnMove() && !learnMoveReplaceStage) {  // "Attacke X erlernen?": SI / NO
+    if (x >= 118 && x <= 218 && y >= 252 && y <= 304) {
+      learnMoveReplaceStage = true;
+      sfxPlay(SFX_MENU);
+    } else {
+      pet.declineLearnMove();
+    }
+    return;
+  }
+  if (pet.hasPendingLearnMove() && learnMoveReplaceStage) {  // welcher Slot wird ersetzt?
+    for (uint8_t s = 0; s < MOVE_SLOTS; s++) {
+      int y0 = 168 + s * 60;
+      if (x >= 76 && x <= 390 && y >= y0 && y <= y0 + 50) {
+        pet.confirmLearnMove(s);
+        learnMoveReplaceStage = false;
+        sfxPlay(SFX_TAP);
+        return;
+      }
+    }
+    return;  // ausserhalb der Slots: Auswahl ist Pflicht, Dialog bleibt offen
+  }
   if (feedMenuUntil) {       // selector de comida
     if (deadlineActive(millis(), feedMenuUntil) && y >= 288 && y <= 352 && x >= 101 && x <= 365) {
       int item = (x - 101) / 66;
@@ -1588,7 +1672,7 @@ void onTap(int16_t x, int16_t y) {
   if (pet.isEgg()) {
     bool justHatched = pet.eggTap();
     if (justHatched) {
-      DexMon fresh = pet.rollFreshDexMon(1, pet.shiny);
+      DexMon fresh = pet.rollFreshDexMon(pet.speciesId, 1, pet.shiny);
       offerDexMon(pet.speciesId, false, fresh);
     }
     sfxPlay(SFX_TAP);
@@ -2041,6 +2125,73 @@ void render() {
     }
   }
 
+  // dialogo "zurueckwechseln?" (Gast-Exemplar aktiv, siehe onTouch())
+  if (switchBackUntil) {
+    if (deadlineReached(millis(), switchBackUntil)) {
+      switchBackUntil = 0;
+      switchBackTarget = -1;
+    } else {
+      gfx->fillRoundRect(94, 168, 278, 152, 16, UI_WHITE);
+      gfx->drawRoundRect(94, 168, 278, 152, 16, UI_INK);
+      char q[36];
+      snprintf(q, sizeof(q), "ZURUECK ZU %s?", dexName(switchBackTarget));
+      gfx->setTextColor(UI_INK);
+      gfx->setTextSize(2);
+      gfx->setCursor(CX - strlen(q) * 6, 196);
+      gfx->print(q);
+      gfx->fillRoundRect(118, 252, 100, 52, 12, UI_BAR_OK);
+      gfx->setTextColor(UI_WHITE);
+      gfx->setCursor(118 + (100 - (int)strlen(T(S_YES)) * 12) / 2, 270);
+      gfx->print(T(S_YES));
+      gfx->fillRoundRect(248, 252, 100, 52, 12, UI_BAR_BAD);
+      gfx->setCursor(248 + (100 - (int)strlen(T(S_NO)) * 12) / 2, 270);
+      gfx->print(T(S_NO));
+    }
+  }
+
+  // Neue-Attacke-Dialog (siehe Pet::hasPendingLearnMove() / onTouch()).
+  if (pet.hasPendingLearnMove()) {
+    if (!learnMoveReplaceStage) {  // Stufe 1: "Attacke X erlernen?" JA/NEIN
+      gfx->fillRoundRect(94, 168, 278, 152, 16, UI_WHITE);
+      gfx->drawRoundRect(94, 168, 278, 152, 16, UI_INK);
+      const char *mvName = (pet.pendingLearnMove < MOVE_COUNT) ? MOVE_TBL[pet.pendingLearnMove].name : "?";
+      char q[32];
+      snprintf(q, sizeof(q), "%s ERLERNEN?", mvName);
+      gfx->setTextColor(UI_INK);
+      gfx->setTextSize(2);
+      gfx->setCursor(CX - strlen(q) * 6, 196);
+      gfx->print(q);
+      gfx->fillRoundRect(118, 252, 100, 52, 12, UI_BAR_OK);
+      gfx->setTextColor(UI_WHITE);
+      gfx->setCursor(118 + (100 - (int)strlen(T(S_YES)) * 12) / 2, 270);
+      gfx->print(T(S_YES));
+      gfx->fillRoundRect(248, 252, 100, 52, 12, UI_BAR_BAD);
+      gfx->setCursor(248 + (100 - (int)strlen(T(S_NO)) * 12) / 2, 270);
+      gfx->print(T(S_NO));
+    } else {  // Stufe 2: welche der 4 Attacken wird ersetzt?
+      gfx->fillRoundRect(50, 138, 366, 280, 18, UI_WHITE);
+      gfx->drawRoundRect(50, 138, 366, 280, 18, UI_INK);
+      const char *mvName = (pet.pendingLearnMove < MOVE_COUNT) ? MOVE_TBL[pet.pendingLearnMove].name : "?";
+      char head[28];
+      snprintf(head, sizeof(head), "%s ERSETZEN:", mvName);
+      gfx->setTextColor(UI_INK);
+      gfx->setTextSize(1);
+      gfx->setCursor(CX - (int)strlen(head) * 3, 150);
+      gfx->print(head);
+      for (uint8_t s = 0; s < MOVE_SLOTS; s++) {
+        int y0 = 168 + s * 60;
+        gfx->fillRoundRect(76, y0, 314, 50, 12, C565(0xf0, 0xf2, 0xf6));
+        gfx->drawRoundRect(76, y0, 314, 50, 12, UI_TRACK);
+        uint16_t mv = pet.moves[s];
+        const char *label = (mv > 0 && mv < MOVE_COUNT) ? MOVE_TBL[mv].name : "-";
+        gfx->setTextColor(UI_INK);
+        gfx->setTextSize(2);
+        gfx->setCursor(90, y0 + 15);
+        gfx->print(label);
+      }
+    }
+  }
+
   // dialogo de decision (evolucionar/mantener, despedirse/quedaros)
   if (choiceKind) {
     if (deadlineReached(millis(), choiceUntil)) choiceKind = 0;
@@ -2269,7 +2420,7 @@ void gameTap(int16_t x, int16_t y) {
     if (now - ballLastHitAt < 260 || ballVY < -0.25f) return;
     gameScore++;
     sfxPlay(SFX_MINIGAME_OK);
-    float lift = 4.65f + (gameScore > 16 ? 1.7f : gameScore * 0.11f);
+    float lift = 6.6f + (gameScore > 16 ? 3.5f : gameScore * 0.22f);  // wie im Original-Projekt
     ballVY = -lift;
     float drift = 0.38f + (gameScore >= 6 ? 0.08f : 0.0f) + (gameScore >= 14 ? 0.10f : 0.0f);
     float chaos = ((int)random(17) - 8) * 0.26f;
@@ -2413,10 +2564,8 @@ void typeTap(int16_t x, int16_t y) {
 }
 
 void stepGame() {
-  float grav = 1.14f + gameScore * 0.046f;
-  if (gameScore >= 5) grav += 0.14f;
-  if (gameScore >= 12) grav += 0.18f;
-  if (grav > 2.10f) grav = 2.10f;
+  float grav = 0.40f + gameScore * 0.013f;  // wie im Original-Projekt
+  if (grav > 0.80f) grav = 0.80f;
   ballVX += sinf((millis() + gameScore * 97) * 0.018f) * 0.11f;
   if (random(100) < 7) ballVX += ((int)random(7) - 3) * 0.22f;
   ballVY += grav;
@@ -2994,7 +3143,7 @@ BattleStats petBattleStats() {
 // aktuellsten 4 laut Lernliste erreichten Attacken. Party-Mitglieder haben
 // keine eigene gespeicherte Moveset-Historie wie das aktive Haustier
 // (pet.moves/checkLevelUpMoves()), daher hier neu abgeleitet statt gespeichert.
-void deriveLevelMoves(int16_t dex, uint8_t level, uint8_t out[4]) {
+void deriveLevelMoves(int16_t dex, uint8_t level, uint16_t out[4]) {
   out[0] = out[1] = out[2] = out[3] = 0;
   if (dex < 1 || dex > DEX_COUNT) { out[0] = 1; return; }
   uint8_t n = learnCount(dex);
@@ -3002,7 +3151,7 @@ void deriveLevelMoves(int16_t dex, uint8_t level, uint8_t out[4]) {
   for (uint8_t i = 0; i < n && slot < 4; i++) {
     uint8_t lv = learnLevel(dex, i);
     if (lv == 0 || lv > level) continue;
-    uint8_t mv = learnMove(dex, i);
+    uint16_t mv = learnMove(dex, i);
     bool dup = false;
     for (uint8_t s = 0; s < slot; s++) if (out[s] == mv) dup = true;
     if (!dup) out[slot++] = mv;
@@ -3024,7 +3173,18 @@ BattleStats partyBattleStats(const PartyMon &m) {
     stats.type1 = DEX_TBL[m.dex].type1;
     stats.type2 = DEX_TBL[m.dex].type2;
   }
-  deriveLevelMoves(m.dex, lvl, stats.moves);
+  // Gefangene/gezuechtete Exemplare mit einem beim Fang gewuerfelten Moveset
+  // (siehe Pet::rollFreshDexMon()) nutzen genau das -- individuell, nicht
+  // immer die 4 hoechststufigen. Aeltere gespeicherte Exemplare ohne eigenes
+  // Moveset (alle 0) fallen weiterhin auf die Level-Ableitung zurueck.
+  const DexMon &src = party.sourceOf(m);
+  bool hasOwnMoves = false;
+  for (uint8_t s = 0; s < MOVE_SLOTS; s++) if (src.moves[s] != 0) hasOwnMoves = true;
+  if (hasOwnMoves) {
+    for (uint8_t s = 0; s < MOVE_SLOTS; s++) stats.moves[s] = src.moves[s];
+  } else {
+    deriveLevelMoves(m.dex, lvl, stats.moves);
+  }
   return stats;
 }
 
@@ -3060,8 +3220,9 @@ void maybeOfferWildEncounter(uint32_t now) {
   }
   if ((uint8_t)random(100) >= chance) return;
 
-  wildPromptDex = cand;
-  wildPromptLevel = wildLevelFor(pet.level(), (uint8_t)random(100));
+  uint8_t lvl = wildLevelFor(pet.level(), (uint8_t)random(100));
+  wildPromptDex = wildEvolvedSpeciesForLevel(cand, lvl);
+  wildPromptLevel = lvl;
   wildPromptShiny = (random(4096) < pet.stepShinyChancePer4096());
   wildPromptUntil = now + WILD_PROMPT_MS;
   scheduleNextWild(now);
@@ -3155,7 +3316,6 @@ void closeBattle() {
   battleCatchTried = false;
   battleCatchDone = false;
   battleCatchSuccess = false;
-  battleRespectCatch = false;
   battleCatchChance = 0;
   battleIsGym = false;
   gymSwitchPending = false;
@@ -3170,8 +3330,10 @@ void closeBattle() {
 void closeBattleAndReoffer() {
   closeBattle();
   if (!mainScreenReadyForWild()) return;  // z.B. gerade eingeschlafen/Ei: kein neuer Kampf moeglich
-  wildPromptDex = pickWildSpecies((uint8_t)random(100), currentDayPhase());
-  wildPromptLevel = wildLevelFor(pet.level(), (uint8_t)random(100));
+  int16_t cand = pickWildSpecies((uint8_t)random(100), currentDayPhase());
+  uint8_t lvl = wildLevelFor(pet.level(), (uint8_t)random(100));
+  wildPromptDex = wildEvolvedSpeciesForLevel(cand, lvl);
+  wildPromptLevel = lvl;
   wildPromptShiny = (random(4096) < pet.stepShinyChancePer4096());
   wildPromptUntil = millis() + WILD_PROMPT_MS;
   scheduleNextWild(millis());
@@ -3187,8 +3349,9 @@ void startBattleWith(int16_t forcedDex, uint8_t forcedLevel, int8_t forcedShiny)
   } else {
     uint8_t speciesRoll = random(100);
     uint8_t levelRoll = random(100);
-    battleDex = pickWildSpecies(speciesRoll, currentDayPhase());
+    int16_t cand = pickWildSpecies(speciesRoll, currentDayPhase());
     battleLevel = wildLevelFor(pet.level(), levelRoll);
+    battleDex = wildEvolvedSpeciesForLevel(cand, battleLevel);
   }
   battleShiny = forcedShiny < 0 ? (random(4096) < pet.stepShinyChancePer4096()) : forcedShiny != 0;
   battlePlayer = petBattleStats();
@@ -3204,7 +3367,6 @@ void startBattleWith(int16_t forcedDex, uint8_t forcedLevel, int8_t forcedShiny)
   battleCatchTried = false;
   battleCatchDone = false;
   battleCatchSuccess = false;
-  battleRespectCatch = false;
   battleCatchChance = 0;
   battleResolved = false;
   battleOpen = true;
@@ -3295,7 +3457,6 @@ void startGymBattle(uint8_t idx) {
   battleCatchTried = false;
   battleCatchDone = false;
   battleCatchSuccess = false;
-  battleRespectCatch = false;
   battleCatchChance = 0;
   battleResolved = false;
   battleOpen = true;
@@ -3379,16 +3540,12 @@ void finishBattle() {
     bool closeWin = battleRun.playerHp <= battleRun.playerMaxHp / 3;
     battleReward = pet.applyBattleWin(battleDex, closeWin);
     battleCatchOffered = true;
-    battleRespectCatch = false;
-    battleCatchChance = pet.catchChanceForWild(battleDex, battleLevel, battlePlayer.level, closeWin);
+      battleCatchChance = pet.catchChanceForWild(battleDex, battleLevel, battlePlayer.level, closeWin);
     sfxPlay(SFX_BATTLE_WIN);
   } else {
     battleReward = {};
     pet.applyBattleLoss();
-    bool closeLoss = battleRun.enemyHp > 0 && battleRun.enemyHp * 100UL <= battleRun.enemyMaxHp * 30UL;
-    battleCatchChance = closeLoss ? pet.respectCatchChanceForWild(battleDex, battleLevel, battlePlayer.level) : 0;
-    battleCatchOffered = battleCatchChance > 0;
-    battleRespectCatch = battleCatchOffered;
+    // Kein Fangversuch nach einer Niederlage -- nur ein Sieg bietet die Chance.
     sfxPlay(SFX_BATTLE_LOSS);
   }
 }
@@ -3482,33 +3639,27 @@ void performBattleMove(uint8_t moveSlot) {
 void battleTap(int16_t x, int16_t y) {
   if (battleResolved) {
     if (battleCatchOffered && !battleCatchDone) {
-      if (x >= 76 && x <= 224 && y >= 392 && y <= 448) {
+      if (x >= 76 && x <= 224 && y >= 392 && y <= 448) {  // links: GEHEN
+        battleCatchDone = true;
+        battleCatchTried = false;
+        battleDirty = true;
+        sfxPlay(SFX_TAP);
+        return;
+      }
+      if (x >= 242 && x <= 390 && y >= 392 && y <= 448) {  // rechts: FANGEN
         bool closeWin = battleRun.playerHp <= battleRun.playerMaxHp / 3;
         battleCatchTried = true;
         battleCatchDone = true;
-        if (battleRespectCatch) {
-          battleCatchSuccess = pet.tryRespectCatchWild(battleDex, battleLevel, battlePlayer.level,
-                                                       (uint8_t)random(100), battleShiny);
-          battleCatchChance = pet.respectCatchChanceForWild(battleDex, battleLevel, battlePlayer.level);
-        } else {
-          battleCatchSuccess = pet.tryCatchWild(battleDex, battleLevel, battlePlayer.level, closeWin,
-                                                (uint8_t)random(100), battleShiny);
-          battleCatchChance = pet.catchChanceForWild(battleDex, battleLevel, battlePlayer.level, closeWin);
-        }
+        battleCatchSuccess = pet.tryCatchWild(battleDex, battleLevel, battlePlayer.level, closeWin,
+                                              (uint8_t)random(100), battleShiny);
+        battleCatchChance = pet.catchChanceForWild(battleDex, battleLevel, battlePlayer.level, closeWin);
         if (battleCatchSuccess) {
-          DexMon fresh = pet.rollFreshDexMon(battleLevel, battleShiny);
+          DexMon fresh = pet.rollFreshDexMon(battleDex, battleLevel, battleShiny);
           offerDexMon(battleDex, true, fresh);
         }
         sfxPlay(battleCatchSuccess ? SFX_CATCH_OK : SFX_CATCH_FAIL);
         galleryDirty = true;
         battleDirty = true;
-        return;
-      }
-      if (x >= 242 && x <= 390 && y >= 392 && y <= 448) {
-        battleCatchDone = true;
-        battleCatchTried = false;
-        battleDirty = true;
-        sfxPlay(SFX_TAP);
         return;
       }
       return;
@@ -3695,11 +3846,10 @@ void drawWildPrompt() {
   gfx->print(T(S_WILD_Q));
 
   gfx->fillRoundRect(93, 226, 280, 44, 12, UI_BAR_BAD);
-  gfx->fillRoundRect(93, 278, 280, 44, 12, UI_TRACK);
+  gfx->fillRoundRect(93, 278, 280, 44, 12, UI_INK);  // dunkler statt hellbeige -- vorher schlecht lesbar
   gfx->setTextColor(UI_WHITE);
   gfx->setCursor(CX - strlen(T(S_FIGHT)) * 6, 240);
   gfx->print(T(S_FIGHT));
-  gfx->setTextColor(UI_BG_DAY);
   gfx->setCursor(CX - strlen(T(S_LATER)) * 6, 292);
   gfx->print(T(S_LATER));
 }
@@ -3859,24 +4009,23 @@ void renderBattle() {
         gfx->setCursor(CX - strlen(reward) * 6, 378);
         gfx->print(reward);
       }
-    } else if (battleRespectCatch && battleCatchOffered && !battleCatchDone) {
-      gfx->setTextColor(UI_BAR_WARN);
-      gfx->setTextSize(2);
-      gfx->setCursor(CX - strlen(T(S_CLOSE_CHANCE)) * 6, 378);
-      gfx->print(T(S_CLOSE_CHANCE));
     }
     if (battleCatchOffered && !battleCatchDone) {
-      gfx->fillRoundRect(76, 396, 148, 52, 14, UI_BAR_OK);
-      gfx->fillRoundRect(242, 396, 148, 52, 14, UI_TRACK);
-      gfx->setTextColor(UI_BG_DAY);
-      drawBattleButtonLabel(76, 414, 148, T(S_CATCH_WILD));
-      drawBattleButtonLabel(242, 414, 148, T(S_LEAVE_WILD));
+      gfx->fillRoundRect(76, 396, 148, 52, 14, UI_BAR_BAD);   // links: GEHEN (kraeftiger Rotton, gut lesbar)
+      gfx->fillRoundRect(242, 396, 148, 52, 14, UI_BAR_OK);   // rechts: FANGEN
+      gfx->setTextColor(UI_WHITE);
+      drawBattleButtonLabel(76, 414, 148, T(S_LEAVE_WILD));
+      drawBattleButtonLabel(242, 414, 148, T(S_CATCH_WILD));
     } else {
       if (battleCatchDone && battleCatchTried) {
+        // Eigene Zeile bei y=358 statt y=378 -- dort steht bei einem Sieg
+        // (Voraussetzung fuer den Fangversuch) bereits der Belohnungstext
+        // ("reward"/gmsg weiter oben), beide auf derselben Hoehe ueberlagerten
+        // sich sonst unleserlich.
         const char *catchMsg = battleCatchSuccess ? T(S_CAUGHT_OK) : T(S_ESCAPED);
         gfx->setTextColor(battleCatchSuccess ? UI_BAR_OK : UI_BAR_BAD);
         gfx->setTextSize(2);
-        gfx->setCursor(CX - strlen(catchMsg) * 6, 378);
+        gfx->setCursor(CX - strlen(catchMsg) * 6, 358);
         gfx->print(catchMsg);
       }
       gfx->fillRoundRect(118, 396, 230, 52, 14, UI_BAR_OK);
@@ -3928,9 +4077,9 @@ void renderBattle() {
       for (uint8_t slot = 0; slot < 4; slot++) {
         int bx = 46 + (slot % 2) * 188;
         int by = 318 + (slot / 2) * 64;
-        uint8_t mv = battlePlayer.moves[slot];
+        uint16_t mv = battlePlayer.moves[slot];
         bool has = mv != 0 && mv < MOVE_COUNT;
-        uint16_t col = !has ? UI_TRACK : (MOVE_TBL[mv].cat == MC_STATUS ? 0x4C98 : (MOVE_TBL[mv].cat == MC_PHYS ? UI_BAR_BAD : UI_BAR_WARN));
+        uint16_t col = !has ? UI_TRACK : battleTypeColor(MOVE_TBL[mv].type);
         gfx->fillRoundRect(bx, by, 186, 56, 13, col);
         gfx->setTextColor(UI_BG_DAY);
         drawBattleButtonLabel(bx, by + 21, 186, has ? MOVE_TBL[mv].name : "-");
@@ -5756,10 +5905,11 @@ void renderGallery() {
       drawDexOriginPage(galleryDetail, pet.dexMonsCaught[galleryDetail], "FANG", UI_BAR_WARN);
     } else if (known && galleryDetailPage == dexPages.zuchtPage) {
       // eigene Seite: gespeicherte Zucht-Werte + ins Team holen
-      drawDexOriginPage(galleryDetail, pet.dexMonsBred[galleryDetail], "ZUCHT", UI_BAR_OK);
+      drawDexOriginPage(galleryDetail, pet.dexMonsBred[galleryDetail], "ZUCHT", UI_BAR_OK, true);
     } else if (known && galleryDetailPage == dexPages.movesPage) {
       // eigene Seite: Level-Aufstiegs-Attacken (siehe drawDexMovesPage())
       drawDexMovesPage(galleryDetail);
+      if (moveSwapOpen) drawMoveSwapPicker();
     } else if (known && galleryDetailPage == 1) {
       // pagina 2: descripcion a tamano grande dentro de un recuadro
       gfx->drawRoundRect(72, 186, 322, 174, 16, d.accent);
@@ -5801,6 +5951,31 @@ void renderGallery() {
     gfx->setTextSize(2);
     gfx->setCursor(CX - strlen(T(S_DETAIL_BACK)) * 6, 408);
     gfx->print(T(S_DETAIL_BACK));
+
+    // Bestaetigungsdialog fuer den "HAUPT-PKMN"-Knopf auf der Zucht-Seite.
+    if (mainSwitchConfirmUntil) {
+      if (deadlineReached(millis(), mainSwitchConfirmUntil)) {
+        mainSwitchConfirmUntil = 0;
+        mainSwitchConfirmDex = -1;
+      } else {
+        gfx->fillRoundRect(94, 168, 278, 152, 16, UI_WHITE);
+        gfx->drawRoundRect(94, 168, 278, 152, 16, UI_INK);
+        char q[36];
+        snprintf(q, sizeof(q), "%s AKTIVIEREN?", dexName(mainSwitchConfirmDex));
+        gfx->setTextColor(UI_INK);
+        gfx->setTextSize(2);
+        gfx->setCursor(CX - strlen(q) * 6, 196);
+        gfx->print(q);
+        gfx->fillRoundRect(118, 252, 100, 52, 12, UI_BAR_OK);
+        gfx->setTextColor(UI_WHITE);
+        gfx->setCursor(118 + (100 - (int)strlen(T(S_YES)) * 12) / 2, 270);
+        gfx->print(T(S_YES));
+        gfx->fillRoundRect(248, 252, 100, 52, 12, UI_BAR_BAD);
+        gfx->setCursor(248 + (100 - (int)strlen(T(S_NO)) * 12) / 2, 270);
+        gfx->print(T(S_NO));
+      }
+    }
+
     flushStampedFrame();
     return;
   }
@@ -5947,6 +6122,34 @@ void renderGallery() {
 }
 
 void galleryTap(int16_t x, int16_t y) {
+  if (mainSwitchConfirmUntil) {   // "HAUPT-PKMN AKTIVIEREN?": SI / NO
+    if (deadlineActive(millis(), mainSwitchConfirmUntil) && x >= 118 && x <= 218 && y >= 252 && y <= 304) {
+      if (pet.switchActiveTo(mainSwitchConfirmDex)) sfxPlay(SFX_TAP);
+      else sfxPlay(SFX_DENY);
+    }
+    mainSwitchConfirmUntil = 0;
+    mainSwitchConfirmDex = -1;
+    return;
+  }
+  if (moveSwapOpen) {  // Zielslot fuer die einzuwechselnde Attacke waehlen
+    for (uint8_t s = 0; s < MOVE_SLOTS; s++) {
+      int y0 = 168 + s * 60;
+      if (x >= 76 && x <= 390 && y >= y0 && y <= y0 + 50) {
+        pet.moves[s] = moveSwapPendingMove;
+        pet.saveNow();
+        moveSwapOpen = false;
+        galleryDirty = true;
+        sfxPlay(SFX_TAP);
+        return;
+      }
+    }
+    if (y < 148 || y > 408) {  // ausserhalb der Slot-Liste = abbrechen
+      moveSwapOpen = false;
+      galleryDirty = true;
+      sfxPlay(SFX_TAP);
+    }
+    return;
+  }
   if (galleryDetail) {  // volver a la rejilla (o Team-Knopf auf Fang-/Zucht-Seite)
     DexDetailPages dp = dexDetailPages(galleryDetail);
     if (galleryDetailPage == dp.fangPage && x >= 64 && x <= 402 && y >= 328 && y <= 388) {  // groesser als der Knopf selbst, leichter zu treffen
@@ -5955,6 +6158,12 @@ void galleryTap(int16_t x, int16_t y) {
       return;
     }
     if (galleryDetailPage == dp.zuchtPage && x >= 64 && x <= 402 && y >= 328 && y <= 388) {  // groesser als der Knopf selbst, leichter zu treffen
+      if (dexShowMainSwitchButton(galleryDetail, true) && x >= 233) {
+        mainSwitchConfirmDex = galleryDetail;
+        mainSwitchConfirmUntil = millis() + 10000;
+        sfxPlay(SFX_MENU);
+        return;
+      }
       if (party.addFromDex(galleryDetail, false)) sfxPlay(SFX_TAP);
       else sfxPlay(SFX_DENY);
       return;
@@ -5971,6 +6180,24 @@ void galleryTap(int16_t x, int16_t y) {
         dexMovesPage++;
         galleryDirty = true;
         sfxPlay(SFX_TAP);
+        return;
+      }
+      if (dexMovesEditable(galleryDetail) && x >= 72 && x <= 394 && y >= 190 && y <= 190 + DEX_MOVES_ROWS * 54) {
+        uint8_t row = (uint8_t)((y - 190) / 54);
+        uint8_t idx = dexMovesPage * DEX_MOVES_ROWS + row;
+        uint16_t mv = 0;
+        uint8_t lvl = 0;
+        dexSwapMoveAt(galleryDetail, pet.level(), idx, &mv, &lvl);
+        bool active = false;
+        for (uint8_t s = 0; s < MOVE_SLOTS; s++) if (pet.moves[s] == mv) active = true;
+        if (mv != 0 && !active) {
+          moveSwapPendingMove = mv;
+          moveSwapOpen = true;
+          galleryDirty = true;
+          sfxPlay(SFX_TAP);
+        } else if (mv != 0) {
+          sfxPlay(SFX_DENY);  // bereits aktiv
+        }
         return;
       }
     }
@@ -6152,7 +6379,8 @@ void drawCeremony() {
 static uint16_t dexMonTotal(int16_t dex, const DexMon &m) {
   const DexEntry &d = DEX_TBL[dex];
   auto calc = [&](uint8_t base, uint8_t gene, uint8_t tr) -> uint16_t {
-    return (uint16_t)base * gene / 100 + m.level + tr;
+    uint32_t adjBase = (uint32_t)base * gene / 100;
+    return (uint16_t)(adjBase * 2 * m.level / 100 + m.level + tr);
   };
   return calc(d.bAtk, m.geneAtk, m.trAtk) + calc(d.bDef, m.geneDef, m.trDef) +
          calc(d.bSpe, m.geneSpe, m.trSpe) + calc(d.bSpA, m.geneSpA, m.trSpA) +
@@ -6181,7 +6409,7 @@ uint8_t dexLevelMoveCount(int16_t dex) {
 }
 
 // i-ter Level-Aufstiegs-Eintrag (0-basiert, siehe dexLevelMoveCount()).
-void dexLevelMoveAt(int16_t dex, uint8_t idx, uint8_t *moveOut, uint8_t *levelOut) {
+void dexLevelMoveAt(int16_t dex, uint8_t idx, uint16_t *moveOut, uint8_t *levelOut) {
   uint8_t total = learnCount(dex);
   uint8_t seen = 0;
   for (uint8_t i = 0; i < total; i++) {
@@ -6192,6 +6420,44 @@ void dexLevelMoveAt(int16_t dex, uint8_t idx, uint8_t *moveOut, uint8_t *levelOu
       *levelOut = lvl;
       return;
     }
+    seen++;
+  }
+  *moveOut = 0;
+  *levelOut = 0;
+}
+
+// Fuer die editierbare Moves-Seite des AKTIVEN Haustiers: alle Attacken, die
+// es sich JETZT schon leisten koennte -- Level-Aufstiegs-Eintraege bis zum
+// aktuellen Level PLUS die Level-0-Eintraege (TM-artige Bonusattacken, siehe
+// checkLevelUpMoves() in pet.cpp: die wurden bisher nie automatisch gelernt
+// und waren nirgends waehlbar). Duplikate werden herausgefiltert.
+uint8_t dexSwapMoveCount(int16_t dex, uint8_t petLevel) {
+  uint8_t total = learnCount(dex);
+  static bool seenMoves[MOVE_COUNT];
+  memset(seenMoves, 0, sizeof(seenMoves));
+  uint8_t n = 0;
+  for (uint8_t i = 0; i < total; i++) {
+    uint8_t lvl = learnLevel(dex, i);
+    if (lvl > petLevel) continue;
+    uint16_t mv = learnMove(dex, i);
+    if (mv == 0 || mv >= MOVE_COUNT || seenMoves[mv]) continue;
+    seenMoves[mv] = true;
+    n++;
+  }
+  return n;
+}
+void dexSwapMoveAt(int16_t dex, uint8_t petLevel, uint8_t idx, uint16_t *moveOut, uint8_t *levelOut) {
+  uint8_t total = learnCount(dex);
+  static bool seenMoves[MOVE_COUNT];
+  memset(seenMoves, 0, sizeof(seenMoves));
+  uint8_t seen = 0;
+  for (uint8_t i = 0; i < total; i++) {
+    uint8_t lvl = learnLevel(dex, i);
+    if (lvl > petLevel) continue;
+    uint16_t mv = learnMove(dex, i);
+    if (mv == 0 || mv >= MOVE_COUNT || seenMoves[mv]) continue;
+    seenMoves[mv] = true;
+    if (seen == idx) { *moveOut = mv; *levelOut = lvl; return; }
     seen++;
   }
   *moveOut = 0;
@@ -6253,21 +6519,28 @@ void drawDexMonCard(int x, int y, int w, int h, int16_t dex, const DexMon &m, co
   // (deutlich besser lesbar), auf schmalen Karten die alte 1-Spalten-Liste.
   static const char *ABBR[6] = { "ATK", "DEF", "SPA", "SPD", "SPE", "KP" };
   const DexEntry &d = DEX_TBL[dex];
+  // Gleiche multiplikative Level-Skalierung wie calcStat() in pet.cpp / die
+  // Wildkampf-Werte in battle.cpp -- sonst wuerde die Pokedex-Anzeige nicht
+  // zu den tatsaechlichen Kampfwerten passen.
+  auto dexStatVal = [](uint8_t base, uint8_t gene, uint16_t lvl, uint8_t tr) -> uint16_t {
+    uint32_t adjBase = (uint32_t)base * gene / 100;
+    return (uint16_t)(adjBase * 2 * lvl / 100 + lvl + tr);
+  };
   uint16_t vals[6] = {
-    (uint16_t)(d.bAtk * m.geneAtk / 100 + m.level + m.trAtk),
-    (uint16_t)(d.bDef * m.geneDef / 100 + m.level + m.trDef),
-    (uint16_t)(d.bSpA * m.geneSpA / 100 + m.level + m.trSpA),
-    (uint16_t)(d.bSpD * m.geneSpD / 100 + m.level + m.trSpD),
-    (uint16_t)(d.bSpe * m.geneSpe / 100 + m.level + m.trSpe),
+    dexStatVal(d.bAtk, m.geneAtk, m.level, m.trAtk),
+    dexStatVal(d.bDef, m.geneDef, m.level, m.trDef),
+    dexStatVal(d.bSpA, m.geneSpA, m.level, m.trSpA),
+    dexStatVal(d.bSpD, m.geneSpD, m.level, m.trSpD),
+    dexStatVal(d.bSpe, m.geneSpe, m.level, m.trSpe),
     (uint16_t)(d.bHp * m.geneHp / 100 + m.level + 10),
   };
   uint16_t cmpVals[6];
   if (cmp) {
-    cmpVals[0] = (uint16_t)(d.bAtk * cmp->geneAtk / 100 + cmp->level + cmp->trAtk);
-    cmpVals[1] = (uint16_t)(d.bDef * cmp->geneDef / 100 + cmp->level + cmp->trDef);
-    cmpVals[2] = (uint16_t)(d.bSpA * cmp->geneSpA / 100 + cmp->level + cmp->trSpA);
-    cmpVals[3] = (uint16_t)(d.bSpD * cmp->geneSpD / 100 + cmp->level + cmp->trSpD);
-    cmpVals[4] = (uint16_t)(d.bSpe * cmp->geneSpe / 100 + cmp->level + cmp->trSpe);
+    cmpVals[0] = dexStatVal(d.bAtk, cmp->geneAtk, cmp->level, cmp->trAtk);
+    cmpVals[1] = dexStatVal(d.bDef, cmp->geneDef, cmp->level, cmp->trDef);
+    cmpVals[2] = dexStatVal(d.bSpA, cmp->geneSpA, cmp->level, cmp->trSpA);
+    cmpVals[3] = dexStatVal(d.bSpD, cmp->geneSpD, cmp->level, cmp->trSpD);
+    cmpVals[4] = dexStatVal(d.bSpe, cmp->geneSpe, cmp->level, cmp->trSpe);
     cmpVals[5] = (uint16_t)(d.bHp * cmp->geneHp / 100 + cmp->level + 10);
   }
   int cols = wide ? 2 : 1;
@@ -6288,24 +6561,43 @@ void drawDexMonCard(int x, int y, int w, int h, int16_t dex, const DexMon &m, co
   }
 }
 
+// Nur auf der ZUCHT-Seite sinnvoll: ein zweiter Knopf zum Wechseln des
+// aktiven (im Hauptbildschirm lebenden) Exemplars, siehe Pet::switchActiveTo().
+bool dexShowMainSwitchButton(int16_t dex, bool isBred) {
+  return isBred && dex != pet.speciesId && !pet.dexMonsBred[dex].empty();
+}
+
 // Eigene Fang- oder Zucht-Seite der Detailansicht: eine volle Karte + eigener
-// "ins Team"-Knopf. Tap-Ziel siehe galleryTap().
-void drawDexOriginPage(int16_t dex, const DexMon &m, const char *label, uint16_t accent) {
+// "ins Team"-Knopf (auf der Zucht-Seite je nach Fall geteilt mit dem
+// "HAUPTPOKEMON"-Knopf zum Wechseln des aktiven Exemplars). Tap-Ziel siehe
+// galleryTap().
+void drawDexOriginPage(int16_t dex, const DexMon &m, const char *label, uint16_t accent, bool isBred) {
   drawDexMonCard(72, 186, 322, 200, dex, m, label, accent, nullptr);
   // Groesserer Knopf (vorher nur 32px hoch, schwer zu treffen) -- Hit-Box in
   // galleryTap() ist ausserdem noch etwas grosszuegiger als die Zeichenflaeche.
+  bool showMain = dexShowMainSwitchButton(dex, isBred);
+  int teamW = showMain ? 155 : 322;
   const char *btn = party.isFull() ? "TEAM VOLL" : "INS TEAM";
-  gfx->fillRoundRect(72, 336, 322, 44, 10, party.isFull() ? UI_TRACK : UI_BAR_OK);
+  gfx->fillRoundRect(72, 336, teamW, 44, 10, party.isFull() ? UI_TRACK : UI_BAR_OK);
   gfx->setTextColor(party.isFull() ? UI_INK : UI_WHITE);
   gfx->setTextSize(2);
-  gfx->setCursor(72 + (322 - (int)strlen(btn) * 12) / 2, 350);
+  gfx->setCursor(72 + (teamW - (int)strlen(btn) * 12) / 2, 350);
   gfx->print(btn);
+  if (showMain) {
+    const char *mbtn = "HAUPT-PKMN";
+    int mw = 322 - teamW - 12;
+    gfx->fillRoundRect(72 + teamW + 12, 336, mw, 44, 10, 0x4C98);
+    gfx->setTextColor(UI_WHITE);
+    gfx->setTextSize(2);
+    gfx->setCursor(72 + teamW + 12 + (mw - (int)strlen(mbtn) * 12) / 2, 350);
+    gfx->print(mbtn);
+  }
 }
 
-#define DEX_MOVES_ROWS 3
+bool dexMovesEditable(int16_t dex) { return !pet.isEgg() && dex == pet.speciesId; }
 
 uint8_t dexMovesPageCount(int16_t dex) {
-  uint8_t n = dexLevelMoveCount(dex);
+  uint8_t n = dexMovesEditable(dex) ? dexSwapMoveCount(dex, pet.level()) : dexLevelMoveCount(dex);
   return n == 0 ? 1 : (uint8_t)((n + DEX_MOVES_ROWS - 1) / DEX_MOVES_ROWS);
 }
 
@@ -6314,7 +6606,8 @@ uint8_t dexMovesPageCount(int16_t dex) {
 // Tap-Ziele (Pfeile) siehe galleryTap().
 void drawDexMovesPage(int16_t dex) {
   const DexEntry &d = DEX_TBL[dex];
-  uint8_t total = dexLevelMoveCount(dex);
+  bool editable = dexMovesEditable(dex);
+  uint8_t total = editable ? dexSwapMoveCount(dex, pet.level()) : dexLevelMoveCount(dex);
   uint8_t pages = dexMovesPageCount(dex);
   if (dexMovesPage >= pages) dexMovesPage = pages - 1;
 
@@ -6330,14 +6623,21 @@ void drawDexMovesPage(int16_t dex) {
   for (uint8_t row = 0; row < DEX_MOVES_ROWS; row++) {
     uint8_t idx = dexMovesPage * DEX_MOVES_ROWS + row;
     if (idx >= total) break;
-    uint8_t mv = 0, lvl = 0;
-    dexLevelMoveAt(dex, idx, &mv, &lvl);
+    uint16_t mv = 0;
+    uint8_t lvl = 0;
+    if (editable) dexSwapMoveAt(dex, pet.level(), idx, &mv, &lvl);
+    else dexLevelMoveAt(dex, idx, &mv, &lvl);
     if (mv == 0 || mv >= MOVE_COUNT) continue;
     const MoveEntry &me = MOVE_TBL[mv];
     int y = 190 + row * 54;
+    bool active = false;
+    if (editable) for (uint8_t s = 0; s < MOVE_SLOTS; s++) if (pet.moves[s] == mv) active = true;
 
-    gfx->fillRoundRect(72, y, 322, 48, 10, UI_WHITE);
-    gfx->drawRoundRect(72, y, 322, 48, 10, UI_TRACK);
+    gfx->fillRoundRect(72, y, 322, 48, 10, active
+                        ? lerp565(battleTypeColor(me.type), UI_BAR_OK, 5, 8)
+                        : lerp565(battleTypeColor(me.type), UI_WHITE, 5, 8));
+    gfx->drawRoundRect(72, y, 322, 48, 10, active ? UI_BAR_OK : UI_TRACK);
+    if (active) gfx->drawRoundRect(73, y + 1, 320, 46, 9, UI_BAR_OK);
 
     gfx->setTextColor(UI_INK);
     gfx->setTextSize(2);
@@ -6353,12 +6653,19 @@ void drawDexMovesPage(int16_t dex) {
       gfx->print("STAB");
     }
 
-    char lvlBuf[10];
-    snprintf(lvlBuf, sizeof(lvlBuf), "Lv.%u", lvl);
-    gfx->setTextColor(UI_INK);
-    gfx->setTextSize(1);
-    gfx->setCursor(72 + 322 - 10 - (int)strlen(lvlBuf) * 6, y + 8);
-    gfx->print(lvlBuf);
+    if (editable && active) {
+      gfx->setTextColor(UI_BAR_OK);
+      gfx->setTextSize(1);
+      gfx->setCursor(72 + 322 - 10 - 5 * 6, y + 8);
+      gfx->print("AKTIV");
+    } else {
+      char lvlBuf[10];
+      snprintf(lvlBuf, sizeof(lvlBuf), lvl == 0 ? "BONUS" : "Lv.%u", lvl);
+      gfx->setTextColor(UI_INK);
+      gfx->setTextSize(1);
+      gfx->setCursor(72 + 322 - 10 - (int)strlen(lvlBuf) * 6, y + 8);
+      gfx->print(lvlBuf);
+    }
 
     char pwr[12];
     uint16_t pwrCol;
@@ -6384,6 +6691,33 @@ void drawDexMovesPage(int16_t dex) {
     gfx->setTextSize(1);
     gfx->setCursor(CX - (int)strlen(pg) * 3, 366);
     gfx->print(pg);
+  }
+}
+
+// Overlay auf der Moves-Seite: welcher der 4 aktiven Slots soll durch
+// moveSwapPendingMove ersetzt werden? Tap ausserhalb der Liste bricht ab
+// (siehe galleryTap()).
+void drawMoveSwapPicker() {
+  gfx->fillRoundRect(50, 138, 366, 280, 18, UI_WHITE);
+  gfx->drawRoundRect(50, 138, 366, 280, 18, UI_INK);
+  const MoveEntry &nm = MOVE_TBL[moveSwapPendingMove];
+  char head[28];
+  snprintf(head, sizeof(head), "%s ERSETZEN:", nm.name);
+  gfx->setTextColor(UI_INK);
+  gfx->setTextSize(1);
+  gfx->setCursor(CX - (int)strlen(head) * 3, 150);
+  gfx->print(head);
+
+  for (uint8_t s = 0; s < MOVE_SLOTS; s++) {
+    int y = 168 + s * 60;
+    gfx->fillRoundRect(76, y, 314, 50, 12, C565(0xf0, 0xf2, 0xf6));
+    gfx->drawRoundRect(76, y, 314, 50, 12, UI_TRACK);
+    uint16_t mv = pet.moves[s];
+    const char *label = (mv > 0 && mv < MOVE_COUNT) ? MOVE_TBL[mv].name : "-";
+    gfx->setTextColor(UI_INK);
+    gfx->setTextSize(2);
+    gfx->setCursor(90, y + 15);
+    gfx->print(label);
   }
 }
 

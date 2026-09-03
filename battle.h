@@ -12,7 +12,7 @@ struct BattleStats {
   uint16_t atk, def, spa, spd, spe;
   uint8_t level;
   uint8_t type1 = 0, type2 = 0;
-  uint8_t moves[4] = { 0, 0, 0, 0 };
+  uint16_t moves[4] = { 0, 0, 0, 0 };  // Index in MOVE_TBL; >255 moegliche Attacken (siehe moves_real.h)
 };
 
 struct BattleRuntime {
@@ -56,3 +56,10 @@ bool applyEndOfTurnAilment(BattleRuntime &battle, bool playerSide);
 bool canStartWildBattle(bool isEgg, bool sleeping, uint8_t ceremony);
 uint8_t wildLevelFor(uint8_t petLevel, uint8_t luckRoll);
 int16_t pickWildSpecies(uint8_t roll, uint8_t phase = 1);
+// Ausgehend von der (immer zufaellig gewuerfelten) Basis-Art: liefert die
+// hoechste Entwicklungsstufe, die bei diesem Level per Level-Bedingung schon
+// erreicht sein koennte (Bindungs-/Tag-Nacht-/Statvergleich-Entwicklungen
+// zaehlen bewusst nicht, da wilde Pokemon keine Bindungs-/Trainingswerte
+// haben) -- so begegnet man im Wildkampf auch Weiterentwicklungen, aber nur
+// wenn deren Level-Voraussetzung wirklich erfuellt ist.
+int16_t wildEvolvedSpeciesForLevel(int16_t baseDex, uint8_t level);

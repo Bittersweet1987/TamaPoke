@@ -35,11 +35,14 @@ BattleStats wildBattleStats(int16_t dex, uint8_t level) {
   const DexEntry &entry = DEX_TBL[dex];
   uint8_t lvl = level ? level : 1;
   BattleStats stats = {};
-  stats.atk = entry.bAtk * 100 / 100 + lvl;
-  stats.def = entry.bDef + lvl;
-  stats.spa = entry.bSpA + lvl;
-  stats.spd = entry.bSpD + lvl;
-  stats.spe = entry.bSpe + lvl;
+  // Gleiche Level-Skalierung wie beim eigenen Haustier (siehe calcStat() in
+  // pet.cpp): multiplikativ statt nur additiv, sonst waeren wilde Lv.1- und
+  // Lv.100-Exemplare derselben Art kaum unterschiedlich stark.
+  stats.atk = (uint16_t)((uint32_t)entry.bAtk * 2 * lvl / 100 + lvl);
+  stats.def = (uint16_t)((uint32_t)entry.bDef * 2 * lvl / 100 + lvl);
+  stats.spa = (uint16_t)((uint32_t)entry.bSpA * 2 * lvl / 100 + lvl);
+  stats.spd = (uint16_t)((uint32_t)entry.bSpD * 2 * lvl / 100 + lvl);
+  stats.spe = (uint16_t)((uint32_t)entry.bSpe * 2 * lvl / 100 + lvl);
   stats.hp  = 30 + (uint16_t)lvl * 5 + entry.bHp / 2;
   stats.level = lvl;
   stats.type1 = entry.type1;
@@ -51,7 +54,7 @@ BattleStats wildBattleStats(int16_t dex, uint8_t level) {
   for (uint8_t i = 0; i < n && slot < 4; i++) {
     uint8_t lv = learnLevel(dex, i);
     if (lv == 0 || lv > lvl) continue;
-    uint8_t mv = learnMove(dex, i);
+    uint16_t mv = learnMove(dex, i);
     bool dup = false;
     for (uint8_t s = 0; s < slot; s++) if (stats.moves[s] == mv) dup = true;
     if (!dup) stats.moves[slot++] = mv;
@@ -145,7 +148,7 @@ static BattleMoveOutcome doMove(BattleRuntime &battle, bool playerSide, uint8_t 
   }
 
   out.acted = true;
-  uint8_t moveId = attacker.moves[moveSlot];
+  uint16_t moveId = attacker.moves[moveSlot];
   if (moveId == 0 || moveId >= MOVE_COUNT) return out;
   const MoveEntry &mv = MOVE_TBL[moveId];
 
@@ -302,4 +305,18 @@ int16_t pickWildSpecies(uint8_t roll, uint8_t phase) {
     if (count == 0) fill(R_COMUN, false);
   }
   return count > 0 ? pool[roll % count] : 1;
+}
+
+int16_t wildEvolvedSpeciesForLevel(int16_t baseDex, uint8_t level) {
+  int16_t cur = baseDex;
+  for (uint8_t guard = 0; guard < 4; guard++) {
+    int16_t next = 0;
+    for (uint16_t i = 0; i < EVOLUTION_RULE_COUNT; i++) {
+      const EvolutionRule &r = EVOLUTION_RULES[i];
+      if (r.from == cur && r.condition == EVO_LEVEL && level >= r.minLevel) { next = r.to; break; }
+    }
+    if (next == 0 || next == cur) break;
+    cur = next;
+  }
+  return cur;
 }

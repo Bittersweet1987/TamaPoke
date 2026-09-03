@@ -55,7 +55,7 @@ enum ExpeditionItem : uint8_t {
   EXP_ITEM_NONE = 0xFF,
 };
 #define EXP_ITEM_COUNT 4
-#define EXP_ITEM_MAX 3
+#define EXP_ITEM_MAX 80
 
 // Belohnungen der taeglichen Schritt-Meilensteine. Die Werte werden nur
 // kurzzeitig fuer die Anzeige gespeichert; der eigentliche Fortschritt liegt
@@ -106,6 +106,23 @@ struct DexMon {
   uint8_t geneSpA = 100, geneSpD = 100, geneHp = 100;
   uint8_t trAtk = 0, trDef = 0, trSpe = 0, trSpA = 0, trSpD = 0;
   uint8_t shiny = 0;
+  // Zufaellig, aber ECHT: 4 Attacken, die die Art bis zu diesem Level per
+  // Level-Aufstieg tatsaechlich gelernt haette (siehe rollFreshDexMon()).
+  // Nur bei frisch erzeugten Exemplaren (Fang/Zucht) befuellt; alte
+  // gespeicherte Exemplare bleiben 0 = "-" (Migration nicht noetig, da
+  // Party-Kaempfe bei 0 auf deriveLevelMoves() zurueckfallen, siehe party.cpp).
+  uint16_t moves[MOVE_SLOTS] = { 0, 0, 0, 0 };
+  // Nur fuer gezuechtete Exemplare (dexMonsBred) relevant, siehe
+  // Pet::switchActiveTo()/newEgg()/canBeSentAway(): das exakte Spielalter
+  // (fuer nahtloses Weiterleveln beim Zurueckwechseln), ob dieses Exemplar
+  // schon einmal weggeschickt wurde (dann nie wieder moeglich), sowie
+  // Bindung/Spitzname/Medaillen des Individuums.
+  uint32_t ageMinutes = 0;
+  bool sentAway = false;
+  uint8_t bond = 0;
+  uint16_t medals = 0;
+  uint8_t moveLevelChecked = 0;
+  char nick[12] = "";
   bool empty() const { return level == 0; }
 };
 
@@ -130,8 +147,14 @@ public:
   uint8_t trSpA = 0, trSpD = 0;
   // Attacken, die das aktuelle Pokemon kennt (0 = leerer Slot). Wird beim
   // Levelaufstieg automatisch befuellt, siehe checkLevelUpMoves() in pet.cpp.
-  uint8_t moves[MOVE_SLOTS] = { 0, 0, 0, 0 };
+  uint16_t moves[MOVE_SLOTS] = { 0, 0, 0, 0 };  // Index in MOVE_TBL (siehe moves_real.h)
   uint8_t moveLevelChecked = 0;  // bis zu diesem Level wurden Lernlisten schon geprueft
+  // Wie im echten Spiel: sind schon 4 Attacken vergeben, wird eine neu
+  // erreichte Lernlisten-Attacke NICHT mehr automatisch ueberschrieben,
+  // sondern erst per Dialog angeboten (siehe hasPendingLearnMove() unten,
+  // UI in TamaPoke.ino). 0 = kein Dialog offen.
+  uint16_t pendingLearnMove = 0;
+  uint8_t pendingLearnLevel = 0;
   bool berryKnown = false;  // ya descubrio su baya favorita
   bool shiny = false;       // variante de color rara (se sortea en el huevo)
   uint32_t ageMinutes = 0;
@@ -265,18 +288,29 @@ public:
   uint16_t spdStat() const;  // Spezial-Verteidigung (echtes Kampfsystem)
 
   // Wuerfelt ein frisches Exemplar (fuer Fang/Zucht-Speicherung, siehe DexMon).
-  DexMon rollFreshDexMon(uint16_t atLevel, bool isShiny) const;
+  DexMon rollFreshDexMon(int16_t dex, uint16_t atLevel, bool isShiny) const;
   // Prueft Lernlisten fuer neu erreichte Level und lernt faellige Attacken
   // automatisch (voller Vorrat -> die aelteste wird ersetzt). Wird aus tick()
   // aufgerufen, ist aber public falls die UI nach einem Levelsprung (z.B.
   // Offline-Fortschritt) manuell nachtriggert werden soll.
   void checkLevelUpMoves();
+  // Dialog "Attacke X erlernen?" (siehe pendingLearnMove oben).
+  bool hasPendingLearnMove() const { return pendingLearnMove != 0; }
+  void declineLearnMove();                  // "Nein": Attacke bleibt ungelernt
+  void confirmLearnMove(uint8_t replaceSlot); // "Ja" + gewaehlter Slot: ersetzt moves[replaceSlot]
   void saveDexMons();  // separat, da die zwei Arrays gross sind (nur bei Aenderung aufrufen)
   // Einmaliger Nachtrag fuer Spielstaende von vor dem Fang/Zucht-Wertesystem:
   // traegt fuer bereits registrierte/gefangene Arten ohne DexMon-Werte welche
   // nach, damit Pokedex-Seite 3 und "INS TEAM" auch ohne Neufang funktionieren.
   void backfillDexMonHistory();
   void backfillDexMonHistoryAfterDexExpand();
+  void backfillDexMonHistoryAfterMovesField();
+  // Einmaliger Nachtrag fuers Pet-Wechsel-Feature: Spielstaende von VOR
+  // diesem Feature kennen "sentAway" noch nicht (Default false ueberall).
+  // Jeder gezuechtete Eintrag, der nicht das aktuell aktive Exemplar ist,
+  // MUSS aber schon einmal weggeschickt worden sein -- sonst gaebe es ja gar
+  // kein neues (aktuelles) Ei/Exemplar. Siehe canBeSentAway().
+  void backfillSentAwayFlags();
   // Haelt dexMonsBred[speciesId] mit dem gerade aufgezogenen Haustier
   // synchron (Level/Gene/Training/Shiny). Ohne das blieb der Pokedex-Eintrag
   // (und alles, was von dort liest -- Werte-Seite, Team) auf dem Stand vom
@@ -314,6 +348,25 @@ public:
   void evolve();                  // compatibilidad: elige una opcion disponible
   bool canFarewellNow() const;  // forma final + 7 dias: lista para despedirse (boton)
   bool canRunawayNow() const;   // abandono total 1h: lista para escaparse (boton triste)
+  // Pet-Wechsel: ein bereits einmal weggeschicktes Exemplar (Abschied/
+  // Weglaufen/Freilassen) darf das kein zweites Mal werden, auch wenn man
+  // es per switchActiveTo() zurueckgeholt hat.
+  bool canBeSentAway() const {
+    return speciesId >= 1 && speciesId <= DEX_COUNT && !dexMonsBred[speciesId].sentAway;
+  }
+  // Die Art des Exemplars, dessen "Reise" noch offen ist (also noch nicht
+  // weggeschickt wurde) -- das ist immer genau eins, siehe canBeSentAway().
+  // -1, wenn es (noch) keins gibt (z.B. ganz frisches Spiel).
+  int16_t homeSpeciesId() const;
+  // Wechselt das aktive (im Hauptbildschirm lebende) Exemplar zu einer
+  // bereits gefangenen ODER gezuechteten Art aus dem Pokedex. Das bisherige
+  // Exemplar wird zuerst gesichert (bleibt also abrufbar), das neue setzt
+  // exakt beim zuletzt gespeicherten Stand fort (Level/Alter, Gene,
+  // Training, Attacken, Bindung, Spitzname, Medaillen). Pflegewerte
+  // (Hunger/Freude/Energie/Hygiene) starten neu, wie beim Schluepfen --
+  // waehrend ein Exemplar "auf der Bank" ist, braucht es keine Pflege
+  // (siehe Pokedex als Box). false, wenn dex ungueltig/leer/schon aktiv ist.
+  bool switchActiveTo(int16_t dex);
   // el usuario decide en un dialogo; "mantener/quedaros" pospone y re-ofrece luego
   bool wantEvolveButton() const;
   bool wantFarewellButton() const { return canFarewellNow() && ageMinutes >= farDeclinedAge; }
@@ -347,11 +400,8 @@ public:
   uint8_t nextDexGoal() const;
   uint8_t applyDexRewards();
   uint8_t catchChanceForWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, bool closeWin) const;
-  uint8_t respectCatchChanceForWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel) const;
   bool tryCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, bool closeWin,
                     uint8_t luckRoll, bool shinyVariant = false);
-  bool tryRespectCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel,
-                           uint8_t luckRoll, bool shinyVariant = false);
   bool lineHasUnregistered(int16_t base) const;
   bool hasEvolutionPath(int16_t dex) const;
   uint8_t eggRarity() const;       // rareza del huevo actual (sin revelar especie)

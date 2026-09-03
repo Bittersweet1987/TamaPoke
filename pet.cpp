@@ -47,12 +47,39 @@ void Pet::begin() {
     load();
     backfillDexMonHistory();
     backfillDexMonHistoryAfterDexExpand();
+    backfillDexMonHistoryAfterMovesField();
+    backfillSentAwayFlags();
+    {
+      // Automatische Diagnose bei jedem Boot (keine interaktive Serial-Anfrage
+      // noetig -- die Antwort auf Befehle ueber die native USB-CDC-Verbindung
+      // dieses Boards ist unzuverlaessig, passiver Boot-Log dagegen nicht).
+      // Nur bei Auffaelligkeiten ausgeben (Normalfall bleibt stumm), damit
+      // das nicht zu dauerhaftem Rauschen im Log wird.
+      uint16_t nCaught = 0, nCaughtEmpty = 0, nBred = 0, nBredEmpty = 0;
+      for (int16_t d = 1; d <= DEX_COUNT; d++) {
+        if (isCaught(d)) { nCaught++; if (dexMonsCaught[d].empty()) nCaughtEmpty++; }
+        if (isRegistered(d)) { nBred++; if (dexMonsBred[d].empty()) nBredEmpty++; }
+      }
+      if (nCaughtEmpty > 0 || nBredEmpty > 0) {
+        Serial.printf("WARNUNG boot-audit: %u/%u gefangene und %u/%u gezuechtete DexMon-Eintraege "
+                      "sind trotz Bitmap-Flag leer (dexnvs evtl. wieder voll?)\n",
+                      nCaughtEmpty, nCaught, nBredEmpty, nBred);
+      }
+    }
   }
   ensureStepDay();
   lastTick = millis();
 }
 
 void Pet::newEgg() {
+  // Das bisherige Exemplar ist jetzt endgueltig weggeschickt: Eintrag final
+  // sichern und fuer immer als "schon weggeschickt" markieren (siehe
+  // canBeSentAway()) -- verhindert, dass man es nach einem Zurueckwechseln
+  // (switchActiveTo()) ein zweites Mal wegschicken kann.
+  if (speciesId >= 1 && speciesId <= DEX_COUNT) {
+    syncOwnDexMon();
+    dexMonsBred[speciesId].sentAway = true;
+  }
   ceremony = CER_NONE;
   ceremonyUntil = 0;
   neglectTicks = 0;
@@ -441,8 +468,14 @@ void Pet::rename(const char *name) {
   save();
 }
 
+// Wie im echten Spiel wirkt sich das Level MULTIPLIKATIV auf den Basiswert
+// aus (angelehnt an die offizielle Formel stat = (2*Basis*Level)/100 + Level),
+// statt es nur additiv draufzuschlagen -- vorher war ein Lv.1-Bisasam kaum
+// schwaecher als ein Lv.100-Bisaflor (Basiswert+1 vs. Basiswert+100), jetzt
+// skaliert die Kampfstaerke wie erwartet deutlich mit dem Level.
 static uint16_t calcStat(uint8_t base, uint8_t gene, uint8_t lvl, uint8_t tr) {
-  return (uint16_t)base * gene / 100 + lvl + tr;
+  uint32_t adjBase = (uint32_t)base * gene / 100;
+  return (uint16_t)(adjBase * 2 * lvl / 100 + lvl + tr);
 }
 
 uint16_t Pet::atkStat() const {
@@ -463,7 +496,7 @@ uint16_t Pet::spdStat() const {
   return isEgg() ? 0 : calcStat(DEX_TBL[speciesId].bSpD, geneSpD, level(), trSpD);
 }
 
-DexMon Pet::rollFreshDexMon(uint16_t atLevel, bool isShiny) const {
+DexMon Pet::rollFreshDexMon(int16_t dex, uint16_t atLevel, bool isShiny) const {
   DexMon m;
   m.level = atLevel < 1 ? 1 : atLevel;
   m.geneAtk = 90 + random(21);
@@ -473,6 +506,32 @@ DexMon Pet::rollFreshDexMon(uint16_t atLevel, bool isShiny) const {
   m.geneSpD = 90 + random(21);
   m.geneHp  = 90 + random(21);
   m.shiny = isShiny ? 1 : 0;
+
+  // Zufaellig, aber ECHT: alle Attacken sammeln, die die Art bis zu diesem
+  // Level per Level-Aufstieg tatsaechlich gelernt haette, daraus 4 zufaellig
+  // ziehen -- statt wie beim aktiven Haustier immer deterministisch die 4
+  // hoechststufigen. Macht gefangene Exemplare individueller (wie
+  // unterschiedlich "trainierte" wilde Tiere).
+  if (dex >= 1 && dex <= DEX_COUNT) {
+    uint16_t pool[64];
+    uint8_t poolN = 0;
+    uint16_t total = learnCount(dex);
+    for (uint16_t i = 0; i < total && poolN < 64; i++) {
+      uint8_t lvl = learnLevel(dex, i);
+      if (lvl > m.level) continue;
+      uint16_t mv = learnMove(dex, i);
+      if (mv == 0) continue;
+      bool dup = false;
+      for (uint8_t p = 0; p < poolN; p++) if (pool[p] == mv) dup = true;
+      if (!dup) pool[poolN++] = mv;
+    }
+    uint8_t take = poolN < MOVE_SLOTS ? poolN : MOVE_SLOTS;
+    for (uint8_t s = 0; s < take; s++) {
+      uint8_t pick = random(poolN - s);
+      m.moves[s] = pool[pick];
+      pool[pick] = pool[poolN - s - 1];  // swap-remove, ohne Zuruecklegen
+    }
+  }
   return m;
 }
 
@@ -483,11 +542,12 @@ DexMon Pet::rollFreshDexMon(uint16_t atLevel, bool isShiny) const {
 // anderen ruecken nach -- einfachste Regel, keine Auswahl-UI noetig.
 void Pet::checkLevelUpMoves() {
   if (isEgg() || speciesId < 1 || speciesId > DEX_COUNT) return;
+  if (pendingLearnMove) return;  // Dialog schon offen -- erst entscheiden lassen
   uint8_t curLevel = level();
   if (curLevel <= moveLevelChecked) return;
   uint8_t n = learnCount(speciesId);
   for (uint8_t i = 0; i < n; i++) {
-    uint8_t mv = learnMove(speciesId, i);
+    uint16_t mv = learnMove(speciesId, i);
     uint8_t lv = learnLevel(speciesId, i);
     if (lv == 0 || lv <= moveLevelChecked || lv > curLevel) continue;
     bool known = false;
@@ -499,12 +559,34 @@ void Pet::checkLevelUpMoves() {
     if (known) continue;
     if (freeSlot >= 0) {
       moves[freeSlot] = mv;
-    } else {
-      for (int s = 0; s < MOVE_SLOTS - 1; s++) moves[s] = moves[s + 1];
-      moves[MOVE_SLOTS - 1] = mv;
+      continue;
     }
+    // Alle 4 Slots vergeben: wie im echten Spiel NICHT mehr automatisch
+    // ersetzen, sondern per Dialog fragen (siehe TamaPoke.ino). moveLevelChecked
+    // bleibt bewusst VOR diesem Level stehen, bis der Spieler entscheidet --
+    // declineLearnMove()/confirmLearnMove() schieben es dann auf lv nach.
+    pendingLearnMove = mv;
+    pendingLearnLevel = lv;
+    return;
   }
   moveLevelChecked = curLevel;
+}
+
+void Pet::declineLearnMove() {
+  if (!pendingLearnMove) return;
+  moveLevelChecked = pendingLearnLevel;
+  pendingLearnMove = 0;
+  pendingLearnLevel = 0;
+  save();
+}
+
+void Pet::confirmLearnMove(uint8_t replaceSlot) {
+  if (!pendingLearnMove || replaceSlot >= MOVE_SLOTS) return;
+  moves[replaceSlot] = pendingLearnMove;
+  moveLevelChecked = pendingLearnLevel;
+  pendingLearnMove = 0;
+  pendingLearnLevel = 0;
+  save();
 }
 
 uint16_t Pet::registeredCount() const {
@@ -615,15 +697,6 @@ uint8_t Pet::catchChanceForWild(int16_t wildDex, uint8_t wildLevel, uint8_t petL
   return (uint8_t)chance;
 }
 
-uint8_t Pet::respectCatchChanceForWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel) const {
-  uint8_t normal = catchChanceForWild(wildDex, wildLevel, petLevel, true);
-  if (normal == 0) return 0;
-  uint8_t chance = (uint8_t)((uint16_t)normal * 40 / 100);
-  if (chance < 5) chance = 5;
-  if (chance > 25) chance = 25;
-  return chance;
-}
-
 bool Pet::tryCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, bool closeWin,
                        uint8_t luckRoll, bool shinyVariant) {
   uint8_t chance = catchChanceForWild(wildDex, wildLevel, petLevel, closeWin);
@@ -638,57 +711,102 @@ bool Pet::tryCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, boo
   return false;
 }
 
-bool Pet::tryRespectCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel,
-                              uint8_t luckRoll, bool shinyVariant) {
-  uint8_t chance = respectCatchChanceForWild(wildDex, wildLevel, petLevel);
-  if (chance == 0) return false;
-  if ((luckRoll % 100) < chance) {
-    registerCaught(wildDex, shinyVariant);
-    save();
-    return true;
-  }
-  return false;
-}
-
 // forma final que ya cumplio su ciclo (7 dias): lista para despedirse. La
 // despedida la dispara el usuario con el boton (no salta sola, para que la vea)
 bool Pet::canFarewellNow() const {
-  return !isEgg() && !sleeping && ceremony == CER_NONE &&
+  return !isEgg() && !sleeping && ceremony == CER_NONE && canBeSentAway() &&
          !hasEvolutionPath(speciesId) && ageMinutes >= FAREWELL_AGE_MIN;
 }
 
 // abandono total durante 1h: lista para escaparse. La dispara el usuario con el
 // boton (final triste); cuidarla un solo tick la salva (neglectTicks se resetea)
 bool Pet::canRunawayNow() const {
-  return !isEgg() && !sleeping && ceremony == CER_NONE && neglectTicks >= RUNAWAY_TICKS;
+  return !isEgg() && !sleeping && ceremony == CER_NONE && canBeSentAway() && neglectTicks >= RUNAWAY_TICKS;
+}
+
+// Siehe canBeSentAway(): das Exemplar, dessen "Reise" noch offen ist (also
+// noch nicht per Abschied/Weglaufen/Freilassen beendet wurde). Das ist immer
+// hoechstens eins -- ein neues Ei gibt es ja erst NACHDEM das vorherige
+// weggeschickt wurde (siehe newEgg()).
+int16_t Pet::homeSpeciesId() const {
+  if (canBeSentAway()) return speciesId;  // das aktive Exemplar selbst ist es meistens
+  for (int16_t d = 1; d <= DEX_COUNT; d++) {
+    if (!dexMonsBred[d].empty() && !dexMonsBred[d].sentAway) return d;
+  }
+  return -1;
+}
+
+bool Pet::switchActiveTo(int16_t dex) {
+  if (dex < 1 || dex > DEX_COUNT || dex == speciesId) return false;
+  if (isEgg() || ceremony != CER_NONE) return false;
+  const DexMon &target = dexMonsBred[dex];
+  if (target.empty()) return false;
+
+  // Das bisherige Exemplar zuerst sichern -- es bleibt ueber den Pokedex
+  // jederzeit abrufbar (siehe switchActiveTo() beim naechsten Wechsel).
+  if (speciesId >= 1 && speciesId <= DEX_COUNT) syncOwnDexMon();
+
+  speciesId = dex;
+  prevSpeciesId = -1;
+  geneAtk = target.geneAtk; geneDef = target.geneDef; geneSpe = target.geneSpe;
+  geneSpA = target.geneSpA; geneSpD = target.geneSpD;
+  trAtk = target.trAtk; trDef = target.trDef; trSpe = target.trSpe;
+  trSpA = target.trSpA; trSpD = target.trSpD;
+  shiny = target.shiny;
+  for (int i = 0; i < MOVE_SLOTS; i++) moves[i] = target.moves[i];
+  moveLevelChecked = target.moveLevelChecked;
+  bond = target.bond;
+  medals = target.medals;
+  snprintf(nick, sizeof(nick), "%s", target.nick);
+  // Exaktes Alter, falls seit der letzten Sync-Runde bekannt; sonst (alte
+  // Speicherstaende von vor diesem Feature) aus dem gespeicherten Level
+  // rekonstruiert -- verliert hoechstens den Fortschritt innerhalb des
+  // aktuellen Levels, nie den Level selbst.
+  ageMinutes = target.ageMinutes ? target.ageMinutes
+             : (uint32_t)(target.level > 1 ? target.level - 1 : 0) * MINUTES_PER_LEVEL;
+  // Pflegewerte wie beim Schluepfen neu: waehrend der Bank-Zeit im Pokedex
+  // (= Box) braucht ein Exemplar keine Pflege, siehe switchActiveTo()-Kommentar.
+  fullness = 80; joy = 80; energy = 80; hygiene = 100;
+  poops = 0; weight = 0; careMistakes = 0; mistakeCooldown = 0;
+  berryKnown = false;
+  sleeping = false;
+  evoDeclinedLv = 0; evoDeclinedAge = 0; farDeclinedAge = 0;
+  lastPetInteractMinute = 0;
+  registerSpecies(speciesId);
+  syncOwnDexMon();  // sofort zurueckspiegeln, damit die Karte nicht kurz leer wirkt
+  save();
+  return true;
 }
 
 void Pet::startFarewell() {
-  if (isEgg() || ceremony != CER_NONE) return;
+  if (isEgg() || ceremony != CER_NONE || !canBeSentAway()) return;
   lastEnd = CER_FAREWELL;
   ceremony = CER_FAREWELL;
   ceremonyUntil = millis() + CEREMONY_MS;
   heartUntil = ceremonyUntil;  // corazones durante toda la despedida
   sfxPlay(SFX_BYE);
+  syncOwnDexMon();  // Level/Attacken sofort sichern, nicht erst beim naechsten Tick
   save();
 }
 
 void Pet::startRunaway() {
-  if (isEgg() || ceremony != CER_NONE) return;
+  if (isEgg() || ceremony != CER_NONE || !canBeSentAway()) return;
   lastEnd = CER_RUNAWAY;
   ceremony = CER_RUNAWAY;
   ceremonyUntil = millis() + CEREMONY_MS;
   sfxPlay(SFX_BYE);
+  syncOwnDexMon();
   save();
 }
 
 void Pet::release() {
-  if (isEgg() || ceremony != CER_NONE) return;
+  if (isEgg() || ceremony != CER_NONE || !canBeSentAway()) return;
   lastEnd = CER_RELEASE;
   ceremony = CER_RELEASE;
   ceremonyUntil = millis() + CEREMONY_MS;
   heartUntil = ceremonyUntil;
   sfxPlay(SFX_BYE);
+  syncOwnDexMon();
   save();
 }
 
@@ -1275,6 +1393,12 @@ BattleReward Pet::applyBattleWin(int16_t wildDex, bool closeWin) {
   energy = dropTo(energy, 8, 20);
   fullness = dropTo(fullness, 3, 10);
   addBond(closeWin ? 3 : 2);
+  // "Erfahrung": das Level ist normalerweise reine Spielzeit (siehe level()),
+  // ein Sieg schenkt zusaetzliche Alters-Minuten und beschleunigt so das
+  // naechste Level-Up spuerbar, ohne ein komplett eigenes XP-System noetig
+  // zu machen. Jeder Sieg zaehlt gleich (kein Bonus fuer knappen Sieg), nur
+  // die Seltenheit des Gegners entscheidet -- 1 bis 10 Minuten.
+  ageMinutes += (wild.rarity == R_LEGENDARIO) ? 10 : (wild.rarity == R_RARO) ? 6 : 2;
   registerCare();
   noteDailyGoal(DAILY_GOAL_BATTLE, 1);
   save();
@@ -1374,9 +1498,20 @@ bool Pet::startExpedition(uint8_t minutes, uint32_t nowEpoch, uint8_t luckRoll, 
 }
 
 ExpeditionItem Pet::claimExpedition(uint32_t nowEpoch) {
-  if (!expeditionReady(nowEpoch) || expeditionRewardItem >= EXP_ITEM_COUNT ||
-      !canReceiveExpeditionItem((ExpeditionItem)expeditionRewardItem)) return EXP_ITEM_NONE;
+  if (!expeditionReady(nowEpoch)) return EXP_ITEM_NONE;
   ExpeditionItem reward = (ExpeditionItem)expeditionRewardItem;
+  // Die urspruenglich zugeteilte Belohnung kann seit dem Start der Expedition
+  // unerreichbar geworden sein (z.B. Training inzwischen bei 100/100/100, oder
+  // das Fach bereits voll) -- ohne Ausweichoption bliebe die Expedition sonst
+  // fuer immer unabholbar (Fehlerton, HUD zeigt weiter "bereit"). Dann wird,
+  // genau wie beim Start, auf ein anderes verfuegbares Item ausgewichen.
+  if (reward >= EXP_ITEM_COUNT || !canReceiveExpeditionItem(reward)) {
+    reward = EXP_ITEM_NONE;
+    for (uint8_t i = 0; i < EXP_ITEM_COUNT; i++) {
+      if (canReceiveExpeditionItem((ExpeditionItem)i)) { reward = (ExpeditionItem)i; break; }
+    }
+  }
+  if (reward == EXP_ITEM_NONE) return EXP_ITEM_NONE;
   itemCounts[reward]++;
   expeditionEndEpoch = 0;
   expeditionRewardItem = EXP_ITEM_NONE;
@@ -1460,8 +1595,19 @@ PetMood Pet::mood() const {
 }
 
 void Pet::saveDexMons() {
-  dexPrefs.putBytes("dmcgt", dexMonsCaught, sizeof(dexMonsCaught));
-  dexPrefs.putBytes("dmbrd", dexMonsBred, sizeof(dexMonsBred));
+  // putBytes() gibt die Anzahl geschriebener Bytes zurueck (0 bei Fehler,
+  // z.B. wenn die dexnvs-Partition voll ist). Frueher wurde das nicht
+  // geprueft -- ein voller Speicher liess frisch gefangene/gezuechtete Werte
+  // beim naechsten Neustart wieder verschwinden, ohne jede Fehlermeldung
+  // (siehe partitions.csv-Kommentar zu dexnvs).
+  size_t wCgt = dexPrefs.putBytes("dmcgt", dexMonsCaught, sizeof(dexMonsCaught));
+  size_t wBrd = dexPrefs.putBytes("dmbrd", dexMonsBred, sizeof(dexMonsBred));
+  if (wCgt != sizeof(dexMonsCaught) || wBrd != sizeof(dexMonsBred)) {
+    Serial.printf("FEHLER saveDexMons: dmcgt %u/%u Byte, dmbrd %u/%u Byte geschrieben "
+                  "(dexnvs-Partition eventuell voll)\n",
+                  (unsigned)wCgt, (unsigned)sizeof(dexMonsCaught),
+                  (unsigned)wBrd, (unsigned)sizeof(dexMonsBred));
+  }
 }
 
 // Laeuft genau einmal (Marker in "prefs"): Spielstaende von vor dem Fang/
@@ -1490,11 +1636,11 @@ void Pet::backfillDexMonHistory() {
   for (int16_t d = 1; d <= DEX_COUNT; d++) {
     if (d == speciesId) continue;
     if (isRegistered(d) && dexMonsBred[d].empty()) {
-      dexMonsBred[d] = rollFreshDexMon(level(), isShinyRegistered(d));
+      dexMonsBred[d] = rollFreshDexMon(d, level(), isShinyRegistered(d));
       changed = true;
     }
     if (isCaught(d) && dexMonsCaught[d].empty()) {
-      dexMonsCaught[d] = rollFreshDexMon(level(), isShinyRegistered(d));
+      dexMonsCaught[d] = rollFreshDexMon(d, level(), isShinyRegistered(d));
       changed = true;
     }
   }
@@ -1527,14 +1673,69 @@ void Pet::backfillDexMonHistoryAfterDexExpand() {
   for (int16_t d = 1; d <= DEX_COUNT; d++) {
     if (d == speciesId) continue;
     if (isRegistered(d) && dexMonsBred[d].empty()) {
-      dexMonsBred[d] = rollFreshDexMon(level(), isShinyRegistered(d));
+      dexMonsBred[d] = rollFreshDexMon(d, level(), isShinyRegistered(d));
       changed = true;
     }
     if (isCaught(d) && dexMonsCaught[d].empty()) {
-      dexMonsCaught[d] = rollFreshDexMon(level(), isShinyRegistered(d));
+      dexMonsCaught[d] = rollFreshDexMon(d, level(), isShinyRegistered(d));
       changed = true;
     }
   }
+  if (changed) saveDexMons();
+}
+
+// Laeuft genau einmal (eigener Marker "dexmig4"): Als DexMon um ein eigenes
+// moves[]-Feld erweitert wurde (siehe rollFreshDexMon()), aenderte sich
+// sizeof(DexMon) ein weiteres Mal. Zwischen dieser Aenderung und dem dafuer
+// noetigen Lade-Fix in load() konnte wieder ein Autosave dexMonsCaught/
+// dexMonsBred leer in der (schon wieder neuen) Groesse persistieren -- exakt
+// dasselbe Muster wie bei "dexmig2", nur mit einem eigenen Marker, weil
+// "dexmig2" schon verbraucht ist und sonst nicht nochmal liefe. Gleiches
+// Vorgehen: Luecken bei laengst bekannten Arten aus dem aktuellen Level
+// nachwuerfeln, statt sie fuer immer leer zu lassen.
+void Pet::backfillDexMonHistoryAfterMovesField() {
+  if (prefs.getBool("dexmig4", false)) return;
+  bool changed = false;
+  if (speciesId >= 1 && speciesId <= DEX_COUNT && isRegistered(speciesId) &&
+      dexMonsBred[speciesId].empty()) {
+    DexMon &m = dexMonsBred[speciesId];
+    m.level = level();
+    m.geneAtk = geneAtk; m.geneDef = geneDef; m.geneSpe = geneSpe;
+    m.geneSpA = geneSpA; m.geneSpD = geneSpD;
+    m.trAtk = trAtk; m.trDef = trDef; m.trSpe = trSpe;
+    m.trSpA = trSpA; m.trSpD = trSpD;
+    m.shiny = shiny ? 1 : 0;
+    changed = true;
+  }
+  for (int16_t d = 1; d <= DEX_COUNT; d++) {
+    if (d == speciesId) continue;
+    if (isRegistered(d) && dexMonsBred[d].empty()) {
+      dexMonsBred[d] = rollFreshDexMon(d, level(), isShinyRegistered(d));
+      changed = true;
+    }
+    if (isCaught(d) && dexMonsCaught[d].empty()) {
+      dexMonsCaught[d] = rollFreshDexMon(d, level(), isShinyRegistered(d));
+      changed = true;
+    }
+  }
+  // Flag erst NACH der Schleife setzen (Absturzsicherheit: bricht die Schleife
+  // vorzeitig ab, wird beim naechsten Boot einfach nochmal versucht statt
+  // faelschlich als "erledigt" zu gelten).
+  prefs.putBool("dexmig4", true);
+  if (changed) saveDexMons();
+}
+
+void Pet::backfillSentAwayFlags() {
+  if (prefs.getBool("dexmig5", false)) return;
+  bool changed = false;
+  for (int16_t d = 1; d <= DEX_COUNT; d++) {
+    if (d == speciesId) continue;  // das aktuell aktive Exemplar: noch offen, siehe canBeSentAway()
+    if (!dexMonsBred[d].empty() && !dexMonsBred[d].sentAway) {
+      dexMonsBred[d].sentAway = true;
+      changed = true;
+    }
+  }
+  prefs.putBool("dexmig5", true);
   if (changed) saveDexMons();
 }
 
@@ -1553,6 +1754,22 @@ void Pet::syncOwnDexMon() {
   m.trAtk = trAtk; m.trDef = trDef; m.trSpe = trSpe;
   m.trSpA = trSpA; m.trSpD = trSpD;
   m.shiny = shiny ? 1 : 0;
+  // Attacken mitsynchronisieren: sonst nutzt die Party/der Arenakampf fuer
+  // das aktive Haustier ein veraltetes Moveset aus einem frueheren Schnapp-
+  // schuss (z.B. von rollFreshDexMon() beim Schluepfen), statt der Attacken,
+  // die man ihm seither ueber die Pokedex-Tausch-Funktion tatsaechlich
+  // gegeben hat.
+  for (int i = 0; i < MOVE_SLOTS; i++) m.moves[i] = moves[i];
+  // Fuer das Pet-Wechsel-Feature (switchActiveTo()): so laesst sich dieses
+  // Exemplar spaeter exakt am selben Punkt (Alter/Level, Bindung, Spitzname,
+  // Medaillen, bereits geprueftes Lernlisten-Level) fortsetzen, statt bei
+  // jedem Wechsel wieder bei 0 anzufangen. sentAway wird NICHT hier gesetzt
+  // (nur beim tatsaechlichen Wegschicken, siehe newEgg()).
+  m.ageMinutes = ageMinutes;
+  m.bond = bond;
+  m.medals = medals;
+  m.moveLevelChecked = moveLevelChecked;
+  snprintf(m.nick, sizeof(m.nick), "%s", nick);
 }
 
 void Pet::save() {
@@ -1570,6 +1787,8 @@ void Pet::save() {
   prefs.putUChar("tatk", trAtk);
   prefs.putBytes("moves", moves, sizeof(moves));
   prefs.putUChar("mvlvl", moveLevelChecked);
+  prefs.putUShort("plmv", pendingLearnMove);
+  prefs.putUChar("pllv", pendingLearnLevel);
   prefs.putUChar("tdef", trDef);
   prefs.putUChar("tspe", trSpe);
   prefs.putBool("bk", berryKnown);
@@ -1654,8 +1873,23 @@ void Pet::load() {
     geneSpe = 90 + random(21);
   }
   trAtk = prefs.getUChar("tatk", 0);
-  prefs.getBytes("moves", moves, sizeof(moves));
+  // Migration: "moves" war 4 Byte gross (uint8_t x4), bevor die Attacken-ID auf
+  // uint16_t erweitert wurde (mehr als 255 Attacken im System, siehe
+  // moves_real.h). Ein blindes getBytes() mit der NEUEN Groesse wuerde die
+  // alten 4 Rohbytes falsch als 2 uint16_t-Werte interpretieren (siehe die
+  // dexMonsCaught-Lehre weiter oben) -- daher hier explizit nach Groesse
+  // unterscheiden statt stillschweigend falsche/verlorene Werte zu riskieren.
+  size_t gotMoves = prefs.getBytesLength("moves");
+  if (gotMoves == sizeof(moves)) {
+    prefs.getBytes("moves", moves, sizeof(moves));
+  } else if (gotMoves == sizeof(uint8_t) * MOVE_SLOTS) {
+    uint8_t oldMoves[MOVE_SLOTS] = { 0 };
+    prefs.getBytes("moves", oldMoves, sizeof(oldMoves));
+    for (int i = 0; i < MOVE_SLOTS; i++) moves[i] = oldMoves[i];
+  }
   moveLevelChecked = prefs.getUChar("mvlvl", 0);
+  pendingLearnMove = prefs.getUShort("plmv", 0);
+  pendingLearnLevel = prefs.getUChar("pllv", 0);
   trDef = prefs.getUChar("tdef", 0);
   trSpe = prefs.getUChar("tspe", 0);
   berryKnown = prefs.getBool("bk", false);
@@ -1683,23 +1917,86 @@ void Pet::load() {
   loadDexBitmap(prefs, "dexreg", dexReg, sizeof(dexReg));
   loadDexBitmap(prefs, "dexcgt", dexCaught, sizeof(dexCaught));
   // Migration: dexMonsCaught/dexMonsBred waren [650] gross, bevor der Dex auf
-  // 1025 Arten erweitert wurde. Ein alter, kuerzerer Blob wuerde die exakte
-  // Groessenpruefung verfehlen und stillschweigend verworfen -- das machte
-  // JEDEN Fang/Zucht wie "neu" aussehen (kein Vergleichsdialog mehr). Ein
-  // Blob mit der alten Laenge wird stattdessen direkt in den Anfang des
-  // neuen (groesseren) Arrays geladen; der Rest bleibt per DexMon-Default
-  // (level=0 -> empty()) unveraendert.
+  // 1025 Arten erweitert wurde -- UND DexMon selbst war kleiner, bevor es ein
+  // eigenes moves[]-Feld bekam (siehe rollFreshDexMon()). Beide Aenderungen
+  // aendern sizeof(...) des gespeicherten Blobs; eine exakte Groessenpruefung
+  // ohne Fallback wuerde jede altere Variante stillschweigend verwerfen --
+  // das ist bereits einmal passiert (kompletter Verlust der Fang-/Zucht-
+  // Historie) und darf nicht nochmal passieren. Legacy-Layout ohne moves[]:
+  struct DexMonNoMoves {
+    uint16_t level = 0;
+    uint8_t geneAtk = 100, geneDef = 100, geneSpe = 100;
+    uint8_t geneSpA = 100, geneSpD = 100, geneHp = 100;
+    uint8_t trAtk = 0, trDef = 0, trSpe = 0, trSpA = 0, trSpD = 0;
+    uint8_t shiny = 0;
+  };
+  // Layout, bevor das Pet-Wechsel-Feature (ageMinutes/sentAway/bond/medals/
+  // moveLevelChecked/nick) dazukam -- das ist der Stand, den JEDER aktuell
+  // gespeicherte Spielstand noch hat (diese Migration betrifft also gerade
+  // wirklich jeden, nicht nur sehr alte Speicherstaende).
+  struct DexMonNoSwitch {
+    uint16_t level = 0;
+    uint8_t geneAtk = 100, geneDef = 100, geneSpe = 100;
+    uint8_t geneSpA = 100, geneSpD = 100, geneHp = 100;
+    uint8_t trAtk = 0, trDef = 0, trSpe = 0, trSpA = 0, trSpD = 0;
+    uint8_t shiny = 0;
+    uint16_t moves[MOVE_SLOTS] = { 0, 0, 0, 0 };
+  };
+  auto loadLegacyNoMoves = [](Preferences &p, const char *key, DexMon *dst, size_t count) {
+    DexMonNoMoves *tmp = new DexMonNoMoves[count];
+    p.getBytes(key, tmp, sizeof(DexMonNoMoves) * count);
+    for (size_t i = 0; i < count; i++) {
+      dst[i].level = tmp[i].level;
+      dst[i].geneAtk = tmp[i].geneAtk; dst[i].geneDef = tmp[i].geneDef; dst[i].geneSpe = tmp[i].geneSpe;
+      dst[i].geneSpA = tmp[i].geneSpA; dst[i].geneSpD = tmp[i].geneSpD; dst[i].geneHp = tmp[i].geneHp;
+      dst[i].trAtk = tmp[i].trAtk; dst[i].trDef = tmp[i].trDef; dst[i].trSpe = tmp[i].trSpe;
+      dst[i].trSpA = tmp[i].trSpA; dst[i].trSpD = tmp[i].trSpD;
+      dst[i].shiny = tmp[i].shiny;
+      // moves[] bleibt 0 -> partyBattleStats() faellt automatisch auf
+      // deriveLevelMoves() zurueck, siehe TamaPoke.ino.
+    }
+    delete[] tmp;
+  };
+  auto loadLegacyNoSwitch = [](Preferences &p, const char *key, DexMon *dst, size_t count) {
+    DexMonNoSwitch *tmp = new DexMonNoSwitch[count];
+    p.getBytes(key, tmp, sizeof(DexMonNoSwitch) * count);
+    for (size_t i = 0; i < count; i++) {
+      dst[i].level = tmp[i].level;
+      dst[i].geneAtk = tmp[i].geneAtk; dst[i].geneDef = tmp[i].geneDef; dst[i].geneSpe = tmp[i].geneSpe;
+      dst[i].geneSpA = tmp[i].geneSpA; dst[i].geneSpD = tmp[i].geneSpD; dst[i].geneHp = tmp[i].geneHp;
+      dst[i].trAtk = tmp[i].trAtk; dst[i].trDef = tmp[i].trDef; dst[i].trSpe = tmp[i].trSpe;
+      dst[i].trSpA = tmp[i].trSpA; dst[i].trSpD = tmp[i].trSpD;
+      dst[i].shiny = tmp[i].shiny;
+      for (int s = 0; s < MOVE_SLOTS; s++) dst[i].moves[s] = tmp[i].moves[s];
+      // ageMinutes/sentAway/bond/medals/moveLevelChecked/nick bleiben 0/leer;
+      // switchActiveTo() leitet die Startzeit in diesem Fall aus level() ab.
+    }
+    delete[] tmp;
+  };
   #define OLD_DEX_MON_COUNT_650 650
+  #define CUR_DEX_MON_COUNT (DEX_COUNT + 1)
   size_t gotCgt = dexPrefs.getBytesLength("dmcgt");
   if (gotCgt == sizeof(dexMonsCaught))
     dexPrefs.getBytes("dmcgt", dexMonsCaught, sizeof(dexMonsCaught));
-  else if (gotCgt == sizeof(DexMon) * OLD_DEX_MON_COUNT_650)
-    dexPrefs.getBytes("dmcgt", dexMonsCaught, gotCgt);
+  else if (gotCgt == sizeof(DexMonNoSwitch) * CUR_DEX_MON_COUNT)
+    loadLegacyNoSwitch(dexPrefs, "dmcgt", dexMonsCaught, CUR_DEX_MON_COUNT);
+  else if (gotCgt == sizeof(DexMonNoSwitch) * OLD_DEX_MON_COUNT_650)
+    loadLegacyNoSwitch(dexPrefs, "dmcgt", dexMonsCaught, OLD_DEX_MON_COUNT_650);
+  else if (gotCgt == sizeof(DexMonNoMoves) * CUR_DEX_MON_COUNT)
+    loadLegacyNoMoves(dexPrefs, "dmcgt", dexMonsCaught, CUR_DEX_MON_COUNT);
+  else if (gotCgt == sizeof(DexMonNoMoves) * OLD_DEX_MON_COUNT_650)
+    loadLegacyNoMoves(dexPrefs, "dmcgt", dexMonsCaught, OLD_DEX_MON_COUNT_650);
   size_t gotBrd = dexPrefs.getBytesLength("dmbrd");
   if (gotBrd == sizeof(dexMonsBred))
     dexPrefs.getBytes("dmbrd", dexMonsBred, sizeof(dexMonsBred));
-  else if (gotBrd == sizeof(DexMon) * OLD_DEX_MON_COUNT_650)
-    dexPrefs.getBytes("dmbrd", dexMonsBred, gotBrd);
+  else if (gotBrd == sizeof(DexMonNoSwitch) * CUR_DEX_MON_COUNT)
+    loadLegacyNoSwitch(dexPrefs, "dmbrd", dexMonsBred, CUR_DEX_MON_COUNT);
+  else if (gotBrd == sizeof(DexMonNoSwitch) * OLD_DEX_MON_COUNT_650)
+    loadLegacyNoSwitch(dexPrefs, "dmbrd", dexMonsBred, OLD_DEX_MON_COUNT_650);
+  else if (gotBrd == sizeof(DexMonNoMoves) * CUR_DEX_MON_COUNT)
+    loadLegacyNoMoves(dexPrefs, "dmbrd", dexMonsBred, CUR_DEX_MON_COUNT);
+  else if (gotBrd == sizeof(DexMonNoMoves) * OLD_DEX_MON_COUNT_650)
+    loadLegacyNoMoves(dexPrefs, "dmbrd", dexMonsBred, OLD_DEX_MON_COUNT_650);
   streak = prefs.getUShort("strk", 0);
   bestStreak = prefs.getUShort("bstrk", 0);
   lastCareDay = prefs.getUInt("cday", 0);

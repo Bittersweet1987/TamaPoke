@@ -3,7 +3,7 @@
 [![Flash in browser](https://img.shields.io/badge/flash-in%20browser-FF6B00?logo=googlechrome&logoColor=white)](https://bittersweet1987.github.io/TamaPoke/web/)
 [![MakerWorld](https://img.shields.io/badge/MakerWorld-3D%20case-00AE42?logo=bambulab&logoColor=white)](https://makerworld.com/es/models/2937822-tamapoke-a-pokemon-pokeball-tamagotchi)
 ![Board](https://img.shields.io/badge/board-ESP32--S3%20round%20AMOLED-E7352C?logo=espressif&logoColor=white)
-![Firmware](https://img.shields.io/badge/firmware-v1.35.3--soft--step-8A2BE2)
+![Firmware](https://img.shields.io/badge/firmware-v1.36.0--moves--switch-8A2BE2)
 ![Species](https://img.shields.io/badge/species-1025%20(Gen%201--9)-3B4CCA)
 ![Code](https://img.shields.io/badge/code-MIT-blue)
 ![Languages](https://img.shields.io/badge/languages-6-FFCB05)
@@ -56,21 +56,33 @@ leagues, and complete the Pokédex (shinies included).
 
 ## Status
 
-Running on hardware. The public build is `1.35.3-soft-step`.
+Running on hardware. The current source is `1.36.0-moves-switch` (see
+[How this fork compares](#how-this-fork-compares-to-socquiquetamapoke--dylanpdaotamapoke)
+below for what that build adds on top of the two projects this was built from).
+The hosted web installer still serves the last published `1.35.3-soft-step`
+binaries until a new release build is cut with `tools/build_web.sh` — building
+from source (see [Developer build info](#developer-build-info)) always gets
+you the current source version.
 Implemented: **all 1025 species (Gen 1–9)** + shinies animated from microSD,
 full life cycle (egg by rarity → evolution → farewell/release/runaway, each
 gated behind a decision dialog), bred-Pokédex with gallery, battle stats
-(genes + training), a full **Party system** and **5-region Gym league** (see
-below), retention hooks (streak / bond / medals / name), biome + real-time
-backgrounds, ball minigame, training bag, animated bath, RTC with offline
-progression, battery (AXP2101) and PWR button, anti-burn-in dimming,
-**sound (ES8311) with real species cries**, **6 UI languages (English
-default)**, **starter choice on first run**, a one-click **web installer**,
-manual and rare optional wild battles, one-shot catch attempts after wins,
-extra minigames, pet events, personality/profile cards, daily goals, collector
-ranks, unlockable cosmetic frames, richer sound effects and a subtle moving
-`@SE` attribution watermark on rendered screens. The Expedition card adds
-timed background tours and a small persistent item inventory.
+(genes + training, real Pokémon-style level scaling), a full **Party system**,
+**5-region Gym league** (see below) and a **pet-switching** system to make any
+previously-raised Pokémon your active companion again, retention hooks
+(streak / bond / medals / name), biome + real-time backgrounds, ball minigame,
+training bag, animated bath, RTC with offline progression, battery (AXP2101)
+and PWR button, anti-burn-in dimming, **sound (ES8311) with real species
+cries**, **6 UI languages (English default)**, **starter choice on first
+run**, a one-click **web installer**, manual and rare optional wild battles
+(now including evolved forms, gated by level), one-shot catch attempts after
+wins with a small battle-win experience bonus, a full **real movepool** (798
+moves, real per-species per-level learnsets) with a Pokédex page to freely
+reassign a Pokémon's 4 active attacks and a proper learn/replace dialog once
+all 4 slots are taken, extra minigames, pet events, personality/profile
+cards, daily goals, collector ranks, unlockable cosmetic frames, richer sound
+effects and a subtle moving `@SE` attribution watermark on rendered screens.
+The Expedition card adds timed background tours and a persistent item
+inventory (up to 80 of each item).
 
 > **Species cries are real Pokémon cries**, sourced from
 > [PokéAPI's cries archive](https://github.com/PokeAPI/cries) (`legacy/` for
@@ -81,6 +93,60 @@ timed background tours and a small persistent item inventory.
 
 The final local hardware path is complete. Optional future work is limited to
 longer soak tests and balance tuning; it is not required for normal use.
+
+## How this fork compares to socquique/TamaPoke & DylanPDao/TamaPoke
+
+This is Bittersweet1987's fork of [socquique/TamaPoke](https://github.com/socquique/TamaPoke)
+(the original project for this board), and it also ports/adapts parts of its
+battle and trainer system from [DylanPDao/TamaPoke](https://github.com/DylanPDao/TamaPoke),
+a separate expanded fork of the same original (see [Credits](CREDITS.md) for
+exact attribution). For anyone comparing the three, here's what's specific to
+this fork:
+
+**vs. [socquique/TamaPoke](https://github.com/socquique/TamaPoke)** (the
+original — Gen 1 only, no battle system yet):
+- **1025 species, Gen 1–9** instead of the original 151 (Gen 1 only).
+- **Wild battles and a full turn-based battle system** — upstream still lists
+  battles as a roadmap item, not implemented.
+- A **5-region Gym league** (Kanto/Johto/Hoenn/Sinnoh/Unova, 8 leaders + Elite
+  Four + Champion each, Easy/Hard modes) and a **Party system** (team of up to
+  6, live-updating stats as members keep leveling).
+- A real **movepool** (798 moves from PokéAPI, real per-species per-level
+  learnsets for all 1025 species) with a Pokédex page to freely customize a
+  Pokémon's 4 active attacks, plus a proper "learn this move? which one do
+  you replace?" dialog once all 4 slots are taken — nothing is silently
+  overwritten.
+- **Pet-switching**: raise more than one Pokémon over time and freely switch
+  which one is your actively-cared-for companion — it resumes exactly where
+  it left off (level, genes, training, moves, bond, nickname) — while each
+  individual can still only be sent off (farewell/release/runaway) once.
+- Wild encounters can be **evolved forms** too (gated by the species' real
+  evolution level), levels skew fairer around your own, and every win now
+  gives a small battle "experience" bonus (extra age-minutes) on top of the
+  training reward.
+- Expeditions with a background-tour system and item inventory, daily goals,
+  personality/profile cards, medals, collector ranks/frames, a pedometer/steps
+  system, real species cries from PokéAPI (instead of synthesized chirps), and
+  a generation-paginated Pokédex with an extra "sort by strength" view.
+
+**vs. [DylanPDao/TamaPoke](https://github.com/DylanPDao/TamaPoke)** (the fork
+this ported the Gym/trainer/badge system from):
+- **1025 species (Gen 1–9)** instead of 386.
+- The full **798-move real movepool** with a genuine per-level learnset for
+  every one of the 1025 species (fetched from PokéAPI), instead of a curated
+  77-move pool — plus the attack-customization/learn-replace UI described
+  above, which that project doesn't have.
+- **Pet-switching**, as above: that project's Party keeps up to 6 pets but
+  freezes their moves once "banked" — here you can pull any previously-raised
+  Pokémon back out as your live, ticking, actively-cared-for main pet and keep
+  developing it.
+- **Genes** (a 90–110% roll per stat at hatch) instead of IVs (0–31), and
+  battle stats now scale with level using the real
+  `(2×base×level)/100 + level + training` formula instead of a flatter curve.
+- Wild encounters can spawn **evolved forms** (gated by evolution level) with
+  a small experience bonus per win, and the internal NVS storage for the
+  caught/bred Pokédex history was enlarged to avoid a silent-data-loss class
+  of bug on very large save files.
 
 ## Trainers, Gyms & the League
 

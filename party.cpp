@@ -81,9 +81,11 @@ void Party::releaseAt(uint8_t i) {
   save();
 }
 
-// Identisch zu calcStat() in pet.cpp: base * gen / 100 + Level + Training.
+// Identisch zu calcStat() in pet.cpp: multiplikative Level-Skalierung
+// (angelehnt an stat = (2*Basis*Level)/100 + Level), plus Training.
 static uint16_t calcStat(uint8_t base, uint8_t gene, uint16_t lvl, uint8_t tr) {
-  return (uint16_t)base * gene / 100 + lvl + tr;
+  uint32_t adjBase = (uint32_t)base * gene / 100;
+  return (uint16_t)(adjBase * 2 * lvl / 100 + lvl + tr);
 }
 
 uint16_t Party::atkOf(const PartyMon &m) const {
