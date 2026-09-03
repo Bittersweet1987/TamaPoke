@@ -5,8 +5,8 @@
 # Uso: bash tools/build_web.sh
 set -e
 cd "$(dirname "$0")/.."
-FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
-VERSION="1.35.3-soft-step"
+FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=custom"
+VERSION="1.36.0-moves-switch"
 
 echo "Compilando..."
 B="$(mktemp -d "${TMPDIR:-/tmp}/tamapoke-build.XXXXXX")"

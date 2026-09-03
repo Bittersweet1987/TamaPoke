@@ -56,13 +56,10 @@ leagues, and complete the Pokédex (shinies included).
 
 ## Status
 
-Running on hardware. The current source is `1.36.0-moves-switch` (see
+Running on hardware. The public build (web installer and source) is
+`1.36.0-moves-switch` (see
 [How this fork compares](#how-this-fork-compares-to-socquiquetamapoke--dylanpdaotamapoke)
 below for what that build adds on top of the two projects this was built from).
-The hosted web installer still serves the last published `1.35.3-soft-step`
-binaries until a new release build is cut with `tools/build_web.sh` — building
-from source (see [Developer build info](#developer-build-info)) always gets
-you the current source version.
 Implemented: **all 1025 species (Gen 1–9)** + shinies animated from microSD,
 full life cycle (egg by rarity → evolution → farewell/release/runaway, each
 gated behind a decision dialog), bred-Pokédex with gallery, battle stats
